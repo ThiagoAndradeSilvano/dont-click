@@ -239,8 +239,45 @@ function normalizePlayer(player) {
   if (!Array.isArray(player.upgrades)) player.upgrades = [];
   if (!player.generators || typeof player.generators !== 'object') player.generators = {};
   if (!Array.isArray(player.flags)) player.flags = [];
+  if (!Array.isArray(player.sessionClickTimestamps)) player.sessionClickTimestamps = [];
   if (!player.clickerStartedAt) player.clickerStartedAt = null;
   return player;
+}
+
+/*
+ * DETECTOR PSICOLÓGICO DE CONTAGEM HUMANA ("1... 2... 3... 4... 5... 6... 7... 8... 9"):
+ * Analisa os intervalos em milissegundos entre os cliques até o 1º erro.
+ * - Quem clica metralhando rápido (< 260ms de média): NÃO está contando mentalmente.
+ * - Quem clica caótico (ora 200ms, ora 1800ms): NÃO está contando, está explorando.
+ * - Quem abre em outro aparelho/aba SÓ PRA CONTAR clica cadenciado (média entre 340ms e 1800ms,
+ *   com baixo coeficiente de variação entre os intervalos)!
+ */
+function detectDeliberateCounting(timestamps = []) {
+  if (timestamps.length < 7) return false;
+
+  const intervals = [];
+  for (let i = 1; i < timestamps.length; i++) {
+    intervals.push(timestamps[i] - timestamps[i - 1]);
+  }
+
+  // Ignora o 1º intervalo caso a pessoa tenha testado o 1º clique e depois começado a contar do 2 em diante,
+  // checando tanto todos os intervalos quanto os últimos 6 intervalos!
+  const checkSlice = (arr) => {
+    if (arr.length < 6) return false;
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    // Cadência humana de contar "um... dois... três...": entre 0.34s e 1.85s por clique
+    if (mean < 340 || mean > 1850) return false;
+
+    const variance = arr.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / arr.length;
+    const stdDev = Math.sqrt(variance);
+    const cv = stdDev / mean; // coeficiente de variação
+
+    // Se a variação de ritmo for menor que 23% e nenhum clique foi metralhado (<220ms), a pessoa está contando no compasso!
+    const minInt = Math.min(...arr);
+    return cv <= 0.23 && minInt >= 220;
+  };
+
+  return checkSlice(intervals) || checkSlice(intervals.slice(1));
 }
 
 function resolvePlayer(req, res, clientMeta = {}) {
@@ -390,6 +427,7 @@ app.post('/api/session', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.visits += 1;
   player.sessionClicks = 0;
+  player.sessionClickTimestamps = [];
 
   if (player.stage === 'button' && player.crashes >= 2) {
     player.stage = 'shape_test';
@@ -429,15 +467,33 @@ app.post('/api/click', (req, res) => {
   }
 
   if (player.stage === 'button') {
-    const crashThreshold = player.crashes === 0 ? player.firstCrashClicks : 5;
+    const nowMs = typeof req.body?.clientTs === 'number' ? req.body.clientTs : Date.now();
+    player.sessionClickTimestamps.push(nowMs);
+
+    const isFirstCrashRun = player.crashes === 0;
+    const crashThreshold = isFirstCrashRun ? player.firstCrashClicks : 5;
     const shouldCrash = player.sessionClicks >= crashThreshold;
-    if (shouldCrash) player.crashes += 1;
+
+    let caughtCounting = false;
+    if (shouldCrash) {
+      if (isFirstCrashRun && detectDeliberateCounting(player.sessionClickTimestamps)) {
+        caughtCounting = true;
+        if (!player.flags.includes('caught_counting_first_crash')) {
+          player.flags.push('caught_counting_first_crash');
+        }
+        console.log(`[PEGAMOS NO PULO!] Jogador ${player.id.slice(0, 8)} clicou contando no ritmo até o 9º clique!`);
+      }
+      player.crashes += 1;
+    }
+
     saveDb(db);
     return res.json({
       ok: true,
       token: player.id,
       stage: 'button',
       action: shouldCrash ? 'crash' : 'none',
+      caughtCounting,
+      crashClickCount: crashThreshold,
     });
   }
 

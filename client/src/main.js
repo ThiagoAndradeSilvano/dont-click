@@ -382,7 +382,8 @@ function renderInitialButtonScreen(buttonLabel = 'Botão') {
 
   theButton?.addEventListener('click', async () => {
     if (crashing) return;
-    const result = await apiPost('/api/click');
+    // Envia performance.now() de alta precisão para o detector de cadência de contagem!
+    const result = await apiPost('/api/click', { clientTs: Math.round(performance.now()) });
     if (!result) return;
 
     if (result.action === 'crash') {
@@ -391,7 +392,11 @@ function renderInitialButtonScreen(buttonLabel = 'Botão') {
         app.innerHTML = '';
         document.title = 'Carregando...';
         setTimeout(() => {
-          renderFakeBrowserCrash({ awakening: false });
+          renderFakeBrowserCrash({
+            awakening: false,
+            caughtCounting: Boolean(result.caughtCounting),
+            crashClickCount: result.crashClickCount || 9,
+          });
         }, 180);
       }, 140);
     }
@@ -1012,7 +1017,14 @@ function renderShapeTestScreen() {
 // ============================================================================
 // TELA DE ERRO DO NAVEGADOR (Normal vs O DESPERTAR DELE AOS ~15 MIN!)
 // ============================================================================
-function renderFakeBrowserCrash({ awakening = false, totalClicks = 600, ownedUpgrades = [], minutesPlayed = 15 } = {}) {
+function renderFakeBrowserCrash({
+  awakening = false,
+  caughtCounting = false,
+  crashClickCount = 9,
+  totalClicks = 600,
+  ownedUpgrades = [],
+  minutesPlayed = 15,
+} = {}) {
   clearTimers();
   currentStage = awakening ? 'awakening_error' : 'crashed';
   const host = window.location.hostname || 'naoclique.net';
@@ -1036,7 +1048,7 @@ function renderFakeBrowserCrash({ awakening = false, totalClicks = 600, ownedUpg
     </svg>
   `;
 
-  if (isFirefox && !awakening) {
+  if (isFirefox && !awakening && !caughtCounting) {
     document.body.className = 'firefox-error-mode';
     app.innerHTML = `
       <div class="ff-wrapper">
@@ -1087,10 +1099,38 @@ function renderFakeBrowserCrash({ awakening = false, totalClicks = 600, ownedUpg
 
   if (!awakening) {
     reloadBtn?.addEventListener('click', () => window.location.reload());
+
+    // SE DETECTOU QUE O CARA CLICOU CONTANDO NO COMPASSO ("1... 2... 3... 9"):
+    // Ele ainda recebe a resposta (caiu no 9º clique!), mas toma uma enquadrada assustadora na tela de erro!
+    if (caughtCounting) {
+      runCaughtCountingEasterEgg(crashClickCount);
+    }
     return;
   }
 
   runAwakeningSequence(totalClicks, ownedUpgrades, minutesPlayed, reloadBtn);
+}
+
+// Mensagem especial quando alguém abre o site do zero e clica num ritmo certinho de quem está contando!
+async function runCaughtCountingEasterEgg(crashClickCount) {
+  await sleep(950);
+  const errCode = document.getElementById('err-code');
+  const slot = document.getElementById('hijack-slot');
+  if (!slot) return;
+
+  if (errCode) errCode.textContent = `ERR_CONTANDO_NO_DEDINHO_${crashClickCount}`;
+
+  const box = document.createElement('div');
+  box.className = 'hijack-box';
+  slot.appendChild(box);
+
+  await humanTypeSequence(box, [
+    { text: '"um... dois... três... quatro..."' },
+    { pause: 1100 },
+    { text: `\n\nabriu em outro aparelho só pra contar quantos cliques eram antes de cair né seu safado? kkkkkkk` },
+    { pause: 1200 },
+    { text: `\n\nanota aí então já que veio buscar cola: foram ${crashClickCount}. mas fica esperto que eu tô vendo.` },
+  ]);
 }
 
 async function humanTypeSequence(container, steps) {
