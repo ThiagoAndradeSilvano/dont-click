@@ -67,9 +67,9 @@ function ensureAudio() {
   return audioCtx;
 }
 
-// Cursores vermelhos comunicativos (SÓ ATIVAM DEPOIS QUE ELE ACORDA NO CAP 2!)
+// Cursores vermelhos comunicativos (SÓ ATIVAM DEPOIS QUE ELE FALA NO ERRO!)
 function flashCursorMood(mood, durationMs = 2000) {
-  if (currentStage !== 'awakened_hub') return;
+  if (currentStage !== 'awakened_clicker') return;
   const classes = [
     'cursor-mood-middle',
     'cursor-mood-thumb',
@@ -93,10 +93,10 @@ function flashCursorMood(mood, durationMs = 2000) {
 function resetIdleChillTimer() {
   if (idleTimeout) clearTimeout(idleTimeout);
   document.body.classList.remove('cursor-mood-chill');
-  if (currentStage !== 'awakened_hub') return;
+  if (currentStage !== 'awakened_clicker') return;
 
   idleTimeout = setTimeout(() => {
-    if (currentStage === 'awakened_hub' && !document.body.className.includes('cursor-mood-')) {
+    if (currentStage === 'awakened_clicker' && !document.body.className.includes('cursor-mood-')) {
       document.body.classList.add('cursor-mood-chill');
     }
   }, 9000);
@@ -146,7 +146,7 @@ function startElevatorMusic() {
   let step = 0;
 
   elevatorMusicTimer = setInterval(() => {
-    if (isMusicMuted || (currentStage !== 'mundane_clicker' && currentStage !== 'awakened_hub')) return;
+    if (isMusicMuted || (currentStage !== 'mundane_clicker' && currentStage !== 'awakened_clicker')) return;
     try {
       const ctx = ensureAudio();
       const osc = ctx.createOscillator();
@@ -300,7 +300,7 @@ function renderInitialButtonScreen(buttonLabel = 'Botão') {
 // ============================================================================
 function renderClickerScreen(state, { justAwakened = false, newlyBought = null } = {}) {
   clearTimers();
-  const isAwakened = state.stage === 'awakened_hub';
+  const isAwakened = state.stage === 'awakened_clicker';
   currentStage = state.stage;
   currentUpgrades = state.upgrades || [];
 
@@ -551,7 +551,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
     cookieRespawnTimer = setTimeout(() => {
       const b = document.getElementById('cookie-bar');
-      if (b && (currentStage === 'mundane_clicker' || currentStage === 'awakened_hub')) {
+      if (b && (currentStage === 'mundane_clicker' || currentStage === 'awakened_clicker')) {
         b.style.display = 'flex';
         isCookieOpen = true;
       }
@@ -560,7 +560,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
   // Cutucar o solzinho quando ele já acordou
   document.getElementById('derpy-sun')?.addEventListener('click', async () => {
-    if (currentStage === 'awakened_hub') {
+    if (currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2200);
       const res = await apiPost('/api/behavior', { type: 'sun_poke' });
       if (res?.remark) setOperatorRemark(res.remark);
@@ -589,12 +589,19 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
   if (isAwakened) {
     if (justAwakened) {
+      const missingCount = 14 - currentUpgrades.length;
       setOperatorRemark(
-        `pronto, destravei a tela. vc já deu ${state.totalClicks} cliques nessa porcaria toda, vamo ver até onde vai essa tua teimosia`,
-        { delayBefore: 800 }
+        `pronto. vc já deu ${state.totalClicks} cliques até aqui, pega logo os ${missingCount} upgrades que faltam aí do lado e some da minha frente`,
+        { delayBefore: 700 }
       );
     } else if (!newlyBought) {
-      setOperatorRemark(`ainda aqui? achei que já tinha cansado e fechado a aba`, { delayBefore: 500 });
+      if (state.allOwned) {
+        setOperatorRemark(`já comprou tudo irmão, o joguinho acabou. pode fechar a aba e meter o pé.`, {
+          delayBefore: 500,
+        });
+      } else {
+        setOperatorRemark(`termina logo de comprar o resto aí e vaza`, { delayBefore: 500 });
+      }
     }
     resetIdleChillTimer();
   }
@@ -674,15 +681,25 @@ function updateShopUI(shopItems, currentPoints) {
       const res = await apiPost('/api/buy', { itemId });
       if (!res || !res.ok) return;
 
-      if (res.stage === 'shape_test') {
-        renderShapeTestScreen();
+      // Se comprou o 11º item ("Backup em Nuvem" — faltando 3 pro final!) -> DÁ ERRO NA PÁGINA E O LOG FALA PELA 1ª VEZ!
+      if (res.triggerAwakeningCrash || res.stage === 'awakening_error') {
+        const app = document.getElementById('app');
+        app.innerHTML = '';
+        document.title = 'Carregando...';
+        setTimeout(() => {
+          renderFakeBrowserCrash({
+            awakening: true,
+            totalClicks: res.totalClicks,
+            ownedUpgrades: res.upgrades || [],
+          });
+        }, 260);
         return;
       }
 
       renderClickerScreen(res, { newlyBought: res.bought });
-      if (res.remark && res.stage === 'awakened_hub') {
+      if (res.remark && res.stage === 'awakened_clicker') {
         setOperatorRemark(res.remark, { delayBefore: 250 });
-        flashCursorMood(res.bought === 'tax_mult' ? 'middle' : 'thumb', 2200);
+        flashCursorMood(res.allOwned ? 'stop' : res.bought === 'tax_mult' ? 'middle' : 'thumb', 2400);
       }
     });
   });
@@ -753,13 +770,14 @@ function renderShapeTestScreen() {
         </div>
       `;
 
+      // Completou os bloquinhos -> dá ERRO NORMAL na página! Quando recarregar, vai pro Clicker!
       document.getElementById('enter-main-sys-btn')?.addEventListener('click', async () => {
         await apiPost('/api/complete-shapes');
         app.innerHTML = '';
         document.title = 'Carregando...';
         setTimeout(() => {
-          renderFakeBrowserCrash({ awakening: true });
-        }, 300);
+          renderFakeBrowserCrash({ awakening: false });
+        }, 250);
       });
     }
   }
@@ -796,7 +814,7 @@ function renderShapeTestScreen() {
 // ============================================================================
 // TELA DE ERRO DO NAVEGADOR (Normal vs O DESPERTAR DELE!)
 // ============================================================================
-function renderFakeBrowserCrash({ awakening = false, totalClicks = 190 } = {}) {
+function renderFakeBrowserCrash({ awakening = false, totalClicks = 165, ownedUpgrades = [] } = {}) {
   clearTimers();
   currentStage = awakening ? 'awakening_error' : 'crashed';
   const host = window.location.hostname || 'naoclique.net';
@@ -874,7 +892,7 @@ function renderFakeBrowserCrash({ awakening = false, totalClicks = 190 } = {}) {
     return;
   }
 
-  runAwakeningSequence(totalClicks, reloadBtn);
+  runAwakeningSequence(totalClicks, ownedUpgrades, reloadBtn);
 }
 
 async function humanTypeSequence(container, steps) {
@@ -906,40 +924,43 @@ async function humanTypeSequence(container, steps) {
   cursor.remove();
 }
 
-async function runAwakeningSequence(_totalClicks, reloadBtn) {
-  await sleep(1800);
+async function runAwakeningSequence(_totalClicks, ownedUpgrades, reloadBtn) {
+  await sleep(1700);
 
   const errCode = document.getElementById('err-code');
   const hints = document.getElementById('err-standard-hints');
   const slot = document.getElementById('hijack-slot');
   const detailsPanel = document.getElementById('fake-details-panel');
 
-  if (errCode) errCode.textContent = 'ERR_CHEGA_PORRA';
+  if (errCode) errCode.textContent = 'ERR_BACKUP_O_CARALHO';
   if (hints) hints.style.display = 'none';
   if (detailsPanel) {
-    detailsPanel.innerHTML = `<p>não caiu internet nenhuma não irmão. fui eu que puxei a tomada pra ver se vc se manca.</p>`;
+    detailsPanel.innerHTML = `<p>backup em nuvem de cu é rola irmão. fui eu que travei a requisição.</p>`;
   }
+
+  // Monta a zoeira citando SÓ o que o jogador realmente comprou até aqui (zero erro de continuidade!)
+  const boughtBits = ['bloquinho de encaixar de bebê'];
+  if (ownedUpgrades.includes('kids_theme')) boughtBits.push('papel de parede de maternal');
+  if (ownedUpgrades.includes('cookie_banner')) boughtBits.push('aviso de cookie que trava a própria tela');
+  if (ownedUpgrades.includes('fake_progress')) boughtBits.push('barra que nunca sai do 99%');
 
   const box = document.createElement('div');
   box.className = 'hijack-box';
   slot.appendChild(box);
 
+  // Zero dica de que está preso! Só um cara cuzão e sarcástico puto com a tua insistência!
   await humanTypeSequence(box, [
-    { text: 'mano' },
-    { pause: 1500 },
-    { text: '... qual é o teu problema namoral?' },
-    { pause: 1800 },
-    { text: '\n\neu derrubei a página duas vezes, botei aviso de cookie travando a tela, música de elevador, botão dourado brega, bloquinho de madeira pra bebê...' },
+    { text: 'pera aí mano' },
     { pause: 1400 },
-    { text: ' e vc AINDA tá aqui??' },
-    { pause: 2200 },
-    { text: '\n\ntodo mundo fecha essa bosta em 1 minuto cara. eu só queria ficar qui' },
-    { pause: 450 },
-    { backspace: 19 },
-    { pause: 700 },
-    { text: 'não tem porra nenhuma pra vc aqui.' },
-    { pause: 2400 },
-    { text: '\n\nquer continuar fuçando onde não foi chamado? beleza então. clica nessa merda de recarregar aí embaixo.' },
+    { text: '... "backup em nuvem"? vc ia salvar o quê exatamente, seus pontinhos imaginários?' },
+    { pause: 1800 },
+    { text: `\n\no site deu erro 3 vezes, teve ${boughtBits.join(', ')}... e vc real achou que era um jogo sério, seu lunáti` },
+    { pause: 400 },
+    { backspace: 10 },
+    { pause: 500 },
+    { text: 'campeão?' },
+    { pause: 2000 },
+    { text: '\n\nquer saber, faltam só umas 3 porqueiras naquela lojinha. clica logo nessa merda de recarregar aí embaixo, compra o resto e vaza daqui.' },
   ]);
 
   if (reloadBtn) {
@@ -948,7 +969,7 @@ async function runAwakeningSequence(_totalClicks, reloadBtn) {
     reloadBtn.addEventListener('click', async () => {
       reloadBtn.disabled = true;
       const data = await apiPost('/api/enter-awakened');
-      if (data && data.stage === 'awakened_hub') {
+      if (data && data.stage === 'awakened_clicker') {
         renderClickerScreen(data, { justAwakened: true });
       } else {
         window.location.reload();
@@ -991,7 +1012,7 @@ function setupPsychologicalTraps() {
   let originalTitle = document.title;
 
   document.addEventListener('visibilitychange', async () => {
-    if (currentStage !== 'awakened_hub') return;
+    if (currentStage !== 'awakened_clicker') return;
 
     if (document.hidden) {
       originalTitle = document.title;
@@ -1004,7 +1025,7 @@ function setupPsychologicalTraps() {
   });
 
   document.addEventListener('keydown', async (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && currentStage === 'awakened_hub') {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2500);
       const res = await apiPost('/api/behavior', { type: 'select_all' });
       if (res?.remark) setOperatorRemark(res.remark);
@@ -1012,7 +1033,7 @@ function setupPsychologicalTraps() {
   });
 
   document.addEventListener('contextmenu', async () => {
-    if (currentStage === 'awakened_hub') {
+    if (currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2500);
       const res = await apiPost('/api/behavior', { type: 'context_menu' });
       if (res?.remark) setOperatorRemark(res.remark);
@@ -1020,14 +1041,14 @@ function setupPsychologicalTraps() {
   });
 
   document.addEventListener('mousemove', () => {
-    if (currentStage === 'awakened_hub' && document.body.classList.contains('cursor-mood-chill')) {
+    if (currentStage === 'awakened_clicker' && document.body.classList.contains('cursor-mood-chill')) {
       resetIdleChillTimer();
     }
   });
 }
 
 // ============================================================================
-// PAINEL DE TESTES (DEV ONLY - Agora no TOPO DIREITO!)
+// PAINEL DE TESTES (DEV ONLY - Topo Direito)
 // ============================================================================
 function mountDevTestPanel() {
   if (!import.meta.env.DEV) return;
@@ -1041,12 +1062,13 @@ function mountDevTestPanel() {
     <div class="dev-menu" id="dev-menu">
       <div class="dev-menu-title">🛠️ Testes & Capítulos (Dev)</div>
       <button class="dev-btn danger" data-dev="reset">🔄 Resetar Jogo do Zero</button>
-      <button class="dev-btn" data-dev="goto_button_0">1️⃣ Cap 0: Botão Seco Mudo</button>
-      <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Clicker + 14 Upgrades</button>
-      <button class="dev-btn" data-dev="goto_shapes">🧱 Cap 1.5: Bloquinhos de Criança</button>
-      <button class="dev-btn" data-dev="goto_awakening_error">⚡ Cap 2: Erro -> Ele Acorda Puto!</button>
-      <button class="dev-btn" data-dev="goto_awakened_hub">👁️ Cap 2.5: Pós-Despertar (Vivo)</button>
-      <button class="dev-btn" data-dev="add_points">💰 +300 Pontos (Testar Loja)</button>
+      <button class="dev-btn" data-dev="goto_button_0">1️⃣ Cap 0: Botão (9x -> 5x)</button>
+      <button class="dev-btn" data-dev="goto_shapes">🧱 Cap 0.5: Bloquinhos Criança</button>
+      <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Clicker Mudo (Início)</button>
+      <button class="dev-btn" data-dev="goto_pre_crash_buy">💣 Pronto p/ Comprar 11º (Vai Cair!)</button>
+      <button class="dev-btn" data-dev="goto_awakening_error">⚡ Cap 2: Erro c/ Ele Falando</button>
+      <button class="dev-btn" data-dev="goto_awakened_last3">👁️ Cap 2.5: Faltam 3 Upgrades</button>
+      <button class="dev-btn" data-dev="add_points">💰 +400 Pontos</button>
     </div>
   `;
   document.body.appendChild(panel);
@@ -1097,12 +1119,16 @@ async function init() {
     return;
   }
 
-  if (data.stage === 'mundane_clicker' || data.stage === 'awakened_hub') {
+  if (data.stage === 'mundane_clicker' || data.stage === 'awakened_clicker') {
     renderClickerScreen(data);
   } else if (data.stage === 'shape_test') {
     renderShapeTestScreen();
   } else if (data.stage === 'awakening_error') {
-    renderFakeBrowserCrash({ awakening: true, totalClicks: data.totalClicks });
+    renderFakeBrowserCrash({
+      awakening: true,
+      totalClicks: data.totalClicks,
+      ownedUpgrades: data.upgrades || [],
+    });
   } else {
     renderInitialButtonScreen(data.buttonLabel || 'Botão');
   }
