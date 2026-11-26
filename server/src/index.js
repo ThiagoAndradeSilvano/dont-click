@@ -90,6 +90,7 @@ function resolvePlayer(req, res, clientMeta = {}) {
       fpHash,
       ip,
       clicks: 0,
+      sessionClicks: 0,
       visits: 0,
       firstSeenAt: now,
       lastSeenAt: now,
@@ -98,6 +99,9 @@ function resolvePlayer(req, res, clientMeta = {}) {
   }
 
   const player = db.players[playerId];
+  if (typeof player.sessionClicks !== 'number') {
+    player.sessionClicks = 0;
+  }
   player.lastSeenAt = now;
   player.fpHash = fpHash;
 
@@ -111,44 +115,56 @@ function resolvePlayer(req, res, clientMeta = {}) {
   return { db, player };
 }
 
-// Chamado silenciosamente quando a página abre
+// Chamado silenciosamente quando a página abre/recarrega
 app.post('/api/session', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.visits += 1;
+  // Ao recarregar, volta ao ciclo normal da tela (mas mantém player.clicks e history intactos!)
+  player.sessionClicks = 0;
   saveDb(db);
 
   console.log(
-    `[VISITA] Jogador ${player.id.slice(0, 8)} | Visitas: ${player.visits} | Cliques acumulados no sistema: ${player.clicks}`
+    `[VISITA] Jogador ${player.id.slice(0, 8)} | Visitas: ${player.visits} | Cliques totais no histórico: ${player.clicks}`
   );
-
-  // Servidor decide o texto do botão para ninguém ver a regra antes da hora no código do client:
-  // Antes de 3 cliques: "Botão" | A partir de 3 cliques: "Não clique"
-  const buttonLabel = player.clicks >= 3 ? 'Não clique' : 'Botão';
 
   res.json({
     token: player.id,
-    buttonLabel,
+    buttonLabel: 'Botão',
   });
 });
 
-// Chamado exatamente no momento em que o jogador clica no botão
+// Chamado a cada clique no botão
 app.post('/api/click', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.clicks += 1;
+  player.sessionClicks += 1;
   db.totalGlobalClicks += 1;
 
   player.history.push({
     clickNumber: player.clicks,
+    sessionClick: player.sessionClicks,
     at: new Date().toISOString(),
   });
+
+  // Regra da tela atual:
+  // Cliques 1, 2, 3: "Botão" -> após o 3º clique vira "Não clique"
+  // Cliques 4, 5, 6, 7: "Não clique" (totalizando 7 cliques sem cair)
+  // No 8º clique: dispara a tela de erro!
+  const shouldCrash = player.sessionClicks >= 8;
+  const buttonLabel = player.sessionClicks >= 3 ? 'Não clique' : 'Botão';
 
   saveDb(db);
 
   console.log(
-    `[CLIQUE REGISTRADO!] Jogador ${player.id.slice(0, 8)} clicou! Total dele: ${player.clicks} | Total Global: ${db.totalGlobalClicks}`
+    `[CLIQUE] Jogador ${player.id.slice(0, 8)} | Sessão: ${player.sessionClicks}/8 | Total Histórico: ${player.clicks} | Crash: ${shouldCrash}`
   );
 
-  res.json({ ok: true, token: player.id });
+  res.json({
+    ok: true,
+    token: player.id,
+    buttonLabel,
+    action: shouldCrash ? 'crash' : 'none',
+  });
 });
 
 // Rotas internas só pra você (dev) inspecionar ou zerar o estado em localhost:3690/api/_debug

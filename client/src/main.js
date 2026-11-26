@@ -55,21 +55,27 @@ async function initSession() {
   }
 }
 
-// Registra o clique no back-end antes/durante a queda falsa
-function registerClick() {
+// Registra o clique no back-end e recebe a reação decidida pelo servidor
+async function registerClick() {
   const payload = JSON.stringify(getClientMeta());
 
-  // Usa fetch com keepalive para garantir que o servidor receba mesmo se ele fechar ou dar F5 rápido
-  fetch('/api/click', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    keepalive: true,
-    body: payload,
-  })
-    .then((r) => r.json())
-    .then((data) => saveLocalToken(data.token))
-    .catch(() => {});
+  try {
+    const res = await fetch('/api/click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      keepalive: true,
+      body: payload,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      saveLocalToken(data.token);
+      return data;
+    }
+  } catch {
+    // Falha silenciosa
+  }
+  return null;
 }
 
 // Gera o favicon cinza de página quebrada igual ao do Chrome/Edge
@@ -170,25 +176,33 @@ function triggerFakeBrowserCrash() {
 
 // Configura o botão inicial
 const theButton = document.getElementById('the-button');
-let clickedThisLoad = false;
+const labelEl = document.getElementById('button-label');
+let crashing = false;
 
-theButton?.addEventListener('click', () => {
-  if (clickedThisLoad) return;
-  clickedThisLoad = true;
+theButton?.addEventListener('click', async () => {
+  if (crashing) return;
 
-  // 1. Avisa o sistema (back-end) silenciosamente que ele clicou
-  registerClick();
+  const result = await registerClick();
+  if (!result) return;
 
-  // 2. Espera 140ms só para a animação do botão afundando (.box-button:active) acontecer e parecer que o clique "quebrou" a página com um pequeno engasgo de rede!
-  setTimeout(() => {
-    // Limpa a tela por 180ms simulando o piscar branco do navegador tentando carregar antes de cair
-    document.getElementById('app').innerHTML = '';
-    document.title = 'Carregando...';
-
+  // Se o servidor mandar cair (8º clique da sessão), trava novos cliques e dispara a tela falsa de erro!
+  if (result.action === 'crash') {
+    crashing = true;
     setTimeout(() => {
-      triggerFakeBrowserCrash();
-    }, 180);
-  }, 140);
+      document.getElementById('app').innerHTML = '';
+      document.title = 'Carregando...';
+
+      setTimeout(() => {
+        triggerFakeBrowserCrash();
+      }, 180);
+    }, 140);
+    return;
+  }
+
+  // Caso contrário, atualiza o texto se o servidor mudou (ex: virou "Não clique" após o 3º clique)
+  if (labelEl && result.buttonLabel) {
+    labelEl.textContent = result.buttonLabel;
+  }
 });
 
 initSession();
