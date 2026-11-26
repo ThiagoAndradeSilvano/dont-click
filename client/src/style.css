@@ -988,16 +988,11 @@ body.shapes-mode {
   line-height: 1.6;
 }
 
-/* ===== ENIGMA 1: TEMPERATURA EDITÁVEL + TRANSIÇÃO DE DERRETIMENTO E FOGO! ===== */
+/* ===== ENIGMA 1: TEMPERATURA SEM NENHUM INDICADOR VISUAL (Parece texto comum!) ===== */
 .temp-editable-num {
-  font-weight: bold;
-  padding: 1px 4px;
-  border-radius: 3px;
-  border-bottom: 1px dotted transparent;
-}
-
-.temp-editable-num.can-edit {
-  border-bottom-color: #d97706;
+  font-weight: inherit;
+  padding: 0;
+  border: none;
 }
 
 .temp-inline-input {

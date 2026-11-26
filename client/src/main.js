@@ -490,9 +490,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
         <div class="widgets-strip">
           ${
             hasWeather
-              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> <span id="temp-slot"><span class="temp-editable-num ${
-                  canEditTemp ? 'can-edit' : ''
-                }" id="temp-display">${curTemp}</span></span>°C | 🕒 <span id="live-clock">--:--:--</span></span></div>`
+              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> <span id="temp-slot"><span class="temp-editable-num" id="temp-display">${curTemp}</span></span>°C | 🕒 <span id="live-clock">--:--:--</span></span></div>`
               : ''
           }
           ${
@@ -665,9 +663,9 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
             triggerMeltdownChaos(res.remark);
           } else {
             document.body.classList.toggle('warm-warning', finalTemp >= 45);
-            tempSlot.innerHTML = `<span class="temp-editable-num can-edit" id="temp-display">${finalTemp}</span>`;
+            tempSlot.innerHTML = `<span class="temp-editable-num" id="temp-display">${finalTemp}</span>`;
             bindTempClick();
-            if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 150 });
+            if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 150, force: true });
           }
         };
 
@@ -806,7 +804,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     } else if (res.mode === 'awakened') {
       if (resultEl) resultEl.textContent = '';
       if (res.mood) flashCursorMood(res.mood, 2500);
-      if (res.remark) setOperatorRemark(res.remark, { delayBefore: 120 });
+      if (res.remark) setOperatorRemark(res.remark, { delayBefore: 120, force: isOverheatedLocal });
     }
   });
 
@@ -944,7 +942,7 @@ function renderActiveShopTab() {
 
         renderClickerScreen(res, { newlyBought: res.bought });
         if (res.remark && res.stage === 'awakened_clicker') {
-          setOperatorRemark(res.remark, { delayBefore: 250 });
+          setOperatorRemark(res.remark, { delayBefore: 250, force: Boolean(res.allOwned) });
           flashCursorMood(res.allOwned ? 'stop' : res.bought === 'tax_mult' ? 'middle' : 'thumb', 2400);
         }
       });
@@ -1301,11 +1299,23 @@ async function runAwakeningSequence(_totalClicks, ownedUpgrades, _minutesPlayed,
   }
 }
 
-async function setOperatorRemark(text, { delayBefore = 350 } = {}) {
+let isRemarkTyping = false;
+let lastRemarkFinishedAt = 0;
+const REMARK_COOLDOWN_MS = 6500; // Tempo obrigatório mínimo entre uma fala e outra para nunca cortar nem espamar!
+
+async function setOperatorRemark(text, { delayBefore = 350, force = false } = {}) {
   const el = document.getElementById('operator-msg');
   if (!el || !text) return;
 
+  // Se ele já estiver digitando OU ainda estiver no tempo de respiro após terminar a última frase,
+  // ignora mensagens normais para NUNCA interromper nem ficar espamando!
+  const now = Date.now();
+  if (!force && (isRemarkTyping || now - lastRemarkFinishedAt < REMARK_COOLDOWN_MS)) {
+    return;
+  }
+
   const myId = ++remarkTypingId;
+  isRemarkTyping = true;
   el.innerHTML = '';
   const cursor = document.createElement('span');
   cursor.className = 'typing-cursor';
@@ -1322,6 +1332,9 @@ async function setOperatorRemark(text, { delayBefore = 350 } = {}) {
     span.textContent += ch;
     await sleep(22 + Math.random() * 24);
   }
+
+  isRemarkTyping = false;
+  lastRemarkFinishedAt = Date.now();
 
   setTimeout(() => {
     if (myId === remarkTypingId) cursor.remove();
@@ -1424,7 +1437,7 @@ function triggerMeltdownChaos(urgentRemark) {
   }
 
   if (urgentRemark) {
-    setOperatorRemark(urgentRemark, { delayBefore: 100 });
+    setOperatorRemark(urgentRemark, { delayBefore: 100, force: true });
   }
 }
 

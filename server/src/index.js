@@ -511,22 +511,24 @@ app.post('/api/click', (req, res) => {
   if (player.stage === 'awakened_clicker') {
     if (isAllUpgradesOwned(player) && !player.overheated) {
       player.postMaxClicks += 1;
-      // Pistas sutis sobre o clima / temperatura nas palavras dele conforme o jogador insiste após zerar!
-      if (player.postMaxClicks === 8) {
-        remark = 'já zerou tudo irmão, não tem mais upgrade nenhum. fecha a aba e vai tomar um ar lá fora.';
-      } else if (player.postMaxClicks === 18) {
-        remark = 'sério msm? ficar trancado nessa tela com esses 23 graus congelados aí tá derretendo teu juízo?';
-      } else if (player.postMaxClicks === 30) {
-        remark = 'mano, nem o clima muda nesse widget vagabundo ali em cima e vc aí esperando acontecer milagre.';
-      } else if (player.postMaxClicks % 22 === 0) {
-        remark = 'continua aí nessa temperatura agradável clicando no nada então, problema é teu.';
+      // Bem espaçado pra não espamar, e na maioria das vezes NÃO fala de clima (só solta uma referência bem sutil lá na frente!)
+      if (player.postMaxClicks === 30) {
+        remark = 'mano já deu 16 de 16, acabou o jogo. para de gastar o botão à toa.';
+      } else if (player.postMaxClicks === 75) {
+        remark = 'vc tem algum problema com encerramento de ciclos? não tem mais nada pra comprar cara.';
+      } else if (player.postMaxClicks === 130) {
+        remark = 'vai lá fora ver se tá chovendo, sei lá... qualquer coisa é melhor que mofar aqui dentro.';
+      } else if (player.postMaxClicks === 200) {
+        remark = 'sério, até eu tô suando de agonia vendo vc clicar nesse botão dourado sem parar.';
+      } else if (player.postMaxClicks > 200 && player.postMaxClicks % 120 === 0) {
+        remark = 'ainda clicando no nada... paciência de monge ou falta do que fazer msm.';
       }
-    } else if (!player.overheated && player.sessionClicks === 20 && !player.flags.includes('awk_c20')) {
-      player.flags.push('awk_c20');
-      remark = 'vai logo, junta esses pontos e compra as 3 porqueiras que faltam pra vc sossegar';
-    } else if (!player.overheated && player.sessionClicks === 55 && !player.flags.includes('awk_c55')) {
-      player.flags.push('awk_c55');
-      remark = 'o cara tem pombo e ventilador amarrado no mouse clicando pra ele e ainda clica na mão kkkkk';
+    } else if (!player.overheated && player.sessionClicks === 35 && !player.flags.includes('awk_c35')) {
+      player.flags.push('awk_c35');
+      remark = 'junta logo esses pontos e compra as 3 porqueiras que faltam pra vc sossegar';
+    } else if (!player.overheated && player.sessionClicks === 110 && !player.flags.includes('awk_c110')) {
+      player.flags.push('awk_c110');
+      remark = 'tem pombo e ventilador clicando por vc e vc ainda martelando na mão kkkkk';
     }
   }
 
@@ -717,10 +719,8 @@ app.post('/api/search', (req, res) => {
   } else if (player.overheated) {
     remark = `NÃO É "${query.slice(0, 18)}" SEU CEGO!! DIGITA subsolo AÍ EM CIMA E DÁ ENTER LOGO ANTES QUE FRITE TUDO!!`;
     mood = 'middle';
-  } else if (['clima', 'temperatura', 'graus', 'calor', 'frio', '23', '23°c', 'termostato', 'relogio', 'relógio'].includes(query)) {
-    remark = isAllUpgradesOwned(player)
-      ? 'aquele widget de clima ali embaixo é tão malfeito que deixaram até o número da temperatura destravado... nem encosta nisso.'
-      : 'é só um widget vagabundo marcando 23 graus fixo irmão, ignora isso aí';
+  } else if (['clima', 'temperatura', 'graus', 'calor', 'frio', '23', '23°c', 'termostato'].includes(query)) {
+    remark = 'é só um widget vagabundo marcando a temperatura da sala, não tem previsão nenhuma aí não';
     mood = 'stop';
   } else if (['subsolo', '/subsolo'].includes(query)) {
     remark = 'que porra de subsolo mano? não tem motivo nenhum pra descer lá agora.';
@@ -729,9 +729,7 @@ app.post('/api/search', (req, res) => {
     remark = 'o X da aba fica lá em cima no canto direito irmão, mete o pé';
     mood = 'point';
   } else if (['senha', 'resposta', 'codigo', 'código', 'segredo', 'ajuda', 'dica', 'enigma'].includes(query)) {
-    remark = isAllUpgradesOwned(player)
-      ? 'não tem dica nenhuma irmão... vai tomar um ar, sair desses 23 graus parados aí.'
-      : `kkkkkk o cara digitou "${query}" achando que tem alguma coisa escondida aqui`;
+    remark = `kkkkkk o cara digitou "${query}" achando que eu vou dar colher de chá`;
     mood = 'middle';
   } else if (['quem é vc', 'quem e vc', 'quem é você', 'oi', 'ola', 'olá', 'alo'].includes(query)) {
     remark = 'não te interessa quem eu sou irmão, termina teus cliques e vaza';
