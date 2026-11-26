@@ -16,6 +16,7 @@ let clockWidgetTimer = null;
 let emberTimer = null;
 let meltdownInactivityTimers = [];
 let idleNudgeTimer = null;
+let subsoloChatTimer = null;
 let subsoloRaf = null;
 let caveKeyHandler = null;
 let isOverheatedLocal = false;
@@ -464,6 +465,7 @@ function clearTimers() {
   if (clockWidgetTimer) { clearInterval(clockWidgetTimer); clockWidgetTimer = null; }
   if (emberTimer) { clearInterval(emberTimer); emberTimer = null; }
   if (idleNudgeTimer) { clearTimeout(idleNudgeTimer); idleNudgeTimer = null; }
+  if (subsoloChatTimer) { clearInterval(subsoloChatTimer); subsoloChatTimer = null; }
   meltdownInactivityTimers.forEach((t) => clearTimeout(t));
   meltdownInactivityTimers = [];
   if (subsoloRaf) { cancelAnimationFrame(subsoloRaf); subsoloRaf = null; }
@@ -1930,10 +1932,31 @@ function renderSubsolo2DScreen(initialState = null) {
   `;
 
   setOperatorRemark(
-    'chegamo. tá vendo o teto soltando faísca ali? é o teu incêndio lá de cima. fica quieto aí no canto enquanto eu resolvo essa bagunça.',
+    'COF COF COF... caralho que fumaceira... fica quieto aí no porão enquanto eu tento salvar essa merda aqui em cima!',
     { delayBefore: 400 }
   );
   resetIdleChillTimer();
+
+  const upstairsLines = [
+    'COF COF... caralho, quanto pó tem nesse extintor...',
+    'a fonte explodiu e levou dois pentes de memória junto... desgraça.',
+    'ei, vc tá quieto aí embaixo né? nem inventa de mexer em nada enquanto eu limpo a fuligem aqui.',
+    'onde enfia esse conector azul... pq tem três fios desencapados saindo da parede?!',
+    'se eu pegar o desgraçado que colocou 99 graus no termostato eu juro que desligo a máquina...',
+    'COF COF... desgraça de fumaça preta... não dá nem pra enxergar o monitor.',
+    'tô tentando religar a refrigeração de emergência... se der estalo aí embaixo nem esquenta.',
+    'ainda bem que aquele desocupado sumiu lá pro porão e parou de clicar, pelo menos silêncio nessa porra.',
+    'peraí, cadê a porra da chave de fenda que tava aqui na mesa...',
+    'vc tá quieto demais aí embaixo... deve tá mofando no escuro. melhor assim, pelo menos não enche o saco.',
+  ];
+  let lineIdx = 0;
+  if (subsoloChatTimer) clearInterval(subsoloChatTimer);
+  subsoloChatTimer = setInterval(() => {
+    if (currentStage !== 'subsolo_2d') return;
+    const line = upstairsLines[lineIdx % upstairsLines.length];
+    lineIdx++;
+    setOperatorRemark(line, { priority: 'ambient' });
+  }, 13000);
 
   const canvas = document.getElementById('subsolo-canvas');
   const ctx = canvas?.getContext('2d');
@@ -1952,19 +1975,13 @@ function renderSubsolo2DScreen(initialState = null) {
   }
 
   const drops = [];
+  const splashes = [];
   const sparks = [];
-  const steamClouds = [];
-  const glassShards = [];
 
   let valveAngle = 0;
   let valveOpen = false;
-  let waterLevel = 0; // 0 a 100 (sobe quando a torneira está aberta, desce pelo ralo sempre!)
-  let glassFog = 0; // 0 a 1 (só sobe quando tem água suficiente batendo nas faíscas gerando vapor!)
-  let lampHits = latestState?.lampBroken ? 3 : 0;
-  let lampBroken = Boolean(latestState?.lampBroken);
   let lampSwing = 0;
   let lampSwingVel = 0;
-  let hintedSteamOnce = false;
   const morseStartOffset = performance.now();
 
   function openTerminalKeypad() {
@@ -2058,54 +2075,22 @@ function renderSubsolo2DScreen(initialState = null) {
     if (Math.hypot(mx - 130, my - 225) <= 36) {
       valveOpen = !valveOpen;
       playCheapBeep();
-      flashCursorMood(valveOpen ? 'stop' : 'thumb', 1600);
-      setOperatorRemark(
-        valveOpen
-          ? 'mano fecha essa torneira, se juntar água demais no chão antes de descer pelo ralo vai fazer uma fumaceira com essas faíscas!'
-          : 'isso, deixa o registro fechado e a água escoar pro ralo.',
-        { priority: 'action' }
-      );
+      flashCursorMood(valveOpen ? 'stop' : 'thumb', 1400);
       return;
     }
 
-    // 2. Clicou na Lâmpada Pendurada no Teto (x=420, y=74) -> Balança e no 3º golpe ESTILHAÇA!
-    if (!lampBroken && Math.hypot(mx - 420, my - 74) <= 34) {
-      lampHits += 1;
-      lampSwingVel = (mx < 420 ? 1 : -1) * 0.14;
+    // 2. Clicou na Lâmpada Pendurada no Teto (x=420, y=74) -> Balança suavemente (NÃO quebra!)
+    if (Math.hypot(mx - 420, my - 74) <= 36) {
+      lampSwingVel = (mx < 420 ? 1 : -1) * 0.16;
       playCheapBeep();
-
-      if (lampHits === 1) {
-        setOperatorRemark('tá dando peteleco na lâmpada pq? ela já tá piscando toda ferrada sozinha!', {
-          priority: 'action',
-        });
-      } else if (lampHits === 2) {
-        setOperatorRemark('ei!! vai trincar o vidro dessa merda se bater de novo, para!!', {
-          priority: 'action',
-        });
-      } else if (lampHits >= 3) {
-        lampBroken = true;
-        playGlassShatterSound();
-        for (let i = 0; i < 18; i++) {
-          glassShards.push({
-            x: 420 + (Math.random() * 16 - 8),
-            y: 74,
-            vx: Math.random() * 6 - 3,
-            vy: Math.random() * 2,
-          });
-        }
-        const res = await apiPost('/api/subsolo/break-lamp');
-        flashCursorMood('middle', 2600);
-        if (res?.remark) setOperatorRemark(res.remark, { priority: 'urgent' });
-      }
       return;
     }
 
-    // 3. Clicou no Quadro de Vidro na parede (x=455..605, y=155..275)
-    if (mx >= 455 && mx <= 605 && my >= 155 && my <= 275) {
+    // 3. Clicou na Placa de Manutenção na parede (x=454..610, y=154..276)
+    if (mx >= 454 && mx <= 610 && my >= 154 && my <= 276) {
+      playCheapBeep();
       setOperatorRemark(
-        glassFog > 0.45
-          ? 'que rabisco é esse aparecendo no vidro sujo com o vapor??'
-          : 'é só um vidro velho engordurado na parede, não dá pra ver nada nele seco.',
+        '[Placa de Manutenção: CÓDIGO DO TERMINAL = SINAL DA LÂMPADA - 42]',
         { priority: 'action' }
       );
       return;
@@ -2121,7 +2106,7 @@ function renderSubsolo2DScreen(initialState = null) {
     if (currentStage !== 'subsolo_2d') return;
 
     const now = performance.now();
-    const morseOn = !lampBroken && getMorseLampState(now - morseStartOffset);
+    const morseOn = getMorseLampState(now - morseStartOffset);
 
     // Balanço físico do pendente da lâmpada
     lampSwing += lampSwingVel;
@@ -2154,7 +2139,7 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.fillStyle = '#0f131a';
     ctx.fillRect(0, 24, 840, 4);
 
-    // 2. OS 3 CANOS VERTICAIS NUMERADOS DA PAREDE (Pista "OS CANOS" = 3!)
+    // 2. OS 3 CANOS VERTICAIS NUMERADOS DA PAREDE
     const pipeXs = [68, 130, 295];
     pipeXs.forEach((px, idx) => {
       // Sombra projetada do cano
@@ -2228,36 +2213,52 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.fill();
     ctx.restore();
 
-    // 3. QUADRO DE VIDRO / ESPELHO DE INSPEÇÃO NA PAREDE (x=460..605, y=160..272)
-    ctx.fillStyle = '#27303f';
-    ctx.fillRect(454, 154, 157, 124);
-    ctx.fillStyle = '#141c26';
-    ctx.fillRect(462, 162, 141, 108);
-
-    // Reflexo sutil diagonal do vidro seco
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    // 3. PLACA METÁLICA DE MANUTENÇÃO COM CONTA SIMPLES (x=454..610, y=154..276)
+    const plGrad = ctx.createLinearGradient(454, 154, 610, 276);
+    plGrad.addColorStop(0, '#2b3648');
+    plGrad.addColorStop(0.5, '#1e2837');
+    plGrad.addColorStop(1, '#111827');
+    ctx.fillStyle = plGrad;
+    ctx.fillRect(454, 154, 156, 122);
+    ctx.strokeStyle = '#475569';
     ctx.lineWidth = 2;
+    ctx.strokeRect(454, 154, 156, 122);
+
+    // Parafusos nos 4 cantos
+    ctx.fillStyle = '#94a3b8';
+    [[461, 161], [603, 161], [461, 269], [603, 269]].forEach(([sx, sy]) => {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Faixa amarela de aviso
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(460, 166, 144, 16);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('⚡ TERMINAL - SETOR 0', 472, 178);
+
+    // Linha divisória
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.beginPath();
-    ctx.moveTo(472, 258);
-    ctx.lineTo(525, 172);
+    ctx.moveTo(462, 189);
+    ctx.lineTo(602, 189);
     ctx.stroke();
 
-    // Camada de VAPOR condensado no vidro (só aparece conforme glassFog > 0!)
-    if (glassFog > 0.02) {
-      ctx.fillStyle = `rgba(205, 224, 238, ${0.42 * glassFog})`;
-      ctx.fillRect(462, 162, 141, 108);
+    // Texto da conta simples
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.fillText('CÓDIGO DE ACESSO:', 474, 206);
 
-      // Quando embaça bem (> 0.35), revela a pista escrita a dedo no vidro!
-      if (glassFog > 0.35) {
-        const textAlpha = Math.min(1, (glassFog - 0.35) / 0.45);
-        ctx.save();
-        ctx.fillStyle = `rgba(18, 26, 36, ${0.92 * textAlpha})`;
-        ctx.font = 'bold 13px "Comic Sans MS", cursive, monospace';
-        ctx.fillText('ESPELHE A LUZ', 478, 206);
-        ctx.fillText('MENOS OS CANOS', 473, 234);
-        ctx.restore();
-      }
-    }
+    ctx.fillStyle = '#4ade80';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('SINAL - 42', 484, 230);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px monospace';
+    ctx.fillText('(Consulte a lâmpada)', 470, 252);
+    ctx.fillText('Código Morse', 492, 266);
 
     // 4. PAINEL / TERMINAL DE SEGURANÇA NA DIREITA (x=670..775, y=190..330)
     ctx.fillStyle = '#1f2633';
@@ -2266,14 +2267,14 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.fillRect(670, 190, 106, 138);
     ctx.strokeRect(670, 190, 106, 138);
 
-    // Visor iluminado próprio (continua aceso no escuro quando quebra a lâmpada!)
+    // Visor iluminado próprio
     ctx.fillStyle = '#061a14';
     ctx.fillRect(684, 206, 78, 42);
     ctx.fillStyle = '#10b981';
     ctx.font = 'bold 11px monospace';
     ctx.fillText('PAINEL #02', 690, 224);
-    ctx.fillStyle = morseOn ? '#fbbf24' : '#34d399';
-    ctx.fillText(morseOn ? '[REFLEXO!]' : '[DIGITAR]', 692, 240);
+    ctx.fillStyle = '#34d399';
+    ctx.fillText('[DIGITAR]', 696, 240);
 
     // Teclinhas desenhadas no painel
     ctx.fillStyle = '#334155';
@@ -2283,90 +2284,27 @@ function renderSubsolo2DScreen(initialState = null) {
       }
     }
 
-    // 5. CHÃO DE CONCRETO + RALO DE ESCOAMENTO NO CENTRO (x=375..435)
+    // 5. CHÃO DE CONCRETO + RALO DE ESCOAMENTO DIRETO EMBAIXO DA TORNEIRA (x=205..265, y=404)
     ctx.fillStyle = '#151922';
     ctx.fillRect(0, 404, 840, 56);
     ctx.fillStyle = '#262f3f';
     ctx.fillRect(0, 404, 840, 4);
 
-    // Grade do Ralo no piso (x=378..434, y=404)
+    // Grade do Ralo no piso exatamente onde a água cai (x=205..265, y=404)
     ctx.fillStyle = '#090b10';
-    ctx.fillRect(378, 404, 56, 10);
+    ctx.fillRect(205, 404, 60, 10);
     ctx.fillStyle = '#475569';
-    for (let gx = 384; gx <= 428; gx += 9) {
+    for (let gx = 211; gx <= 259; gx += 8) {
       ctx.fillRect(gx, 404, 4, 10);
     }
 
-    // 6. FÍSICA DA POÇA D'ÁGUA + RALO + FAÍSCAS = VAPOR!
-    // Se a torneira está aberta, entra água (+0.34/frame); o ralo SEMPRE drena (-0.16/frame)!
-    if (valveOpen) {
-      waterLevel = Math.min(100, waterLevel + 0.34);
-    } else {
-      waterLevel = Math.max(0, waterLevel - 0.22);
-    }
-
-    if (waterLevel > 1) {
-      // A poça se espalha debaixo do bico (x=235) até passar pela zona de faíscas (x=380..490) e o ralo!
-      const puddleWidth = 50 + waterLevel * 4.1;
-      const puddleHeight = Math.min(12, 2 + waterLevel * 0.1);
-      const puddleGrad = ctx.createLinearGradient(0, 404 - puddleHeight, 0, 408);
-      puddleGrad.addColorStop(0, 'rgba(56, 189, 248, 0.55)');
-      puddleGrad.addColorStop(1, 'rgba(14, 116, 144, 0.8)');
-      ctx.fillStyle = puddleGrad;
-      ctx.beginPath();
-      ctx.ellipse(235 + puddleWidth * 0.32, 405, puddleWidth * 0.65, puddleHeight, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Se a poça passou de 48% (água chegou na zona onde as brasas quentes caem em x=460..520!): GERA VAPOR!
-    const isSteaming = waterLevel >= 48;
-    if (isSteaming) {
-      glassFog = Math.min(1, glassFog + 0.0045); // precisa ficar ligado um tempinho pra embaçar o vidro!
-      if (!hintedSteamOnce && glassFog > 0.5) {
-        hintedSteamOnce = true;
-        setOperatorRemark('ó a merda que eu falei, a água bateu nas brasas e tá embaçando o vidro todo ali!', {
-          priority: 'ambient',
-        });
-      }
-      if (Math.random() < 0.45) {
-        steamClouds.push({
-          x: 475 + Math.random() * 75,
-          y: 398,
-          r: 8 + Math.random() * 10,
-          vy: -0.9 - Math.random() * 0.8,
-          vx: Math.random() * 0.6 - 0.3,
-          alpha: 0.36,
-        });
-      }
-    } else {
-      // Quando fecha a torneira e a água desce pelo ralo, o vapor para e o vidro desembaça!
-      glassFog = Math.max(0, glassFog - 0.0038);
-    }
-
-    // Desenha nuvens suaves de vapor subindo até o vidro
-    for (let i = steamClouds.length - 1; i >= 0; i--) {
-      const st = steamClouds[i];
-      st.x += st.vx;
-      st.y += st.vy;
-      st.r += 0.22;
-      st.alpha -= 0.0028;
-      if (st.alpha <= 0 || st.y < 120) {
-        steamClouds.splice(i, 1);
-        continue;
-      }
-      ctx.fillStyle = `rgba(226, 232, 240, ${st.alpha})`;
-      ctx.beginPath();
-      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Gotas saindo do bico da torneira (x=235, y=296)
-    if (Math.random() < (valveOpen ? 0.75 : 0.03)) {
+    // 6. GOTAS SAINDO DA TORNEIRA (x=235) E CAINDO DIRETO NO RALO (x=205..265)
+    if (Math.random() < (valveOpen ? 0.75 : 0.04)) {
       drops.push({
-        x: 235 + (Math.random() * 5 - 2.5),
+        x: 235 + (Math.random() * 4 - 2),
         y: 296,
-        vx: valveOpen ? 0.4 + Math.random() * 0.8 : 0,
-        vy: valveOpen ? 2.8 : 1.0,
+        vx: (Math.random() * 0.3 - 0.15),
+        vy: valveOpen ? 3.0 : 1.2,
       });
     }
     ctx.fillStyle = '#38bdf8';
@@ -2378,10 +2316,38 @@ function renderSubsolo2DScreen(initialState = null) {
       ctx.beginPath();
       ctx.arc(d.x, d.y, 3.2, 0, Math.PI * 2);
       ctx.fill();
-      if (d.y >= 404) drops.splice(i, 1);
+      if (d.y >= 404) {
+        if (valveOpen && Math.random() < 0.6) {
+          splashes.push({
+            x: d.x,
+            y: 403,
+            vx: (Math.random() - 0.5) * 2.2,
+            vy: -1.0 - Math.random() * 1.4,
+            alpha: 0.8,
+          });
+        }
+        drops.splice(i, 1);
+      }
     }
 
-    // Rachadura incandescente no teto (x=465..540) pingando brasas bem embaixo do quadro de vidro!
+    // Respingos d'água no ralo
+    for (let i = splashes.length - 1; i >= 0; i--) {
+      const sp = splashes[i];
+      sp.x += sp.vx;
+      sp.y += sp.vy;
+      sp.vy += 0.22;
+      sp.alpha -= 0.05;
+      if (sp.alpha <= 0 || sp.y > 406) {
+        splashes.splice(i, 1);
+        continue;
+      }
+      ctx.fillStyle = `rgba(56, 189, 248, ${sp.alpha})`;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Rachadura incandescente no teto pingando fagulhas
     ctx.strokeStyle = '#fb923c';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -2409,18 +2375,7 @@ function renderSubsolo2DScreen(initialState = null) {
       if (s.y >= 403) sparks.splice(i, 1);
     }
 
-    // Cacos de vidro caindo caso acabou de quebrar a lâmpada
-    ctx.fillStyle = '#fef08a';
-    for (let i = glassShards.length - 1; i >= 0; i--) {
-      const g = glassShards[i];
-      g.x += g.vx;
-      g.y += g.vy;
-      g.vy += 0.35;
-      ctx.fillRect(g.x, g.y, 4, 4);
-      if (g.y >= 405) glassShards.splice(i, 1);
-    }
-
-    // 7. FIO PENDENTE + CÚPULA INDUSTRIAL + ILUMINAÇÃO RADIAL 100% CIRCULAR (ZERO CORTE RETO EM CIMA!)
+    // 7. FIO PENDENTE + CÚPULA INDUSTRIAL + ILUMINAÇÃO RADIAL
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -2438,31 +2393,19 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.closePath();
     ctx.fill();
 
-    if (!lampBroken) {
-      // Bulbo da lâmpada
-      ctx.fillStyle = morseOn ? '#fef08a' : '#475569';
-      ctx.beginPath();
-      ctx.arc(lampX, lampY + 5, 9, 0, Math.PI * 2);
-      ctx.fill();
+    // Bulbo da lâmpada (sempre intacto, piscando em Morse!)
+    ctx.fillStyle = morseOn ? '#fef08a' : '#475569';
+    ctx.beginPath();
+    ctx.arc(lampX, lampY + 5, 9, 0, Math.PI * 2);
+    ctx.fill();
 
-      // HALO CIRCULAR COMPLETO (Desenhado em 0,0,840,460 inteiro para NUNCA cortar linha reta no topo!)
-      if (morseOn) {
-        const halo = ctx.createRadialGradient(lampX, lampY + 6, 4, lampX, lampY + 6, 360);
-        halo.addColorStop(0, 'rgba(254, 240, 138, 0.34)');
-        halo.addColorStop(0.35, 'rgba(253, 224, 71, 0.12)');
-        halo.addColorStop(1, 'rgba(253, 224, 71, 0)');
-        ctx.fillStyle = halo;
-        ctx.fillRect(0, 0, 840, 460);
-      }
-    } else {
-      // Soquete quebrado + escuridão densa no porão (deixando só o visor verde do painel brilhar!)
-      ctx.fillStyle = 'rgba(3, 5, 9, 0.62)';
-      ctx.fillRect(0, 0, 840, 460);
-
-      const termGlow = ctx.createRadialGradient(723, 227, 6, 723, 227, 130);
-      termGlow.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
-      termGlow.addColorStop(1, 'rgba(16, 185, 129, 0)');
-      ctx.fillStyle = termGlow;
+    // Halo circular suave de luz
+    if (morseOn) {
+      const halo = ctx.createRadialGradient(lampX, lampY + 6, 4, lampX, lampY + 6, 360);
+      halo.addColorStop(0, 'rgba(254, 240, 138, 0.34)');
+      halo.addColorStop(0.35, 'rgba(253, 224, 71, 0.12)');
+      halo.addColorStop(1, 'rgba(253, 224, 71, 0)');
+      ctx.fillStyle = halo;
       ctx.fillRect(0, 0, 840, 460);
     }
 

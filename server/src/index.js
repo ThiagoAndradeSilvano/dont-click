@@ -842,13 +842,12 @@ app.post('/api/subsolo/break-lamp', (req, res) => {
 });
 
 /*
- * VALIDAÇÃO DO ENIGMA DO SUBSOLO 2D (100% no servidor para ninguém colar no F12!):
- * - A lâmpada pisca em Código Morse: 7 (--...)  4 (....-)  2 (..---)  -> 742
- * - O vapor no vidro (água acumulada + faísca antes de escoar pelo ralo) revela a regra escrita a dedo:
- *   "ESPELHE A LUZ  E  DESCONTE OS CANOS"
- *   -> Espelhar 742 = 247
- *   -> Na parede do porão há exatamente 3 canos verticais numerados/visíveis -> 247 - 3 = 244!
- * - E o visor do painel exige que a luz do teto esteja apagada (lâmpada quebrada!), senão dá erro de reflexo óptico!
+ * VALIDAÇÃO DO ENIGMA DO SUBSOLO 2D (100% no servidor):
+ * - A lâmpada pisca em Código Morse: 7 (--...)  4 (....-)  2 (..---)  -> Sinal: 742
+ * - A placa metálica na parede informa a conta simples:
+ *   "SENHA = SINAL - 42"
+ *   -> 742 - 42 = 700!
+ * - Ao digitar 700, o painel estremece toda a estrutura do porão e desaba na Caverna!
  */
 app.post('/api/subsolo/unlock', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
@@ -858,40 +857,21 @@ app.post('/api/subsolo/unlock', (req, res) => {
     return res.json({
       ok: false,
       errorType: 'raw_morse',
-      screenMsg: 'ERRO: SINAL BRUTO',
-      remark: 'kkkkkk achou msm que era só anotar a piscadinha da lâmpada crua? tá faltando metade do cérebro aí.',
+      screenMsg: 'FAÇA A CONTA!',
+      remark: null,
     });
   }
 
-  if (code === '247') {
-    return res.json({
-      ok: false,
-      errorType: 'almost',
-      screenMsg: 'ERRO: FALTA AJUSTE',
-      remark: 'espelhou certinho hein... pena que não leu o resto do vidro embaçado.',
-    });
-  }
-
-  if (code !== '244') {
+  if (code !== '700' && code !== '244') {
     return res.json({
       ok: false,
       errorType: 'wrong',
       screenMsg: 'SENHA INCORRETA',
-      remark: `digitou "${code.slice(0, 6)}" no chute? vai ficar tentando até amanhã assim.`,
+      remark: null,
     });
   }
 
-  // Acertou o 244, mas a lâmpada ainda está acesa dando reflexo no sensor óptico do painel!
-  if (!player.lampBroken) {
-    return res.json({
-      ok: false,
-      errorType: 'glare',
-      screenMsg: 'FALHA: LUZ NO SENSOR',
-      remark: 'ih ó lá, o leitor óptico velho tá cego com o reflexo dessa lâmpada na cara dele... e nem tem interruptor nessa bosta.',
-    });
-  }
-
-  // ACERTOU 244 COM A LÂMPADA QUEBRADA! O PAINEL DÁ DEFEITO, RACHA O CHÃO DO SUBSOLO E A GENTE DESPENCA NA CAVERNA!
+  // ACERTOU 700! O PAINEL DÁ DEFEITO, O PISO DO SUBSOLO RACHA E DESPENCA NA CAVERNA!
   player.subsoloSolved = true;
   player.stage = 'cave_2d';
   saveDb(db);
@@ -901,7 +881,7 @@ app.post('/api/subsolo/unlock', (req, res) => {
     stage: 'cave_2d',
     collapse: true,
     screenMsg: 'ERRO ESTRUTURAL!!',
-    remark: 'pera... era pra esse painel só destravar a porta, pq o chão inteiro tá tremendo?! EI SEGURA AÍ QUE VAI CEDER TUDO—',
+    remark: 'QUE PORRA DE ESTRONDO FOI ESSE AÍ EMBAIXO?! O QUE VC TÁ APRONTANDO?! ESPERA, O PISO TÁ AFUNDANDO—',
     caveState: player.caveState,
   });
 });

@@ -103,13 +103,19 @@ Toda a lógica sensível e senhas ficam no `server/src/index.js` para impedir tr
 - Janela `carregando_subsolo_2d_final_agoravai(copia).exe` com roda torta girando a 4 FPS, barra que volta 4% pra trás e para em `69%`, dicas idiotas e **2 rodadas de diálogo com escolhas** (com cobrança se ficar inativo e pausa de 4.2s no fim para leitura confortável).
 
 ### Página 7 — O Subsolo / Porão 2D (`stage: 'subsolo_2d'`)
-- Renderizado em `<canvas>` 2D detalhado (tijolos sombreados, manchas de umidade, 3 canos verticais numerados `I, II, III`, manômetro vivo, válvula vermelha, ralo gradeado no piso, brasas caindo do teto, quadro de vidro sujo e lâmpada com iluminação radial circular completa).
-- **Enigma Completo do Porão (validado em `/api/subsolo/unlock`):**
-  1. **Lâmpada em Código Morse:** Pisca ciclicamente `--...` (`7`), `....-` (`4`), `..---` (`2`) → **`742`**.
-  2. **Água + Ralo + Brasas = Vapor:** Abrindo a válvula vermelha por tempo suficiente, a poça enche mais rápido que o ralo drena, toca nas brasas quentes e sobe **vapor**, embaçando o vidro e revelando: **`ESPELHE A LUZ / MENOS OS CANOS`**. (Se fechar a válvula, a água escoa pelo ralo e o texto some!).
-  3. **Cálculo:** Espelhar `742` = `247`. Menos os `3` canos da parede = **`244`**.
-  4. **Duplo Sentido Físico (Reflexo Óptico):** Digitar `244` com a lâmpada acesa dá `FALHA: LUZ NO SENSOR`. O jogador deve **clicar 3x na lâmpada até estilhaçá-la**, deixando o porão no escuro com a energia do painel ligada, e confirmar **`244`**.
-- **Transição:** Ao acertar `244` no escuro, dá `ERRO ESTRUTURAL!!`, toca estrondo grave (`playCollapseRumble`), o porão treme violentamente e **despenca pra fora da tela**!
+- Renderizado em `<canvas>` 2D detalhado (tijolos sombreados, manchas de umidade, 3 canos verticais, manômetro, válvula vermelha, torneira alinhada diretamente sobre o ralo gradeado, placa metálica de manutenção e lâmpada industrial balançando no teto).
+- **Comportamento do Operador (Ele está LÁ EM CIMA):**
+  - O Operador está no andar de cima desesperado com extintor, fumaça preta e peças queimadas do servidor.
+  - Ele **NÃO enxerga o que o jogador faz no porão**! As mensagens dele no feed de log são transmissões periódicas dele tossindo com o extintor, resmungando que a fonte e a placa-mãe derreteram, tentando achar conectores e rezando pro jogador ficar quieto lá embaixo.
+- **Enigma do Porão (validado em `/api/subsolo/unlock`):**
+  1. **Lâmpada em Código Morse (Inquebrável):** Pisca ciclicamente `--...` (`7`), `....-` (`4`), `..---` (`2`) → **`742`**. A lâmpada **NÃO pode ser quebrada** para que o jogador sempre consiga ler o Morse sem cair em armadilhas irreversíveis.
+  2. **Placa de Manutenção na Parede:** Em vez de espelho/vapor confuso, há uma placa metálica parafusada na parede com instruções claras:
+     `CÓDIGO DE ACESSO:`
+     `SENHA = SINAL - 42`
+     `(Consulte a lâmpada em código Morse)`
+  3. **Cálculo Direto:** O sinal é `742`. A conta simples é: `742 - 42` = **`700`**.
+  4. **Torneira e Ralo Alinhados:** Ao abrir a válvula vermelha, as gotas caem **direto dentro do ralo** no piso com respingos d'água.
+- **Transição:** Ao digitar `700` no teclado do painel, a estrutura sofre pane (`ERRO ESTRUTURAL!!`), o Operador grita lá de cima surpreso com o estrondo (`"QUE PORRA DE ESTRONDO FOI ESSE AÍ EMBAIXO?! O QUE VC TÁ APRONTANDO?! ESPERA, O PISO TÁ AFUNDANDO—"`), toca o estrondo grave (`playCollapseRumble`) e o chão do porão **despenca em queda livre pra Caverna**!
 
 ### Página 8 — A Caverna Profunda (`stage: 'cave_2d'` -> `'cave_escaped'`)
 - Adaptação completa em JS + `WASD` de mina subterrânea 4x12 segmentos (`client/public/cave/*` com 38 assets locais).
