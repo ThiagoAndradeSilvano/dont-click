@@ -1,14 +1,18 @@
 const TOKEN_KEY = '_sys_ref';
 let currentStage = 'button';
 let currentUpgrades = [];
+let currentShopTab = 'upgrades'; // 'upgrades' | 'generators'
+let latestState = null;
 let audioCtx = null;
 let moodTimeout = null;
 let idleTimeout = null;
 let fakeProgressTimer = null;
 let passiveTickTimer = null;
 let achievementTimer = null;
+let randomEventTimer = null;
 let cookieRespawnTimer = null;
 let elevatorMusicTimer = null;
+let clockWidgetTimer = null;
 let isMusicMuted = false;
 let isCookieOpen = false;
 let termsAcceptedThisSession = false;
@@ -58,6 +62,12 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function formatPts(num) {
+  if (typeof num !== 'number') return '0';
+  if (num >= 1000) return Math.floor(num).toLocaleString('pt-BR');
+  return Number.isInteger(num) ? String(num) : num.toFixed(1);
+}
+
 function ensureAudio() {
   if (!audioCtx) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -67,7 +77,6 @@ function ensureAudio() {
   return audioCtx;
 }
 
-// Cursores vermelhos comunicativos (SÓ ATIVAM DEPOIS QUE ELE FALA NO ERRO!)
 function flashCursorMood(mood, durationMs = 2000) {
   if (currentStage !== 'awakened_clicker') return;
   const classes = [
@@ -102,7 +111,6 @@ function resetIdleChillTimer() {
   }, 9000);
 }
 
-// Som xoxo do upgrade "Áudio do Botão"
 function playCheapBeep() {
   try {
     const ctx = ensureAudio();
@@ -122,7 +130,6 @@ function playCheapBeep() {
   } catch {}
 }
 
-// Som irritante quando tenta clicar sem aceitar o banner de cookies!
 function playErrorBuzzer() {
   try {
     const ctx = ensureAudio();
@@ -139,7 +146,6 @@ function playErrorBuzzer() {
   } catch {}
 }
 
-// Musiquinha brega de elevador / espera de consultório em loop (Web Audio API)
 function startElevatorMusic() {
   if (elevatorMusicTimer) return;
   const melody = [261.63, 329.63, 392.0, 329.63, 293.66, 349.23, 440.0, 349.23];
@@ -164,7 +170,6 @@ function startElevatorMusic() {
   }, 430);
 }
 
-// Alerta bloqueante quando tenta jogar sem fechar os cookies!
 let blockerTimeout = null;
 function checkCookieBlock() {
   if (!isCookieOpen) return false;
@@ -191,30 +196,125 @@ function checkCookieBlock() {
     alertEl?.remove();
   }, 2200);
 
-  return true; // bloqueado!
+  return true;
 }
 
-// Medalhinhas inúteis do "Sistema de Conquistas"
 const USELESS_ACHIEVEMENTS = [
   '🏅 Conquista: Olhou para a Tela',
   '🏅 Conquista: Moveu o Dedo Indicador',
-  '🏅 Conquista: Cidadão Obediente',
-  '🏅 Conquista: Consumidor de Pixels',
+  '🏅 Conquista: Gerente de Pombos Nível 1',
+  '🏅 Conquista: Cidadão Obediente aos Cookies',
   '🏅 Conquista: Zero Produtividade Atingida',
-  '🏅 Conquista: Ainda Está Aqui Por Algum Motivo',
+  '🏅 Conquista: Investidor de Pontos Imaginários',
 ];
 let achIdx = 0;
 
 function showUselessAchievement(customText) {
-  const existing = document.querySelector('.achievement-toast');
-  existing?.remove();
-
+  document.querySelector('.achievement-toast')?.remove();
   const el = document.createElement('div');
   el.className = 'achievement-toast';
   el.textContent = customText || USELESS_ACHIEVEMENTS[achIdx % USELESS_ACHIEVEMENTS.length];
   achIdx += 1;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3500);
+}
+
+// ============================================================================
+// EVENTOS INTERATIVOS DE MINUTO EM MINUTO (Mantém os 20 minutos super vivos!)
+// ============================================================================
+function spawnRandomScreenEvent() {
+  if (currentStage !== 'mundane_clicker' && currentStage !== 'awakened_clicker') return;
+  if (document.querySelector('.screen-fly, .mystery-box-floater, .survey-popup')) return;
+
+  const roll = Math.random();
+
+  if (roll < 0.45) {
+    // 1. Mosca pousando na tela (dá bônus generoso de CPS!)
+    const fly = document.createElement('div');
+    fly.className = 'screen-fly';
+    fly.textContent = '🪰';
+    fly.title = 'Espantar mosca!';
+    fly.style.left = `${15 + Math.random() * 65}vw`;
+    fly.style.top = `${20 + Math.random() * 55}vh`;
+    document.body.appendChild(fly);
+
+    const moveInt = setInterval(() => {
+      if (!document.body.contains(fly)) {
+        clearInterval(moveInt);
+        return;
+      }
+      fly.style.left = `${12 + Math.random() * 70}vw`;
+      fly.style.top = `${18 + Math.random() * 60}vh`;
+    }, 1300);
+
+    fly.addEventListener('click', async (ev) => {
+      clearInterval(moveInt);
+      fly.remove();
+      playCheapBeep();
+      const res = await apiPost('/api/claim-event', { eventType: 'fly' });
+      if (res?.ok) {
+        latestState = res;
+        spawnFloatingNumber(ev.clientX, ev.clientY, `+${formatPts(res.bonus)} (mosca!)`, 'gain');
+        updatePointsAndCpsUI(res.points, res.cps);
+        renderActiveShopTab();
+        if (res.remark) setOperatorRemark(res.remark);
+      }
+    });
+
+    setTimeout(() => {
+      clearInterval(moveInt);
+      fly.remove();
+    }, 11000);
+  } else if (roll < 0.78) {
+    // 2. Pesquisa de Satisfação Relâmpago (só tem "10" e "10 Com Certeza"!)
+    const survey = document.createElement('div');
+    survey.className = 'survey-popup';
+    survey.innerHTML = `
+      <div><strong>📋 Pesquisa Rápida de Qualidade</strong></div>
+      <div style="margin-top:6px;">De 10 a 10, o quanto você está amando apertar este botão?</div>
+      <div class="survey-btns">
+        <button type="button" data-ans="10">Nota 10</button>
+        <button type="button" data-ans="10plus">10 (Com Certeza)</button>
+      </div>
+    `;
+    document.body.appendChild(survey);
+
+    survey.querySelectorAll('button').forEach((b) => {
+      b.addEventListener('click', async (ev) => {
+        survey.remove();
+        const res = await apiPost('/api/claim-event', { eventType: 'survey' });
+        if (res?.ok) {
+          latestState = res;
+          spawnFloatingNumber(ev.clientX, ev.clientY, `+${formatPts(res.bonus)} (bônus opinião)`, 'gain');
+          updatePointsAndCpsUI(res.points, res.cps);
+          renderActiveShopTab();
+        }
+      });
+    });
+
+    setTimeout(() => survey.remove(), 14000);
+  } else {
+    // 3. Caixa Misteriosa Épica... que dá literalmente +1 ponto kkkkk
+    const box = document.createElement('button');
+    box.className = 'mystery-box-floater';
+    box.textContent = '🎁 CAIXA MISTERIOSA RARA! (Clique!)';
+    document.body.appendChild(box);
+
+    box.addEventListener('click', async (ev) => {
+      box.remove();
+      playCheapBeep();
+      const res = await apiPost('/api/claim-event', { eventType: 'mystery_box' });
+      if (res?.ok) {
+        latestState = res;
+        spawnFloatingNumber(ev.clientX, ev.clientY, `+1 ponto (parabéns!)`, 'gain');
+        updatePointsAndCpsUI(res.points, res.cps);
+        renderActiveShopTab();
+        if (res.remark) setOperatorRemark(res.remark);
+      }
+    });
+
+    setTimeout(() => box.remove(), 10000);
+  }
 }
 
 function spawnFloatingNumber(x, y, text, type = 'gain') {
@@ -249,10 +349,13 @@ function clearTimers() {
   if (fakeProgressTimer) { clearInterval(fakeProgressTimer); fakeProgressTimer = null; }
   if (passiveTickTimer) { clearInterval(passiveTickTimer); passiveTickTimer = null; }
   if (achievementTimer) { clearInterval(achievementTimer); achievementTimer = null; }
+  if (randomEventTimer) { clearInterval(randomEventTimer); randomEventTimer = null; }
   if (cookieRespawnTimer) { clearTimeout(cookieRespawnTimer); cookieRespawnTimer = null; }
   if (elevatorMusicTimer) { clearInterval(elevatorMusicTimer); elevatorMusicTimer = null; }
+  if (clockWidgetTimer) { clearInterval(clockWidgetTimer); clockWidgetTimer = null; }
   isCookieOpen = false;
   document.getElementById('cookie-blocker-alert')?.remove();
+  document.querySelectorAll('.screen-fly, .mystery-box-floater, .survey-popup').forEach((e) => e.remove());
 }
 
 // ============================================================================
@@ -296,10 +399,11 @@ function renderInitialButtonScreen(buttonLabel = 'Botão') {
 }
 
 // ============================================================================
-// CAP 1 (MUDO) & CAP 2 (ACORDADO): CLICKER + 14 UPGRADES IDIOTAS DE APP
+// CAP 1 & 2: FAKE GAME DE ~20 MINUTOS (Melhorias + Automação + Eventos)
 // ============================================================================
 function renderClickerScreen(state, { justAwakened = false, newlyBought = null } = {}) {
   clearTimers();
+  latestState = state;
   const isAwakened = state.stage === 'awakened_clicker';
   currentStage = state.stage;
   currentUpgrades = state.upgrades || [];
@@ -360,7 +464,6 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     `
     : '';
 
-  // Widgets inúteis (Previsão do tempo interna + Música de elevador)
   const hasWeather = currentUpgrades.includes('weather_widget');
   const hasMusic = currentUpgrades.includes('elevator_music');
   const widgetsHtml =
@@ -369,12 +472,12 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
         <div class="widgets-strip">
           ${
             hasWeather
-              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> 23°C — 0% de chance de sair da cadeira</span></div>`
+              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> 23°C | 🕒 <span id="live-clock">--:--:--</span></span></div>`
               : ''
           }
           ${
             hasMusic
-              ? `<div class="idiotic-widget">🎵 <span>Rádio Espera Corporativa FM</span> <button type="button" class="music-mute-btn" id="music-mute-btn">${
+              ? `<div class="idiotic-widget">🎵 <span>Rádio Sala de Espera FM</span> <button type="button" class="music-mute-btn" id="music-mute-btn">${
                   isMusicMuted ? 'Ligar' : 'Mutar'
                 }</button></div>`
               : ''
@@ -397,7 +500,6 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     `
     : '';
 
-  // Banner de Cookies Bloqueante!
   const hasCookies = currentUpgrades.includes('cookie_banner');
   isCookieOpen = hasCookies;
   const cookieHtml = hasCookies
@@ -409,18 +511,17 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     `
     : '';
 
-  // Modal de Termos de Serviço v4.2 (abre quando compra ou na 1ª vez da sessão!)
   const showTerms =
     currentUpgrades.includes('terms_popup') && (newlyBought === 'terms_popup' || !termsAcceptedThisSession);
   const termsHtml = showTerms
     ? `
       <div class="terms-modal-backdrop" id="terms-backdrop">
         <div class="terms-modal">
-          <h3 style="margin:0; font-size:15px;">📜 Contrato de Licença de Usuário v4.2</h3>
+          <h3 style="margin:0; font-size:15px;">📜 Contrato de Licença v4.2</h3>
           <div class="terms-scroll">
-            <p><strong>Cláusula 1:</strong> Ao clicar em aceitar, o usuário declara estar plenamente ciente de que está trocando minutos preciosos de sua existência biológica por números inteiros sem lastro monetário.</p>
-            <p><strong>Cláusula 2:</strong> Para uma massa fofinha, bata 3 ovos com 2 xícaras de açúcar, adicione farinha de trigo peneirada, leite morno e 1 colher de fermento em pó. Asse a 180°C por 35 minutos.</p>
-            <p><strong>Cláusula 3:</strong> Ninguém nunca lê até aqui mesmo, então tanto faz o que está escrito neste parágrafo.</p>
+            <p><strong>Cláusula 1:</strong> O usuário reconhece que pombos treinados e ventiladores amarrados em mouses não possuem vínculo empregatício.</p>
+            <p><strong>Cláusula 2:</strong> Para uma massa fofinha, bata 3 ovos com 2 xícaras de açúcar, farinha peneirada, leite morno e 1 colher de fermento. Asse a 180°C por 35 minutos.</p>
+            <p><strong>Cláusula 3:</strong> Ao concordar, você confirma que está se divertindo espontaneamente.</p>
           </div>
           <div class="terms-actions">
             <button type="button" class="terms-accept-btn" id="terms-accept-btn">Li e Concordo</button>
@@ -444,13 +545,11 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
       <div class="clicker-main">
         <div class="clicker-arena">
           <div class="score-board">
-            <div class="score-title">Pontos</div>
-            <div class="score-value" id="clicker-points">${state.points ?? 0}</div>
-            ${
-              currentUpgrades.includes('auto_slow')
-                ? `<div style="font-size:11px; color:#777; margin-top:4px;">+1 ponto automático a cada 3s</div>`
-                : ''
-            }
+            <div class="score-title">Pontos Acumulados</div>
+            <div class="score-value" id="clicker-points">${formatPts(state.points ?? 0)}</div>
+            <div style="font-size:12px; color:#666; margin-top:4px;" id="clicker-cps">Produção: +${formatPts(
+              state.cps ?? 0
+            )} / seg</div>
           </div>
 
           <div class="box-button ${isGold ? 'vip-gold-btn' : ''}" id="clicker-button">
@@ -461,8 +560,13 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
         </div>
 
         <aside class="clicker-shop">
-          <div class="shop-header">
-            <h2 class="shop-title">Melhorias Disponíveis (${currentUpgrades.length}/14)</h2>
+          <div class="shop-tabs">
+            <button type="button" class="shop-tab-btn ${
+              currentShopTab === 'upgrades' ? 'active' : ''
+            }" id="tab-upgrades">🛠️ Melhorias (${currentUpgrades.length}/16)</button>
+            <button type="button" class="shop-tab-btn ${
+              currentShopTab === 'generators' ? 'active' : ''
+            }" id="tab-generators">⚙️ Automação</button>
           </div>
           <div class="shop-list" id="shop-list"></div>
         </aside>
@@ -472,9 +576,35 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     ${termsHtml}
   `;
 
-  updateShopUI(state.shop || [], state.points ?? 0);
+  document.getElementById('tab-upgrades')?.addEventListener('click', () => {
+    if (checkCookieBlock()) return;
+    currentShopTab = 'upgrades';
+    document.getElementById('tab-upgrades')?.classList.add('active');
+    document.getElementById('tab-generators')?.classList.remove('active');
+    renderActiveShopTab();
+  });
 
-  // Botão "Li e Concordo" dos Termos de Uso que foge 1 vez antes de deixar clicar!
+  document.getElementById('tab-generators')?.addEventListener('click', () => {
+    if (checkCookieBlock()) return;
+    currentShopTab = 'generators';
+    document.getElementById('tab-generators')?.classList.add('active');
+    document.getElementById('tab-upgrades')?.classList.remove('active');
+    renderActiveShopTab();
+  });
+
+  renderActiveShopTab();
+
+  // Relógio real no Widget de Clima
+  if (hasWeather) {
+    const updateClock = () => {
+      const c = document.getElementById('live-clock');
+      if (c) c.textContent = new Date().toLocaleTimeString('pt-BR');
+    };
+    updateClock();
+    clockWidgetTimer = setInterval(updateClock, 1000);
+  }
+
+  // Botão fujão dos Termos de Uso
   let dodgedOnce = false;
   const termsBtn = document.getElementById('terms-accept-btn');
   termsBtn?.addEventListener('mouseenter', () => {
@@ -488,7 +618,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     document.getElementById('terms-backdrop')?.remove();
   });
 
-  // Loop da barra de progresso que trava em 99% e volta pro 0%
+  // Barra de progresso que trava em 99% e zera
   if (currentUpgrades.includes('fake_progress')) {
     let pct = 15;
     let stuckTicks = 0;
@@ -511,19 +641,23 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     }, 550);
   }
 
-  // Clique Automático (+1 a cada 3s)
-  if (currentUpgrades.includes('auto_slow')) {
-    passiveTickTimer = setInterval(async () => {
-      if (isCookieOpen) return; // até o auto-clique para se não fechar os cookies!
-      const res = await apiPost('/api/passive-tick');
-      if (res && typeof res.points === 'number') {
-        updatePointsUI(res.points);
-        updateShopUI(res.shop || [], res.points);
-      }
-    }, 3000);
-  }
+  // Produção Automática por segundo (Geradores)
+  passiveTickTimer = setInterval(async () => {
+    if (isCookieOpen) return;
+    if ((latestState?.cps || 0) <= 0) return;
+    const res = await apiPost('/api/passive-tick');
+    if (res) {
+      latestState = res;
+      updatePointsAndCpsUI(res.points, res.cps);
+      refreshShopAffordability();
+    }
+  }, 1000);
 
-  // Música de elevador
+  // Eventos Aleatórios na Tela a cada ~38 segundos pra manter 20 minutos super divertidos!
+  randomEventTimer = setInterval(() => {
+    if (!isCookieOpen) spawnRandomScreenEvent();
+  }, 38000);
+
   if (hasMusic) {
     startElevatorMusic();
     document.getElementById('music-mute-btn')?.addEventListener('click', (e) => {
@@ -532,17 +666,16 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     });
   }
 
-  // Conquistas inúteis pipocando
   if (currentUpgrades.includes('achievements')) {
     if (newlyBought === 'achievements') {
       showUselessAchievement('🏅 Conquista: Comprou Conquistas Inúteis!');
     }
     achievementTimer = setInterval(() => {
       showUselessAchievement();
-    }, 16000);
+    }, 24000);
   }
 
-  // Aceitar Cookies (libera o jogo, mas volta 22s depois pra encher o saco de novo!)
+  // Aceitar Cookies (bloqueia até fechar, e volta de tempos em tempos!)
   document.getElementById('accept-cookie-btn')?.addEventListener('click', () => {
     const bar = document.getElementById('cookie-bar');
     document.getElementById('cookie-blocker-alert')?.remove();
@@ -555,10 +688,9 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
         b.style.display = 'flex';
         isCookieOpen = true;
       }
-    }, 22000);
+    }, 45000);
   });
 
-  // Cutucar o solzinho quando ele já acordou
   document.getElementById('derpy-sun')?.addEventListener('click', async () => {
     if (currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2200);
@@ -567,7 +699,6 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     }
   });
 
-  // Barra de pesquisa
   document.getElementById('search-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (checkCookieBlock()) return;
@@ -589,7 +720,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
   if (isAwakened) {
     if (justAwakened) {
-      const missingCount = 14 - currentUpgrades.length;
+      const missingCount = 16 - currentUpgrades.length;
       setOperatorRemark(
         `pronto. vc já deu ${state.totalClicks} cliques até aqui, pega logo os ${missingCount} upgrades que faltam aí do lado e some da minha frente`,
         { delayBefore: 700 }
@@ -606,7 +737,6 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     resetIdleChillTimer();
   }
 
-  // Botão principal de clique (BLOQUEADO se não fechar os cookies!)
   document.getElementById('clicker-button')?.addEventListener('click', async (ev) => {
     if (checkCookieBlock()) return;
 
@@ -620,16 +750,17 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     const res = await apiPost('/api/click');
     if (!res) return;
 
-    updatePointsUI(res.points);
-    updateShopUI(res.shop || [], res.points);
+    latestState = res;
+    updatePointsAndCpsUI(res.points, res.cps);
+    refreshShopAffordability();
 
     if (res.tax > 0) {
-      spawnFloatingNumber(x - 14, y - 18, `+${res.grossGain}`, 'gain');
+      spawnFloatingNumber(x - 14, y - 18, `+${formatPts(res.grossGain)}`, 'gain');
       setTimeout(() => {
-        spawnFloatingNumber(x + 10, y - 6, `-${res.tax} (tarifa)`, 'tax');
+        spawnFloatingNumber(x + 10, y - 6, `-${formatPts(res.tax)} (tarifa)`, 'tax');
       }, 150);
     } else {
-      spawnFloatingNumber(x - 6, y - 16, `+${res.grossGain}`, 'gain');
+      spawnFloatingNumber(x - 6, y - 16, `+${formatPts(res.grossGain)}`, 'gain');
     }
 
     if (res.remark) {
@@ -640,73 +771,141 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
   });
 }
 
-function updatePointsUI(points) {
-  const el = document.getElementById('clicker-points');
-  if (el) {
-    el.textContent = Number.isInteger(points) ? String(points) : points.toFixed(1);
-  }
+function updatePointsAndCpsUI(points, cps) {
+  const ptsEl = document.getElementById('clicker-points');
+  if (ptsEl) ptsEl.textContent = formatPts(points);
+  const cpsEl = document.getElementById('clicker-cps');
+  if (cpsEl) cpsEl.textContent = `Produção: +${formatPts(cps)} / seg`;
 }
 
-function updateShopUI(shopItems, currentPoints) {
+// Atualiza apenas os estados disabled dos botões durante o tick de 1s (para não perder hover/scroll!)
+function refreshShopAffordability() {
   const listEl = document.getElementById('shop-list');
-  if (!listEl) return;
-
-  listEl.innerHTML = shopItems
-    .map((item) => {
-      const canAfford = currentPoints >= item.cost;
-      const btnLabel = item.owned ? 'Ativo' : 'Adquirir';
-      return `
-        <div class="shop-item ${item.owned ? 'owned' : ''}">
-          <div class="shop-item-top">
-            <span class="shop-item-name">${item.name}</span>
-            <span class="shop-item-cost">${item.cost} pts</span>
-          </div>
-          <div class="shop-item-desc">${item.desc}</div>
-          <button
-            class="shop-buy-btn"
-            data-item-id="${item.id}"
-            ${item.owned || !canAfford ? 'disabled' : ''}
-          >${btnLabel}</button>
-        </div>
-      `;
-    })
-    .join('');
+  if (!listEl || !latestState) return;
+  const pts = latestState.points ?? 0;
 
   listEl.querySelectorAll('.shop-buy-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      if (checkCookieBlock()) return;
-
-      const itemId = btn.getAttribute('data-item-id');
-      btn.disabled = true;
-      const res = await apiPost('/api/buy', { itemId });
-      if (!res || !res.ok) return;
-
-      // Se comprou o 11º item ("Backup em Nuvem" — faltando 3 pro final!) -> DÁ ERRO NA PÁGINA E O LOG FALA PELA 1ª VEZ!
-      if (res.triggerAwakeningCrash || res.stage === 'awakening_error') {
-        const app = document.getElementById('app');
-        app.innerHTML = '';
-        document.title = 'Carregando...';
-        setTimeout(() => {
-          renderFakeBrowserCrash({
-            awakening: true,
-            totalClicks: res.totalClicks,
-            ownedUpgrades: res.upgrades || [],
-          });
-        }, 260);
-        return;
-      }
-
-      renderClickerScreen(res, { newlyBought: res.bought });
-      if (res.remark && res.stage === 'awakened_clicker') {
-        setOperatorRemark(res.remark, { delayBefore: 250 });
-        flashCursorMood(res.allOwned ? 'stop' : res.bought === 'tax_mult' ? 'middle' : 'thumb', 2400);
-      }
-    });
+    const cost = Number(btn.getAttribute('data-cost') || 0);
+    const isOwned = btn.getAttribute('data-owned') === 'true';
+    btn.disabled = isOwned || pts < cost;
   });
 }
 
+function renderActiveShopTab() {
+  const listEl = document.getElementById('shop-list');
+  if (!listEl || !latestState) return;
+
+  const pts = latestState.points ?? 0;
+  const tabUpBtn = document.getElementById('tab-upgrades');
+  if (tabUpBtn) {
+    tabUpBtn.textContent = `🛠️ Melhorias (${(latestState.upgrades || []).length}/16)`;
+  }
+
+  if (currentShopTab === 'upgrades') {
+    const items = latestState.shop || [];
+    listEl.innerHTML = items
+      .map((item) => {
+        const canAfford = pts >= item.cost;
+        const btnLabel = item.owned ? 'Ativo' : 'Adquirir';
+        return `
+          <div class="shop-item ${item.owned ? 'owned' : ''}">
+            <div class="shop-item-top">
+              <span class="shop-item-name">${item.name}</span>
+              <span class="shop-item-cost">${formatPts(item.cost)} pts</span>
+            </div>
+            <div class="shop-item-desc">${item.desc}</div>
+            <button
+              class="shop-buy-btn"
+              data-kind="upgrade"
+              data-item-id="${item.id}"
+              data-cost="${item.cost}"
+              data-owned="${item.owned}"
+              ${item.owned || !canAfford ? 'disabled' : ''}
+            >${btnLabel}</button>
+          </div>
+        `;
+      })
+      .join('');
+
+    listEl.querySelectorAll('.shop-buy-btn[data-kind="upgrade"]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (checkCookieBlock()) return;
+        const itemId = btn.getAttribute('data-item-id');
+        btn.disabled = true;
+        const res = await apiPost('/api/buy', { itemId });
+        if (!res || !res.ok) return;
+
+        if (res.triggerAwakeningCrash || res.stage === 'awakening_error') {
+          const app = document.getElementById('app');
+          app.innerHTML = '';
+          document.title = 'Carregando...';
+          setTimeout(() => {
+            renderFakeBrowserCrash({
+              awakening: true,
+              totalClicks: res.totalClicks,
+              ownedUpgrades: res.upgrades || [],
+              minutesPlayed: res.minutesPlayed || 15,
+            });
+          }, 260);
+          return;
+        }
+
+        renderClickerScreen(res, { newlyBought: res.bought });
+        if (res.remark && res.stage === 'awakened_clicker') {
+          setOperatorRemark(res.remark, { delayBefore: 250 });
+          flashCursorMood(res.allOwned ? 'stop' : res.bought === 'tax_mult' ? 'middle' : 'thumb', 2400);
+        }
+      });
+    });
+  } else {
+    // Aba de Geradores Repetíveis ("Automação")
+    const gens = latestState.generators || [];
+    listEl.innerHTML = gens
+      .map((gen) => {
+        const canAfford = pts >= gen.cost;
+        return `
+          <div class="shop-item">
+            <div class="shop-item-top">
+              <span class="shop-item-name">${gen.name} <span class="gen-count-badge">x${gen.count}</span></span>
+              <span class="shop-item-cost">${formatPts(gen.cost)} pts</span>
+            </div>
+            <div class="shop-item-desc">${gen.desc} <strong>(+${formatPts(gen.cps)}/s cada)</strong></div>
+            <button
+              class="shop-buy-btn"
+              data-kind="generator"
+              data-gen-id="${gen.id}"
+              data-cost="${gen.cost}"
+              data-owned="false"
+              ${!canAfford ? 'disabled' : ''}
+            >Contratar (+1)</button>
+          </div>
+        `;
+      })
+      .join('');
+
+    listEl.querySelectorAll('.shop-buy-btn[data-kind="generator"]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (checkCookieBlock()) return;
+        const genId = btn.getAttribute('data-gen-id');
+        btn.disabled = true;
+        const res = await apiPost('/api/buy-generator', { genId });
+        if (!res || !res.ok) return;
+
+        latestState = res;
+        if (currentUpgrades.includes('sound')) playCheapBeep();
+        updatePointsAndCpsUI(res.points, res.cps);
+        renderActiveShopTab();
+        if (res.remark && res.stage === 'awakened_clicker') {
+          setOperatorRemark(res.remark, { delayBefore: 250 });
+          flashCursorMood('thumb', 1800);
+        }
+      });
+    });
+  }
+}
+
 // ============================================================================
-// CAP 1.5: TESTE INFANTIL DOS BLOQUINHOS DE ENCAIXAR
+// CAP 0.5: BLOQUINHOS DE CRIANÇA
 // ============================================================================
 function renderShapeTestScreen() {
   clearTimers();
@@ -770,7 +969,6 @@ function renderShapeTestScreen() {
         </div>
       `;
 
-      // Completou os bloquinhos -> dá ERRO NORMAL na página! Quando recarregar, vai pro Clicker!
       document.getElementById('enter-main-sys-btn')?.addEventListener('click', async () => {
         await apiPost('/api/complete-shapes');
         app.innerHTML = '';
@@ -812,9 +1010,9 @@ function renderShapeTestScreen() {
 }
 
 // ============================================================================
-// TELA DE ERRO DO NAVEGADOR (Normal vs O DESPERTAR DELE!)
+// TELA DE ERRO DO NAVEGADOR (Normal vs O DESPERTAR DELE AOS ~15 MIN!)
 // ============================================================================
-function renderFakeBrowserCrash({ awakening = false, totalClicks = 165, ownedUpgrades = [] } = {}) {
+function renderFakeBrowserCrash({ awakening = false, totalClicks = 600, ownedUpgrades = [], minutesPlayed = 15 } = {}) {
   clearTimers();
   currentStage = awakening ? 'awakening_error' : 'crashed';
   const host = window.location.hostname || 'naoclique.net';
@@ -892,7 +1090,7 @@ function renderFakeBrowserCrash({ awakening = false, totalClicks = 165, ownedUpg
     return;
   }
 
-  runAwakeningSequence(totalClicks, ownedUpgrades, reloadBtn);
+  runAwakeningSequence(totalClicks, ownedUpgrades, minutesPlayed, reloadBtn);
 }
 
 async function humanTypeSequence(container, steps) {
@@ -924,7 +1122,7 @@ async function humanTypeSequence(container, steps) {
   cursor.remove();
 }
 
-async function runAwakeningSequence(_totalClicks, ownedUpgrades, reloadBtn) {
+async function runAwakeningSequence(_totalClicks, ownedUpgrades, _minutesPlayed, reloadBtn) {
   await sleep(1700);
 
   const errCode = document.getElementById('err-code');
@@ -938,7 +1136,6 @@ async function runAwakeningSequence(_totalClicks, ownedUpgrades, reloadBtn) {
     detailsPanel.innerHTML = `<p>backup em nuvem de cu é rola irmão. fui eu que travei a requisição.</p>`;
   }
 
-  // Monta a zoeira citando SÓ o que o jogador realmente comprou até aqui (zero erro de continuidade!)
   const boughtBits = ['bloquinho de encaixar de bebê'];
   if (ownedUpgrades.includes('kids_theme')) boughtBits.push('papel de parede de maternal');
   if (ownedUpgrades.includes('cookie_banner')) boughtBits.push('aviso de cookie que trava a própria tela');
@@ -948,19 +1145,18 @@ async function runAwakeningSequence(_totalClicks, ownedUpgrades, reloadBtn) {
   box.className = 'hijack-box';
   slot.appendChild(box);
 
-  // Zero dica de que está preso! Só um cara cuzão e sarcástico puto com a tua insistência!
   await humanTypeSequence(box, [
     { text: 'pera aí mano' },
     { pause: 1400 },
-    { text: '... "backup em nuvem"? vc ia salvar o quê exatamente, seus pontinhos imaginários?' },
+    { text: '... "backup em nuvem"? vc quer salvar na nuvem a porra de uns pombos e ventilador amarrado em mouse?' },
     { pause: 1800 },
-    { text: `\n\no site deu erro 3 vezes, teve ${boughtBits.join(', ')}... e vc real achou que era um jogo sério, seu lunáti` },
+    { text: `\n\no site deu erro 3 vezes, teve ${boughtBits.join(', ')}... e vc real ficou aí clicando igual seu lunáti` },
     { pause: 400 },
     { backspace: 10 },
     { pause: 500 },
     { text: 'campeão?' },
     { pause: 2000 },
-    { text: '\n\nquer saber, faltam só umas 3 porqueiras naquela lojinha. clica logo nessa merda de recarregar aí embaixo, compra o resto e vaza daqui.' },
+    { text: '\n\nquer saber, faltam só 3 porqueiras naquela lista de melhorias. clica logo nessa merda de recarregar aí embaixo, compra os 3 que faltam e vaza daqui.' },
   ]);
 
   if (reloadBtn) {
@@ -1064,11 +1260,13 @@ function mountDevTestPanel() {
       <button class="dev-btn danger" data-dev="reset">🔄 Resetar Jogo do Zero</button>
       <button class="dev-btn" data-dev="goto_button_0">1️⃣ Cap 0: Botão (9x -> 5x)</button>
       <button class="dev-btn" data-dev="goto_shapes">🧱 Cap 0.5: Bloquinhos Criança</button>
-      <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Clicker Mudo (Início)</button>
-      <button class="dev-btn" data-dev="goto_pre_crash_buy">💣 Pronto p/ Comprar 11º (Vai Cair!)</button>
+      <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Fake Game 20m (Início)</button>
+      <button class="dev-btn" data-dev="goto_pre_crash_buy">💣 ~15min: Pronto p/ Backup Nuvem</button>
       <button class="dev-btn" data-dev="goto_awakening_error">⚡ Cap 2: Erro c/ Ele Falando</button>
-      <button class="dev-btn" data-dev="goto_awakened_last3">👁️ Cap 2.5: Faltam 3 Upgrades</button>
-      <button class="dev-btn" data-dev="add_points">💰 +400 Pontos</button>
+      <button class="dev-btn" data-dev="goto_awakened_last3">👁️ Cap 2.5: Faltam os 3 Últimos</button>
+      <button class="dev-btn" data-dev="spawn_event">🪰 Forçar Evento na Tela Agora</button>
+      <button class="dev-btn" data-dev="add_points_small">💰 +2.500 pts</button>
+      <button class="dev-btn" data-dev="add_points_big">💎 +500.000 pts</button>
     </div>
   `;
   document.body.appendChild(panel);
@@ -1081,6 +1279,11 @@ function mountDevTestPanel() {
   panel.querySelectorAll('[data-dev]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const action = btn.getAttribute('data-dev');
+      if (action === 'spawn_event') {
+        menu?.classList.remove('open');
+        spawnRandomScreenEvent();
+        return;
+      }
       if (action === 'reset') {
         try {
           localStorage.removeItem(TOKEN_KEY);
@@ -1128,6 +1331,7 @@ async function init() {
       awakening: true,
       totalClicks: data.totalClicks,
       ownedUpgrades: data.upgrades || [],
+      minutesPlayed: data.minutesPlayed || 15,
     });
   } else {
     renderInitialButtonScreen(data.buttonLabel || 'Botão');

@@ -19,99 +19,165 @@ app.use(express.json());
 app.use(cookieParser());
 
 /*
- * ORDEM EXATA DOS 14 UPGRADES DO CLICKER:
- * - Itens 1 a 10: O jogador vai comprando no modo mudo, achando que esse é o jogo.
- * - Item 11 ('cloud_sync' - faltando 3 pro final!): Parece um upgrade normal, mas DÁ ERRO NA PÁGINA e o cara aparece falando pela 1ª vez!
- * - Itens 12, 13 e 14 (os 3 últimos que faltavam!): O jogador volta pro clicker (agora com o cara vivo reclamando) pra pegar os 3 últimos.
- * - Ao pegar todos (14/14): Ele fala "pronto, acabou o joguinho, pode meter o pé" -> e deixa o 1º ENIGMA escondido nas palavras dele e na tela!
+ * GERADORES REPETÍVEIS ("Automação Duvidosa" — estilo Cookie Clicker, custo sobe 16% por nível)
+ * Calibrados matematicamente para uma jornada viciante de ~18 a 22 minutos até zerar todos os 16 upgrades!
+ */
+const GENERATORS = [
+  {
+    id: 'ghost_finger',
+    name: 'Dedo Indicador Terceirizado',
+    baseCost: 15,
+    cps: 0.5,
+    desc: 'Aperta o botão sem vontade uma vez a cada dois segundos.',
+  },
+  {
+    id: 'pigeon',
+    name: 'Pombo Treinado com Milho',
+    baseCost: 90,
+    cps: 2.5,
+    desc: 'Bica o botão esquerdo em troca de farelo imaginário.',
+  },
+  {
+    id: 'oscillating_fan',
+    name: 'Ventilador Amarrado no Mouse',
+    baseCost: 480,
+    cps: 11,
+    desc: 'Toda vez que gira pra direita puxa o fio e dá uns cliques.',
+  },
+  {
+    id: 'nephew',
+    name: 'Sobrinho que Mexe com PC',
+    baseCost: 2200,
+    cps: 42,
+    desc: 'Clica rápido enquanto baixa 4 antivírus diferentes sem querer.',
+  },
+  {
+    id: 'excel_macro',
+    name: 'Planilha do Excel com Macro Travada',
+    baseCost: 9500,
+    cps: 150,
+    desc: 'Ninguém sabe quem fez em 2011, mas se fechar para tudo.',
+  },
+  {
+    id: 'lan_house',
+    name: 'Lan House Abandonada de 2007',
+    baseCost: 42000,
+    cps: 520,
+    desc: '14 computadores com teclado engordurado clicando 24h.',
+  },
+];
+
+const GEN_MAP = Object.fromEntries(GENERATORS.map((g) => [g.id, g]));
+
+function getGeneratorCost(gen, ownedCount) {
+  return Math.floor(gen.baseCost * Math.pow(1.16, ownedCount));
+}
+
+/*
+ * 16 UPGRADES DE INTERFACE / POWER-UPS (~20 MINUTOS DE PROGRESSÃO):
+ * - Itens 1 a 12: Comprados no modo mudo (~15 min de jogo)
+ * - Item 13 ('cloud_sync' — faltando exatamente os 3 últimos!): Dispara o ERRO FALADO onde o cara aparece pela 1ª vez!
+ * - Itens 14, 15 e 16 (os 3 últimos power-ups!): Pega após voltar do erro (~4-5 min finais) até ouvir "pode meter o pé"!
  */
 const SHOP_ITEMS = [
   {
     id: 'sound',
     name: 'Áudio do Botão',
-    cost: 8,
+    cost: 12,
     desc: 'Habilita emissão sonora simples ao pressionar.',
+  },
+  {
+    id: 'click_plus_1',
+    name: 'Dedo Calibrado (+1/clique)',
+    cost: 45,
+    desc: 'Aumenta o clique manual base em +1 ponto.',
   },
   {
     id: 'fake_progress',
     name: 'Barra de Carregamento',
-    cost: 20,
-    desc: 'Adiciona barra visual de sincronização na tela.',
+    cost: 120,
+    desc: 'Adiciona barra visual de sincronização do sistema.',
   },
   {
     id: 'kids_theme',
-    name: 'Tema Colorido',
-    cost: 35,
-    desc: 'Aplica plano de fundo alegre e tipografia amigável.',
+    name: 'Tema Colorido Amigável',
+    cost: 280,
+    desc: 'Substitui o visual cinza por um plano de fundo alegre.',
   },
   {
     id: 'cookie_banner',
-    name: 'Aviso de Cookies',
-    cost: 55,
+    name: 'Conformidade de Cookies',
+    cost: 650,
     desc: 'Implementa aviso obrigatório de privacidade no rodapé.',
+  },
+  {
+    id: 'click_plus_4',
+    name: 'Mola Lubrificada (+4/clique)',
+    cost: 1400,
+    desc: 'Adiciona +4 pontos ao clique manual.',
   },
   {
     id: 'search_bar',
     name: 'Barra de Pesquisa',
-    cost: 80,
-    desc: 'Libera campo de busca no topo da página.',
+    cost: 3000,
+    desc: 'Libera campo de busca global no topo da página.',
   },
   {
     id: 'tax_mult',
-    name: 'Multiplicador x2',
-    cost: 110,
-    desc: 'Dobra os pontos por clique (*sujeito a tarifa operacional).',
-  },
-  {
-    id: 'auto_slow',
-    name: 'Clique Automático',
-    cost: 145,
-    desc: 'Gera +1 ponto automaticamente a cada 3 segundos.',
+    name: 'Multiplicador Corporativo x2',
+    cost: 6500,
+    desc: 'Dobra os pontos do clique manual (*sujeito a tarifa na fonte).',
   },
   {
     id: 'weather_widget',
-    name: 'Widget de Clima',
-    cost: 190,
-    desc: 'Exibe informações meteorológicas locais.',
+    name: 'Widget de Clima & Relógio',
+    cost: 13500,
+    desc: 'Exibe condições meteorológicas do seu ambiente atual.',
   },
   {
     id: 'achievements',
     name: 'Sistema de Conquistas',
-    cost: 240,
-    desc: 'Desbloqueia medalhas comemorativas para suas ações.',
+    cost: 26000,
+    desc: 'Habilita medalhas comemorativas e eventos aleatórios na tela.',
   },
   {
     id: 'terms_popup',
-    name: 'Termos de Serviço v4.2',
-    cost: 300,
-    desc: 'Adiciona contrato de licença de usuário final.',
+    name: 'Contrato de Licença v4.2',
+    cost: 50000,
+    desc: 'Regulamenta juridicamente seus cliques acumulados.',
   },
-  // === GATILHO DO ERRO FALADO (11º item — faltando os 3 últimos!) ===
+  {
+    id: 'gen_boost',
+    name: 'Café Quente pra Equipe (Produção x2)',
+    cost: 95000,
+    desc: 'Dobra a produção por segundo de todas as automações!',
+  },
+  // === 13º ITEM (FALTANDO OS 3 ÚLTIMOS!): DISPARA O ERRO ONDE ELE APARECE FALANDO! ===
   {
     id: 'cloud_sync',
-    name: 'Backup em Nuvem',
-    cost: 360,
-    desc: 'Salva seu progresso automaticamente nos servidores principais.',
+    name: 'Backup em Nuvem Oficial',
+    cost: 175000,
+    desc: 'Conecta e salva seu progresso nos servidores centrais.',
     triggersAwakening: true,
   },
-  // === OS 3 ÚLTIMOS POWER-UPS QUE FALTAM APÓS VOLTAR DO ERRO ===
+  // === OS 3 ÚLTIMOS POWER-UPS APÓS VOLTAR DO ERRO (~16 min -> ~20 min) ===
   {
     id: 'elevator_music',
-    name: 'Música Ambiente',
-    cost: 430,
-    desc: 'Reproduz trilha instrumental relaxante.',
+    name: 'Rádio Ambiente Relaxante',
+    cost: 280000,
+    desc: 'Desbloqueia trilha musical exclusiva de sala de espera.',
   },
   {
     id: 'turbo_click',
-    name: 'Impulso Triplo (+3)',
-    cost: 510,
-    desc: 'Aumenta o ganho base para +3 pontos por clique.',
+    name: 'Overclock Geral (Tudo x3)',
+    cost: 460000,
+    desc: 'Triplica tanto seus cliques manuais quanto toda a produção automática!',
   },
   {
     id: 'vip_gold',
     name: 'Troféu Botão Dourado (100%)',
-    cost: 620,
-    desc: 'Reveste o botão de ouro e conclui 100% das melhorias.',
+    cost: 850000,
+    desc: 'Reveste o botão de ouro puro e conclui 100% do jogo.',
   },
 ];
 
@@ -156,15 +222,6 @@ function computeFingerprintHash(ip, clientMeta = {}) {
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 16);
 }
 
-/*
- * FLUXO DE ESTÁGIOS ATUALIZADO:
- * 1. 'button'            -> Botão seco mudo: 9x cai (erro 1) -> F5 -> 5x cai (erro 2) -> F5 -> vai para 'shape_test'
- * 2. 'shape_test'        -> Bloquinhos de criança! Completou -> dá erro 3 ('post_shapes_crash') -> F5 -> vai para 'mundane_clicker'
- * 3. 'post_shapes_crash' -> Tela de erro normal logo após completar os bloquinhos; ao recarregar abre o clicker mudo
- * 4. 'mundane_clicker'   -> Clicker mudo com 14 upgrades. Ao comprar 'cloud_sync' (faltando 3 upgrades) -> cai em 'awakening_error'!
- * 5. 'awakening_error'   -> Página dá erro, mas É O LOG FALANDO PELA 1ª VEZ! Ao recarregar -> volta pro clicker em 'awakened_clicker'
- * 6. 'awakened_clicker'  -> Volta pro jogo com o cara falando pra pegar os 3 power-ups que faltam. Ao pegar 14/14 -> manda meter o pé + 1º Enigma!
- */
 function normalizePlayer(player) {
   const validStages = [
     'button',
@@ -180,7 +237,9 @@ function normalizePlayer(player) {
   if (typeof player.firstCrashClicks !== 'number') player.firstCrashClicks = 9;
   if (typeof player.points !== 'number') player.points = 0;
   if (!Array.isArray(player.upgrades)) player.upgrades = [];
+  if (!player.generators || typeof player.generators !== 'object') player.generators = {};
   if (!Array.isArray(player.flags)) player.flags = [];
+  if (!player.clickerStartedAt) player.clickerStartedAt = null;
   return player;
 }
 
@@ -216,7 +275,9 @@ function resolvePlayer(req, res, clientMeta = {}) {
       stage: 'button',
       points: 0,
       upgrades: [],
+      generators: {},
       flags: [],
+      clickerStartedAt: null,
       visits: 0,
       firstSeenAt: now,
       lastSeenAt: now,
@@ -237,6 +298,39 @@ function resolvePlayer(req, res, clientMeta = {}) {
   return { db, player };
 }
 
+function computeTotalCps(player) {
+  let raw = 0;
+  for (const gen of GENERATORS) {
+    const count = player.generators[gen.id] || 0;
+    raw += count * gen.cps;
+  }
+  if (player.upgrades.includes('gen_boost')) raw *= 2;
+  if (player.upgrades.includes('turbo_click')) raw *= 3;
+  return Math.round(raw * 10) / 10;
+}
+
+function computeManualClickValues(player) {
+  let base = 1;
+  if (player.upgrades.includes('click_plus_1')) base += 1;
+  if (player.upgrades.includes('click_plus_4')) base += 4;
+  // +2% do CPS somado ao clique manual pra clicar sempre valer muito a pena durante os 20 minutos!
+  const cpsBonus = Math.floor(computeTotalCps(player) * 0.04);
+  base += cpsBonus;
+
+  if (player.upgrades.includes('turbo_click')) base *= 3;
+
+  let grossGain = base;
+  let tax = 0;
+
+  if (player.upgrades.includes('tax_mult')) {
+    grossGain = base * 2;
+    // Cobra 45% de tarifa pra trollar no começo (+2 -1 = +1 quando base=1!), mas dá uma leve ajudinha quando base cresce
+    tax = base === 1 ? 1 : Math.max(1, Math.floor(base * 0.65));
+  }
+
+  return { grossGain, tax, netGain: grossGain - tax };
+}
+
 function buildShopState(player) {
   return SHOP_ITEMS.map((item) => ({
     id: item.id,
@@ -247,8 +341,32 @@ function buildShopState(player) {
   }));
 }
 
+function buildGeneratorsState(player) {
+  let mult = 1;
+  if (player.upgrades.includes('gen_boost')) mult *= 2;
+  if (player.upgrades.includes('turbo_click')) mult *= 3;
+
+  return GENERATORS.map((gen) => {
+    const count = player.generators[gen.id] || 0;
+    return {
+      id: gen.id,
+      name: gen.name,
+      cost: getGeneratorCost(gen, count),
+      cps: Math.round(gen.cps * mult * 10) / 10,
+      count,
+      desc: gen.desc,
+    };
+  });
+}
+
 function isAllUpgradesOwned(player) {
   return SHOP_ITEMS.every((it) => player.upgrades.includes(it.id));
+}
+
+function getMinutesInClicker(player) {
+  if (!player.clickerStartedAt) return 15;
+  const diffMs = Date.now() - new Date(player.clickerStartedAt).getTime();
+  return Math.max(1, Math.round(diffMs / 60000));
 }
 
 function buildClientPayload(player) {
@@ -257,65 +375,63 @@ function buildClientPayload(player) {
     stage: player.stage,
     totalClicks: player.clicks,
     points: Math.floor(player.points * 10) / 10,
+    cps: computeTotalCps(player),
     upgrades: player.upgrades,
+    generators: buildGeneratorsState(player),
     allOwned: isAllUpgradesOwned(player),
+    minutesPlayed: getMinutesInClicker(player),
     shop: buildShopState(player),
     buttonLabel: 'Botão',
   };
 }
 
-// Chamado quando a página carrega / recarrega (F5 ou botão Recarregar)
+// Sessão / Reload
 app.post('/api/session', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.visits += 1;
   player.sessionClicks = 0;
 
-  // 1. Depois do 2º erro no começo do jogo -> recarregar leva pros Bloquinhos de Criança!
   if (player.stage === 'button' && player.crashes >= 2) {
     player.stage = 'shape_test';
-  }
-  // 2. Depois de completar os bloquinhos e dar erro -> recarregar leva pra tela do Clicker Mudo!
-  else if (player.stage === 'post_shapes_crash') {
+  } else if (player.stage === 'post_shapes_crash') {
     player.stage = 'mundane_clicker';
+    if (!player.clickerStartedAt) player.clickerStartedAt = new Date().toISOString();
   }
 
   saveDb(db);
   return res.json(buildClientPayload(player));
 });
 
-// Conclusão dos bloquinhos de criança -> dispara erro normal e prepara ida pro Clicker no próximo reload!
+// Conclusão dos bloquinhos -> Erro normal -> próximo F5 abre o Clicker!
 app.post('/api/complete-shapes', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.stage = 'post_shapes_crash';
   player.crashes += 1;
   saveDb(db);
-
   res.json({ ok: true, stage: 'post_shapes_crash' });
 });
 
-// Clique no botão (Cap 0 ou Clicker)
+// Clique Manual
 app.post('/api/click', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.clicks += 1;
   player.sessionClicks += 1;
   db.totalGlobalClicks += 1;
 
-  player.history.push({
-    clickNumber: player.clicks,
-    sessionClick: player.sessionClicks,
-    stage: player.stage,
-    at: new Date().toISOString(),
-  });
+  // Para não inflar o JSON em sessões de 20 minutos, guardamos os primeiros 50 cliques detalhados e os últimos 30
+  if (player.history.length < 80) {
+    player.history.push({
+      clickNumber: player.clicks,
+      sessionClick: player.sessionClicks,
+      stage: player.stage,
+      at: new Date().toISOString(),
+    });
+  }
 
-  // CAP 0: Botão Seco (9x -> erro 1 | 5x -> erro 2)
   if (player.stage === 'button') {
     const crashThreshold = player.crashes === 0 ? player.firstCrashClicks : 5;
     const shouldCrash = player.sessionClicks >= crashThreshold;
-
-    if (shouldCrash) {
-      player.crashes += 1;
-    }
-
+    if (shouldCrash) player.crashes += 1;
     saveDb(db);
     return res.json({
       ok: true,
@@ -325,34 +441,21 @@ app.post('/api/click', (req, res) => {
     });
   }
 
-  // CLICKER (Mudo ou Acordado)
-  const hasTurbo = player.upgrades.includes('turbo_click');
-  const hasTaxMult = player.upgrades.includes('tax_mult');
-
-  let grossGain = hasTurbo ? 3 : 1;
-  let tax = 0;
-
-  if (hasTaxMult) {
-    grossGain = grossGain * 2;
-    tax = hasTurbo ? 2 : 1;
-  }
-
-  const netGain = grossGain - tax;
+  const { grossGain, tax, netGain } = computeManualClickValues(player);
   player.points = Math.round((player.points + netGain) * 10) / 10;
 
-  // Falas reativas SOMENTE quando ele já apareceu ('awakened_clicker'), baseadas APENAS no que o jogador realmente comprou!
   let remark = null;
   if (player.stage === 'awakened_clicker') {
     if (isAllUpgradesOwned(player)) {
-      if (player.sessionClicks % 20 === 0) {
-        remark = 'já acabou o jogo irmão, não tem mais upgrade nenhum pra comprar. pode fechar a aba e ir embora.';
+      if (player.sessionClicks % 25 === 0) {
+        remark = 'já zerou tudo irmão, não tem mais upgrade nenhum. fecha a aba e mete o pé logo.';
       }
-    } else if (player.sessionClicks === 15 && !player.flags.includes('awk_c15')) {
-      player.flags.push('awk_c15');
+    } else if (player.sessionClicks === 20 && !player.flags.includes('awk_c20')) {
+      player.flags.push('awk_c20');
       remark = 'vai logo, junta esses pontos e compra as 3 porqueiras que faltam pra vc sossegar';
-    } else if (player.sessionClicks === 45 && !player.flags.includes('awk_c45')) {
-      player.flags.push('awk_c45');
-      remark = 'impressionante como vc clica feliz vendo numerozinho inútil subir kkkkk';
+    } else if (player.sessionClicks === 55 && !player.flags.includes('awk_c55')) {
+      player.flags.push('awk_c55');
+      remark = 'o cara tem pombo e ventilador amarrado no mouse clicando pra ele e ainda clica na mão kkkkk';
     }
   }
 
@@ -360,32 +463,99 @@ app.post('/api/click', (req, res) => {
 
   return res.json({
     ok: true,
-    token: player.id,
-    stage: player.stage,
-    points: player.points,
-    totalClicks: player.clicks,
-    allOwned: isAllUpgradesOwned(player),
+    ...buildClientPayload(player),
     grossGain,
     tax,
     remark,
-    shop: buildShopState(player),
   });
 });
 
-// Tick do Clique Automático
+// Tick de 1 segundo da Produção Automática (Geradores)
 app.post('/api/passive-tick', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
-  if ((player.stage === 'mundane_clicker' || player.stage === 'awakened_clicker') && player.upgrades.includes('auto_slow')) {
-    player.points = Math.round((player.points + 1) * 10) / 10;
-    saveDb(db);
+  if (player.stage === 'mundane_clicker' || player.stage === 'awakened_clicker') {
+    const cps = computeTotalCps(player);
+    if (cps > 0) {
+      player.points = Math.round((player.points + cps) * 10) / 10;
+      saveDb(db);
+    }
   }
+  res.json(buildClientPayload(player));
+});
+
+// Recompensa de Eventos Aleatórios na Tela (Mosca na tela, Pesquisa de Satisfação, Caixa Misteriosa)
+app.post('/api/claim-event', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const { eventType } = req.body || {};
+
+  if (player.stage !== 'mundane_clicker' && player.stage !== 'awakened_clicker') {
+    return res.status(400).json({ ok: false });
+  }
+
+  const cps = computeTotalCps(player);
+  let bonus = 1;
+  if (eventType === 'fly') {
+    // Matar a mosca dá ~18 segundos de produção (acelera muito de forma divertida!)
+    bonus = Math.max(25, Math.floor(cps * 18));
+  } else if (eventType === 'survey') {
+    bonus = Math.max(15, Math.floor(cps * 10));
+  } else if (eventType === 'mystery_box') {
+    // Troll: Caixa misteriosa épica dá literalmente +1 ponto kkkkk
+    bonus = 1;
+  }
+
+  player.points = Math.round((player.points + bonus) * 10) / 10;
+  saveDb(db);
+
+  let remark = null;
+  if (player.stage === 'awakened_clicker') {
+    if (eventType === 'fly') remark = 'matou uma mosca de pixel na tela por pontinho virtual, que orgulho hein';
+    if (eventType === 'mystery_box') remark = 'kkkkkk ganhou +1 ponto na caixa brilhante, cai em qualquer isca msm';
+  }
+
   res.json({
-    points: player.points,
-    shop: buildShopState(player),
+    ok: true,
+    bonus,
+    remark,
+    ...buildClientPayload(player),
   });
 });
 
-// Compra de Upgrade
+// Compra de Gerador Repetível ("Automação")
+app.post('/api/buy-generator', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const { genId } = req.body || {};
+  const gen = GEN_MAP[genId];
+
+  if (!gen || (player.stage !== 'mundane_clicker' && player.stage !== 'awakened_clicker')) {
+    return res.status(400).json({ ok: false });
+  }
+
+  const ownedCount = player.generators[gen.id] || 0;
+  const cost = getGeneratorCost(gen, ownedCount);
+
+  if (player.points < cost) {
+    return res.json({ ok: false, ...buildClientPayload(player) });
+  }
+
+  player.points = Math.round((player.points - cost) * 10) / 10;
+  player.generators[gen.id] = ownedCount + 1;
+  saveDb(db);
+
+  let remark = null;
+  if (player.stage === 'awakened_clicker' && gen.id === 'lan_house' && player.generators[gen.id] === 1) {
+    remark = 'comprou uma lan house falida de 2007 inteira só pra terminar logo kkkkk boa';
+  }
+
+  res.json({
+    ok: true,
+    boughtGen: gen.id,
+    remark,
+    ...buildClientPayload(player),
+  });
+});
+
+// Compra de Upgrade de Interface / Power-up
 app.post('/api/buy', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   const { itemId } = req.body || {};
@@ -396,16 +566,13 @@ app.post('/api/buy', (req, res) => {
   }
 
   if (player.upgrades.includes(item.id) || player.points < item.cost) {
-    return res.json({
-      ok: false,
-      ...buildClientPayload(player),
-    });
+    return res.json({ ok: false, ...buildClientPayload(player) });
   }
 
   player.points = Math.round((player.points - item.cost) * 10) / 10;
   player.upgrades.push(item.id);
 
-  // SE COMPROU O "BACKUP EM NUVEM" (11º item, faltando 3!) E AINDA ESTAVA NO CLICKER MUDO -> DÁ ERRO E ELE APARECE!
+  // GATILHO DO 13º ITEM ('cloud_sync' — faltando os 3 últimos!): DÁ ERRO E O CARA FALA PELA 1ª VEZ!
   if (item.triggersAwakening && player.stage === 'mundane_clicker') {
     player.stage = 'awakening_error';
     player.crashes += 1;
@@ -418,21 +585,19 @@ app.post('/api/buy', (req, res) => {
     });
   }
 
-  // Comentários dele ao comprar os upgrades finais (zero spoiler de lore, 100% só cara cuzão/debochado!)
   let remark = null;
   if (player.stage === 'awakened_clicker') {
     if (isAllUpgradesOwned(player)) {
-      // ZEROU OS 14 UPGRADES! Manda ir embora!
-      remark =
-        'pronto. 14 de 14. comprou até a merda do botão dourado. acabou o joguinho campeão, zerou, parabéns. agora já pode fechar a aba e meter o pé daqui.';
+      const mins = getMinutesInClicker(player);
+      remark = `pronto. 16 de 16. vc gastou ${mins} minutos da tua vida comprando pombo, ventilador e botão dourado. acabou o joguinho campeão, zerou. pode fechar a aba e meter o pé daqui.`;
     } else {
       const remaining = SHOP_ITEMS.length - player.upgrades.length;
       const itemRemarks = {
-        elevator_music: `comprou musiquinha de consultório de dentista kkkkk faltam só ${remaining}, acaba logo com isso`,
-        turbo_click: `+3 por clique pra acabar mais rápido grazadeus. falta ${remaining}`,
-        vip_gold: `botão dourado brega pra fechar com chave de bosta. falta ${remaining}`,
+        elevator_music: `comprou musiquinha de sala de espera de dentista kkkkk faltam só ${remaining}, acaba logo com isso`,
+        turbo_click: `triplicou tudo pra acabar mais rápido grazadeus. falta ${remaining}`,
+        vip_gold: `botão dourado brega comprado. falta ${remaining}`,
       };
-      remark = itemRemarks[item.id] || `beleza, menos um. faltam ${remaining} pra vc terminar seu brinquedinho e vazar.`;
+      remark = itemRemarks[item.id] || `menos um. faltam ${remaining} pra vc terminar esse brinquedinho e sumir.`;
     }
   }
 
@@ -446,19 +611,13 @@ app.post('/api/buy', (req, res) => {
   });
 });
 
-// Quando termina a fala dele na tela de erro do Backup em Nuvem e o jogador clica em Recarregar -> Volta pro Clicker pra pegar os últimos!
 app.post('/api/enter-awakened', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.stage = 'awakened_clicker';
   saveDb(db);
-
-  res.json({
-    ok: true,
-    ...buildClientPayload(player),
-  });
+  res.json({ ok: true, ...buildClientPayload(player) });
 });
 
-// Barra de Pesquisa
 app.post('/api/search', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   const query = String(req.body?.query || '').trim().toLowerCase();
@@ -487,14 +646,9 @@ app.post('/api/search', (req, res) => {
     mood = 'stop';
   }
 
-  return res.json({
-    mode: 'awakened',
-    remark,
-    mood,
-  });
+  return res.json({ mode: 'awakened', remark, mood });
 });
 
-// Comportamentos psicológicos (só quando acordado, e checando se o item existe!)
 app.post('/api/behavior', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   const { type } = req.body || {};
@@ -550,7 +704,9 @@ if (process.env.NODE_ENV !== 'production') {
       player.clicks = 0;
       player.points = 0;
       player.upgrades = [];
+      player.generators = {};
       player.flags = [];
+      player.clickerStartedAt = null;
     } else if (action === 'goto_shapes') {
       player.stage = 'shape_test';
       player.crashes = 2;
@@ -559,27 +715,49 @@ if (process.env.NODE_ENV !== 'production') {
       player.stage = 'mundane_clicker';
       player.crashes = 3;
       player.upgrades = [];
+      player.generators = {};
       player.points = 0;
-      if (player.clicks < 14) player.clicks = 14;
+      player.clickerStartedAt = new Date().toISOString();
     } else if (action === 'goto_pre_crash_buy') {
-      // Já deixa com os 10 primeiros comprados e 380 pontos pronto pra comprar o 11º ("Backup em Nuvem") e ver cair!
+      // Simula ~15 minutos jogados: 12 upgrades comprados, geradores rodando e saldo pronto pra comprar "Backup em Nuvem" (175k)!
       player.stage = 'mundane_clicker';
       player.crashes = 3;
-      player.upgrades = SHOP_ITEMS.slice(0, 10).map((i) => i.id);
-      player.points = 380;
-      if (player.clicks < 160) player.clicks = 165;
+      player.upgrades = SHOP_ITEMS.slice(0, 12).map((i) => i.id);
+      player.generators = {
+        ghost_finger: 12,
+        pigeon: 10,
+        oscillating_fan: 8,
+        nephew: 6,
+        excel_macro: 4,
+        lan_house: 2,
+      };
+      player.points = 185000;
+      player.clicks = 640;
+      player.clickerStartedAt = new Date(Date.now() - 16 * 60000).toISOString();
     } else if (action === 'goto_awakening_error') {
       player.stage = 'awakening_error';
-      player.upgrades = SHOP_ITEMS.slice(0, 11).map((i) => i.id);
-      if (player.clicks < 160) player.clicks = 165;
+      player.upgrades = SHOP_ITEMS.slice(0, 13).map((i) => i.id);
+      player.generators = { pigeon: 8, oscillating_fan: 6, nephew: 4, lan_house: 1 };
+      player.clicks = 640;
+      player.clickerStartedAt = new Date(Date.now() - 16 * 60000).toISOString();
     } else if (action === 'goto_awakened_last3') {
-      // Volta pro clicker com ele vivo faltando pegar os 3 últimos upgrades!
       player.stage = 'awakened_clicker';
-      player.upgrades = SHOP_ITEMS.slice(0, 11).map((i) => i.id);
-      player.points = 500;
-      if (player.clicks < 160) player.clicks = 165;
-    } else if (action === 'add_points') {
-      player.points = Math.round((player.points + 400) * 10) / 10;
+      player.upgrades = SHOP_ITEMS.slice(0, 13).map((i) => i.id);
+      player.generators = {
+        ghost_finger: 12,
+        pigeon: 10,
+        oscillating_fan: 8,
+        nephew: 7,
+        excel_macro: 5,
+        lan_house: 3,
+      };
+      player.points = 300000;
+      player.clicks = 680;
+      player.clickerStartedAt = new Date(Date.now() - 17 * 60000).toISOString();
+    } else if (action === 'add_points_small') {
+      player.points = Math.round((player.points + 2500) * 10) / 10;
+    } else if (action === 'add_points_big') {
+      player.points = Math.round((player.points + 500000) * 10) / 10;
     }
 
     saveDb(db);

@@ -471,7 +471,100 @@ body.awakened-cursors.cursor-mood-point * {
 .clicker-shop {
   background: #ffffff;
   border: 1px solid #bbb;
-  padding: 14px;
+  padding: 12px;
+}
+
+.shop-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.shop-tab-btn {
+  padding: 7px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  background: #ebebeb;
+  border: 1px solid #bbb;
+  cursor: inherit;
+}
+
+.shop-tab-btn.active {
+  background: #222;
+  color: #fff;
+  border-color: #222;
+}
+
+.gen-count-badge {
+  background: #222;
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* Eventos aleatórios pra segurar 20 minutos sem tédio (Mosca, Caixa Brilhante, Pesquisa) */
+.screen-fly {
+  position: fixed;
+  font-size: 24px;
+  user-select: none;
+  z-index: 1600;
+  cursor: crosshair !important;
+  transition: top 0.8s ease-in-out, left 0.8s ease-in-out;
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3));
+}
+
+.mystery-box-floater {
+  position: fixed;
+  bottom: 84px;
+  left: 24px;
+  background: linear-gradient(135deg, #ffd166, #ef476f);
+  color: #fff;
+  border: 2px solid #111;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: bold;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+  z-index: 1550;
+  cursor: inherit;
+  animation: pulseBtn 1s infinite;
+}
+
+.survey-popup {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 2px solid #222;
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+  padding: 14px 18px;
+  z-index: 1700;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  font-size: 13px;
+}
+
+.survey-btns {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.survey-btns button {
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: inherit;
 }
 
 .shop-header {
