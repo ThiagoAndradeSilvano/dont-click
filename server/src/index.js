@@ -18,7 +18,38 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Garante que a pasta e o arquivo de persistência existam
+// Catálogo da primeira falsa loja ("Gaiola de Dopamina")
+const CAGE_SHOP = {
+  sound: {
+    id: 'sound',
+    name: 'Barulhinho Satisfatório™',
+    cost: 10,
+    desc: 'Faz "tec" quando você clica. Funciona com pombos em laboratório desde 1954.',
+    afterBuyRemark: 'Ótimo. Agora além de gastar o mouse você faz barulho. Feliz?',
+  },
+  particles: {
+    id: 'particles',
+    name: 'Confete de Validação Emocional',
+    cost: 25,
+    desc: 'Solta quadradinhos coloridos pra fingir que você conquistou algo hoje.',
+    afterBuyRemark: 'Olha lá as corzinhas voando! Seu córtex pré-frontal deve estar em festa.',
+  },
+  tax_mult: {
+    id: 'tax_mult',
+    name: 'Multiplicador Quântico (x2)',
+    cost: 45,
+    desc: 'Dobra seus pontos por clique! (*Sujeito a retenção administrativa na fonte).',
+    afterBuyRemark: 'Você leu as letras miúdas? +2 de ganho, -1 de taxa de processamento de burrice. Matemática básica, campeão.',
+  },
+  auto_drip: {
+    id: 'auto_drip',
+    name: 'Estagiário Invisível (0.2/s)',
+    cost: 70,
+    desc: 'Clica por você numa velocidade agonizante pra você poder ficar olhando pro nada.',
+    afterBuyRemark: 'Parabéns, você automatizou a inutilidade.',
+  },
+};
+
 function loadDb() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -47,7 +78,6 @@ function getClientIp(req) {
   return req.socket.remoteAddress || 'unknown';
 }
 
-// Cria um hash de identificação combinando IP + dados do navegador (caso limpe cookies/localStorage)
 function computeFingerprintHash(ip, clientMeta = {}) {
   const raw = [
     ip,
@@ -59,21 +89,27 @@ function computeFingerprintHash(ip, clientMeta = {}) {
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 16);
 }
 
-// Resolve ou cria o jogador silenciosamente
+function normalizePlayer(player) {
+  if (typeof player.sessionClicks !== 'number') player.sessionClicks = 0;
+  if (typeof player.crashes !== 'number') player.crashes = 0;
+  if (!player.stage) player.stage = 'button'; // 'button' | 'intercepted_error' | 'cage'
+  if (typeof player.points !== 'number') player.points = 0;
+  if (!Array.isArray(player.upgrades)) player.upgrades = [];
+  if (!Array.isArray(player.flags)) player.flags = [];
+  return player;
+}
+
 function resolvePlayer(req, res, clientMeta = {}) {
   const db = loadDb();
   const ip = getClientIp(req);
   const fpHash = computeFingerprintHash(ip, clientMeta);
 
-  // 1. Tenta pelo cookie HttpOnly
   let playerId = req.cookies[COOKIE_NAME];
 
-  // 2. Tenta pelo token que o client guardou no localStorage
   if ((!playerId || !db.players[playerId]) && clientMeta.localToken && db.players[clientMeta.localToken]) {
     playerId = clientMeta.localToken;
   }
 
-  // 3. Tenta recuperar por IP + Fingerprint (ex: jogador abriu aba anônima ou limpou dados)
   if (!playerId || !db.players[playerId]) {
     const existingByFp = Object.values(db.players).find((p) => p.fpHash === fpHash);
     if (existingByFp) {
@@ -81,7 +117,6 @@ function resolvePlayer(req, res, clientMeta = {}) {
     }
   }
 
-  // 4. Se realmente é novo, cria registro
   const now = new Date().toISOString();
   if (!playerId || !db.players[playerId]) {
     playerId = crypto.randomUUID();
@@ -92,6 +127,10 @@ function resolvePlayer(req, res, clientMeta = {}) {
       clicks: 0,
       sessionClicks: 0,
       crashes: 0,
+      stage: 'button',
+      points: 0,
+      upgrades: [],
+      flags: [],
       visits: 0,
       firstSeenAt: now,
       lastSeenAt: now,
@@ -99,17 +138,10 @@ function resolvePlayer(req, res, clientMeta = {}) {
     };
   }
 
-  const player = db.players[playerId];
-  if (typeof player.sessionClicks !== 'number') {
-    player.sessionClicks = 0;
-  }
-  if (typeof player.crashes !== 'number') {
-    player.crashes = 0;
-  }
+  const player = normalizePlayer(db.players[playerId]);
   player.lastSeenAt = now;
   player.fpHash = fpHash;
 
-  // Renova o cookie silenciosamente (1 ano)
   res.cookie(COOKIE_NAME, playerId, {
     httpOnly: true,
     sameSite: 'lax',
@@ -119,25 +151,80 @@ function resolvePlayer(req, res, clientMeta = {}) {
   return { db, player };
 }
 
-// Chamado silenciosamente quando a página abre/recarrega
+function buildShopState(player) {
+  return Object.values(CAGE_SHOP).map((item) => ({
+    id: item.id,
+    name: item.name,
+    cost: item.cost,
+    desc: item.desc,
+    owned: player.upgrades.includes(item.id),
+  }));
+}
+
+// Chamado quando a página abre ou recarrega (F5 / botão Recarregar)
 app.post('/api/session', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.visits += 1;
-  // Ao recarregar, volta ao ciclo normal da tela (mas mantém player.clicks e history intactos!)
   player.sessionClicks = 0;
+
+  // Se ele já caiu 2 vezes no botão inicial e acabou de recarregar (F5 ou botão Recarregar),
+  // ele cai direto na tela de erro "invadida" pelo operador!
+  if (player.stage === 'button' && player.crashes >= 2) {
+    player.stage = 'intercepted_error';
+  }
+
   saveDb(db);
 
   console.log(
-    `[VISITA] Jogador ${player.id.slice(0, 8)} | Visitas: ${player.visits} | Cliques totais no histórico: ${player.clicks}`
+    `[SESSÃO] Jogador ${player.id.slice(0, 8)} | Stage: ${player.stage} | Quedas: ${player.crashes} | Cliques totais: ${player.clicks}`
   );
 
-  res.json({
+  if (player.stage === 'intercepted_error') {
+    return res.json({
+      token: player.id,
+      stage: 'intercepted_error',
+      totalClicks: player.clicks,
+    });
+  }
+
+  if (player.stage === 'cage') {
+    return res.json({
+      token: player.id,
+      stage: 'cage',
+      totalClicks: player.clicks,
+      points: Math.floor(player.points * 10) / 10,
+      upgrades: player.upgrades,
+      shop: buildShopState(player),
+    });
+  }
+
+  return res.json({
     token: player.id,
+    stage: 'button',
     buttonLabel: 'Botão',
   });
 });
 
-// Chamado a cada clique no botão
+// Transição quando o jogador clica no botão "Recarregar" ao final do monólogo na tela de erro invadida
+app.post('/api/enter-cage', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+
+  if (player.stage === 'intercepted_error' || player.crashes >= 2) {
+    player.stage = 'cage';
+    saveDb(db);
+  }
+
+  res.json({
+    ok: true,
+    stage: player.stage,
+    totalClicks: player.clicks,
+    points: Math.floor(player.points * 10) / 10,
+    upgrades: player.upgrades,
+    shop: buildShopState(player),
+  });
+});
+
+// Clique no botão (tanto no estágio inicial quanto na Gaiola de Dopamina)
 app.post('/api/click', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.clicks += 1;
@@ -147,35 +234,147 @@ app.post('/api/click', (req, res) => {
   player.history.push({
     clickNumber: player.clicks,
     sessionClick: player.sessionClicks,
+    stage: player.stage,
     at: new Date().toISOString(),
   });
 
-  // Regra de progressão de quedas:
-  // Na 1ª vez (crashes === 0): dá erro no 8º clique.
-  // Depois que recarregar após a 1ª queda (crashes >= 1): passa a dar o mesmo erro já no 4º clique!
-  const crashThreshold = player.crashes === 0 ? 8 : 4;
-  const shouldCrash = player.sessionClicks >= crashThreshold;
-  const buttonLabel = 'Botão';
+  // ESTÁGIO 1: Botão Seco (9 cliques na 1ª queda, 5 cliques na 2ª queda)
+  if (player.stage === 'button') {
+    const crashThreshold = player.crashes === 0 ? 9 : 5;
+    const shouldCrash = player.sessionClicks >= crashThreshold;
 
-  if (shouldCrash) {
-    player.crashes += 1;
+    if (shouldCrash) {
+      player.crashes += 1;
+    }
+
+    saveDb(db);
+
+    console.log(
+      `[CLIQUE BOTÃO] Jogador ${player.id.slice(0, 8)} | Sessão: ${player.sessionClicks}/${crashThreshold} | Quedas: ${player.crashes} | Crash: ${shouldCrash}`
+    );
+
+    return res.json({
+      ok: true,
+      token: player.id,
+      stage: 'button',
+      buttonLabel: 'Botão',
+      action: shouldCrash ? 'crash' : 'none',
+    });
+  }
+
+  // ESTÁGIO 2: A Gaiola de Dopamina (Clicker Sarcástico)
+  const hasTaxMult = player.upgrades.includes('tax_mult');
+  // Se comprou o multiplicador troll, ganha +2 bruto e perde -1 de imposto = continua ganhando +1 líquido!
+  const grossGain = hasTaxMult ? 2 : 1;
+  const tax = hasTaxMult ? 1 : 0;
+  const netGain = grossGain - tax;
+
+  player.points = Math.round((player.points + netGain) * 10) / 10;
+
+  // Comentários reativos ocasionais conforme ele clica na gaiola
+  let remark = null;
+  if (player.sessionClicks === 15 && !player.flags.includes('cage_15')) {
+    player.flags.push('cage_15');
+    remark = 'Olha que disciplina. Quinze cliques seguidos numa caixa que literalmente te chamou de primata.';
+  } else if (player.sessionClicks === 40 && !player.flags.includes('cage_40')) {
+    player.flags.push('cage_40');
+    remark = 'Você sabe que esse número não vale dinheiro de verdade, né? Só checando.';
+  } else if (player.sessionClicks === 85 && !player.flags.includes('cage_85')) {
+    player.flags.push('cage_85');
+    remark = 'Impressionante. Se eu colocar uma roda de hamster aqui você gera energia pro meu servidor.';
   }
 
   saveDb(db);
 
-  console.log(
-    `[CLIQUE] Jogador ${player.id.slice(0, 8)} | Sessão: ${player.sessionClicks}/${crashThreshold} | Quedas: ${player.crashes} | Total Histórico: ${player.clicks} | Crash: ${shouldCrash}`
-  );
-
-  res.json({
+  return res.json({
     ok: true,
     token: player.id,
-    buttonLabel,
-    action: shouldCrash ? 'crash' : 'none',
+    stage: 'cage',
+    points: player.points,
+    totalClicks: player.clicks,
+    grossGain,
+    tax,
+    remark,
+    shop: buildShopState(player),
   });
 });
 
-// Rotas internas só pra você (dev) inspecionar ou zerar o estado em localhost:3690/api/_debug
+// Tick passivo caso tenha comprado o "Estagiário Invisível"
+app.post('/api/passive-tick', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  if (player.stage === 'cage' && player.upgrades.includes('auto_drip')) {
+    player.points = Math.round((player.points + 0.2) * 10) / 10;
+    saveDb(db);
+  }
+  res.json({
+    points: player.points,
+    shop: buildShopState(player),
+  });
+});
+
+// Compra de upgrade na Lojinha Sarcástica
+app.post('/api/buy', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const { itemId } = req.body || {};
+  const item = CAGE_SHOP[itemId];
+
+  if (!item || player.stage !== 'cage') {
+    return res.status(400).json({ ok: false, error: 'Item inexistente.' });
+  }
+
+  if (player.upgrades.includes(item.id)) {
+    return res.json({
+      ok: false,
+      remark: 'Você já comprou essa porcaria. Quer comprar duas vezes o mesmo placebo?',
+      points: player.points,
+      upgrades: player.upgrades,
+      shop: buildShopState(player),
+    });
+  }
+
+  if (player.points < item.cost) {
+    return res.json({
+      ok: false,
+      remark: `Faltam pontos, gênio da economia. Custa ${item.cost} e você tem ${player.points}. Vai clicar mais.`,
+      points: player.points,
+      upgrades: player.upgrades,
+      shop: buildShopState(player),
+    });
+  }
+
+  player.points = Math.round((player.points - item.cost) * 10) / 10;
+  player.upgrades.push(item.id);
+  saveDb(db);
+
+  return res.json({
+    ok: true,
+    bought: item.id,
+    remark: item.afterBuyRemark,
+    points: player.points,
+    upgrades: player.upgrades,
+    shop: buildShopState(player),
+  });
+});
+
+// Registra eventos psicológicos (ex: abriu F12, deu Ctrl+A, saiu da aba, tentou URL suspeita)
+app.post('/api/behavior', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const { type } = req.body || {};
+  if (type && !player.flags.includes(`bh_${type}`)) {
+    player.flags.push(`bh_${type}`);
+    saveDb(db);
+  }
+
+  const reactions = {
+    select_all: 'Texto branco no fundo branco? Sério? Achou que tava num ARG de 2009?',
+    context_menu: 'Botão direito não vai abrir um menu mágico escrito "Pular Fase", parceiro.',
+    tab_return: 'Voltou? E aí, o Google te deu alguma resposta útil ou só perdeu tempo?',
+  };
+
+  res.json({ ok: true, remark: reactions[type] || null });
+});
+
+// Rotas internas de dev
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/_debug', (_req, res) => {
     res.json(loadDb());
@@ -185,7 +384,7 @@ if (process.env.NODE_ENV !== 'production') {
     const empty = { totalGlobalClicks: 0, players: {} };
     saveDb(empty);
     res.clearCookie(COOKIE_NAME);
-    res.json({ reset: true, message: 'Cliques zerados para teste!' });
+    res.json({ reset: true, message: 'Estado zerado! Pode testar do início em http://localhost:3690/' });
   });
 }
 
