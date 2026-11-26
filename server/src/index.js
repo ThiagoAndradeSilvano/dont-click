@@ -230,12 +230,17 @@ function normalizePlayer(player) {
     'mundane_clicker',
     'awakening_error',
     'awakened_clicker',
+    'shitty_loading',
+    'subsolo_2d',
   ];
   if (!validStages.includes(player.stage)) player.stage = 'button';
   if (typeof player.sessionClicks !== 'number') player.sessionClicks = 0;
   if (typeof player.crashes !== 'number') player.crashes = 0;
   if (typeof player.firstCrashClicks !== 'number') player.firstCrashClicks = 9;
   if (typeof player.points !== 'number') player.points = 0;
+  if (typeof player.temperature !== 'number') player.temperature = 23;
+  if (typeof player.postMaxClicks !== 'number') player.postMaxClicks = 0;
+  if (typeof player.overheated !== 'boolean') player.overheated = false;
   if (!Array.isArray(player.upgrades)) player.upgrades = [];
   if (!player.generators || typeof player.generators !== 'object') player.generators = {};
   if (!Array.isArray(player.flags)) player.flags = [];
@@ -416,6 +421,8 @@ function buildClientPayload(player) {
     upgrades: player.upgrades,
     generators: buildGeneratorsState(player),
     allOwned: isAllUpgradesOwned(player),
+    temperature: player.temperature,
+    overheated: player.overheated,
     minutesPlayed: getMinutesInClicker(player),
     shop: buildShopState(player),
     buttonLabel: 'Botão',
@@ -502,14 +509,22 @@ app.post('/api/click', (req, res) => {
 
   let remark = null;
   if (player.stage === 'awakened_clicker') {
-    if (isAllUpgradesOwned(player)) {
-      if (player.sessionClicks % 25 === 0) {
-        remark = 'já zerou tudo irmão, não tem mais upgrade nenhum. fecha a aba e mete o pé logo.';
+    if (isAllUpgradesOwned(player) && !player.overheated) {
+      player.postMaxClicks += 1;
+      // Pistas sutis sobre o clima / temperatura nas palavras dele conforme o jogador insiste após zerar!
+      if (player.postMaxClicks === 8) {
+        remark = 'já zerou tudo irmão, não tem mais upgrade nenhum. fecha a aba e vai tomar um ar lá fora.';
+      } else if (player.postMaxClicks === 18) {
+        remark = 'sério msm? ficar trancado nessa tela com esses 23 graus congelados aí tá derretendo teu juízo?';
+      } else if (player.postMaxClicks === 30) {
+        remark = 'mano, nem o clima muda nesse widget vagabundo ali em cima e vc aí esperando acontecer milagre.';
+      } else if (player.postMaxClicks % 22 === 0) {
+        remark = 'continua aí nessa temperatura agradável clicando no nada então, problema é teu.';
       }
-    } else if (player.sessionClicks === 20 && !player.flags.includes('awk_c20')) {
+    } else if (!player.overheated && player.sessionClicks === 20 && !player.flags.includes('awk_c20')) {
       player.flags.push('awk_c20');
       remark = 'vai logo, junta esses pontos e compra as 3 porqueiras que faltam pra vc sossegar';
-    } else if (player.sessionClicks === 55 && !player.flags.includes('awk_c55')) {
+    } else if (!player.overheated && player.sessionClicks === 55 && !player.flags.includes('awk_c55')) {
       player.flags.push('awk_c55');
       remark = 'o cara tem pombo e ventilador amarrado no mouse clicando pra ele e ainda clica na mão kkkkk';
     }
@@ -691,11 +706,32 @@ app.post('/api/search', (req, res) => {
 
   if (!query) {
     remark = 'vai pesquisar vento? digita direito pô';
+  } else if (player.overheated && ['subsolo', 'o subsolo', '/subsolo'].includes(query)) {
+    // COMANDO DE FUGA DIGITADO NO MEIO DO INCÊNDIO! Vai pro Loading Porco!
+    player.stage = 'shitty_loading';
+    saveDb(db);
+    return res.json({
+      mode: 'escape_to_loading',
+      stage: 'shitty_loading',
+    });
+  } else if (player.overheated) {
+    remark = `NÃO É "${query.slice(0, 18)}" SEU CEGO!! DIGITA subsolo AÍ EM CIMA E DÁ ENTER LOGO ANTES QUE FRITE TUDO!!`;
+    mood = 'middle';
+  } else if (['clima', 'temperatura', 'graus', 'calor', 'frio', '23', '23°c', 'termostato', 'relogio', 'relógio'].includes(query)) {
+    remark = isAllUpgradesOwned(player)
+      ? 'aquele widget de clima ali embaixo é tão malfeito que deixaram até o número da temperatura destravado... nem encosta nisso.'
+      : 'é só um widget vagabundo marcando 23 graus fixo irmão, ignora isso aí';
+    mood = 'stop';
+  } else if (['subsolo', '/subsolo'].includes(query)) {
+    remark = 'que porra de subsolo mano? não tem motivo nenhum pra descer lá agora.';
+    mood = 'stop';
   } else if (['sair', 'fechar', 'quit', 'exit'].includes(query)) {
     remark = 'o X da aba fica lá em cima no canto direito irmão, mete o pé';
     mood = 'point';
   } else if (['senha', 'resposta', 'codigo', 'código', 'segredo', 'ajuda', 'dica', 'enigma'].includes(query)) {
-    remark = `kkkkkk o cara digitou "${query}" achando que tem alguma coisa escondida aqui`;
+    remark = isAllUpgradesOwned(player)
+      ? 'não tem dica nenhuma irmão... vai tomar um ar, sair desses 23 graus parados aí.'
+      : `kkkkkk o cara digitou "${query}" achando que tem alguma coisa escondida aqui`;
     mood = 'middle';
   } else if (['quem é vc', 'quem e vc', 'quem é você', 'oi', 'ola', 'olá', 'alo'].includes(query)) {
     remark = 'não te interessa quem eu sou irmão, termina teus cliques e vaza';
@@ -703,6 +739,63 @@ app.post('/api/search', (req, res) => {
   }
 
   return res.json({ mode: 'awakened', remark, mood });
+});
+
+// Alterar a temperatura no Widget de Clima (0 a 99, sem negativo! Se passar de 80 -> QUEBRA O RELÓGIO E PEGA FOGO!)
+app.post('/api/set-temperature', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+
+  if (player.stage !== 'awakened_clicker' || !isAllUpgradesOwned(player)) {
+    return res.status(400).json({ ok: false });
+  }
+
+  // Se já quebrou/superaqueceu, não dá mais pra voltar!
+  if (player.overheated) {
+    return res.json({
+      ok: false,
+      locked: true,
+      temperature: player.temperature,
+      overheated: true,
+      remark: 'JÁ ERA O TERMOSTATO, QUEBROU A PORRA DO RELÓGIO!! DIGITA subsolo NA BARRA DE PESQUISA E DÁ ENTER LOGO!!',
+    });
+  }
+
+  let rawTemp = Math.floor(Number(req.body?.temperature));
+  if (Number.isNaN(rawTemp)) rawTemp = 23;
+  // Trava estritamente entre 0 e 99 (sem negativo!)
+  const clamped = Math.max(0, Math.min(99, rawTemp));
+  player.temperature = clamped;
+
+  let remark = null;
+  if (clamped >= 80) {
+    player.overheated = true;
+    remark =
+      'PUTA QUE PARIU VC BOTOU ' +
+      clamped +
+      ' GRAUS?! QUEBROU O RELÓGIO E TRAVOU TUDO, VAI DERRETER A PÁGINA INTEIRA!! RÁPIDO, VAMOS SAIR DAQUI, DIGITA subsolo NA BARRA DE PESQUISA E APERTA ENTER AGORA!!';
+  } else if (clamped >= 45) {
+    remark = `tá maluco botando ${clamped} graus aqui dentro?! tá começando a cheirar queimado, volta isso pro 23 seu doente!`;
+  } else if (clamped < 12) {
+    remark = `${clamped} graus? quer congelar a porra dos pombos? para de fuçar nesse número mano`;
+  } else if (clamped !== 23) {
+    remark = 'ei!! quem mandou clicar na temperatura?? deixa no 23 quieto!';
+  }
+
+  saveDb(db);
+  return res.json({
+    ok: true,
+    temperature: player.temperature,
+    overheated: player.overheated,
+    remark,
+  });
+});
+
+// Conclui o Loading Porco e entra oficialmente no Novo Ambiente 2D ("Subsolo")!
+app.post('/api/finish-loading', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  player.stage = 'subsolo_2d';
+  saveDb(db);
+  res.json({ ok: true, stage: 'subsolo_2d' });
 });
 
 app.post('/api/behavior', (req, res) => {
@@ -809,7 +902,27 @@ if (process.env.NODE_ENV !== 'production') {
       };
       player.points = 300000;
       player.clicks = 680;
+      player.temperature = 23;
+      player.overheated = false;
       player.clickerStartedAt = new Date(Date.now() - 17 * 60000).toISOString();
+    } else if (action === 'goto_maxed_16') {
+      // 16/16 zerado, pronto pra descobrir o enigma da temperatura (23°C -> 99°C)!
+      player.stage = 'awakened_clicker';
+      player.upgrades = SHOP_ITEMS.map((i) => i.id);
+      player.generators = { ghost_finger: 15, pigeon: 12, oscillating_fan: 10, nephew: 8, excel_macro: 6, lan_house: 4 };
+      player.points = 125000;
+      player.temperature = 23;
+      player.overheated = false;
+      player.postMaxClicks = 0;
+      player.clickerStartedAt = new Date(Date.now() - 21 * 60000).toISOString();
+    } else if (action === 'goto_shitty_loading') {
+      player.stage = 'shitty_loading';
+      player.overheated = true;
+      player.temperature = 99;
+    } else if (action === 'goto_subsolo') {
+      player.stage = 'subsolo_2d';
+      player.overheated = true;
+      player.temperature = 99;
     } else if (action === 'add_points_small') {
       player.points = Math.round((player.points + 2500) * 10) / 10;
     } else if (action === 'add_points_big') {

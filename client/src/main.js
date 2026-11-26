@@ -13,6 +13,9 @@ let randomEventTimer = null;
 let cookieRespawnTimer = null;
 let elevatorMusicTimer = null;
 let clockWidgetTimer = null;
+let emberTimer = null;
+let subsoloRaf = null;
+let isOverheatedLocal = false;
 let isMusicMuted = false;
 let isCookieOpen = false;
 let termsAcceptedThisSession = false;
@@ -157,8 +160,11 @@ function startElevatorMusic() {
       const ctx = ensureAudio();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(melody[step % melody.length], ctx.currentTime);
+      osc.type = isOverheatedLocal ? 'sawtooth' : 'triangle';
+      // Quando pega fogo, a música de elevador derrete e desafina toda torta!
+      const baseFreq = melody[step % melody.length];
+      const freq = isOverheatedLocal ? baseFreq * (0.68 + Math.random() * 0.25) : baseFreq;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
       gain.gain.setValueAtTime(0.045, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.0008, ctx.currentTime + 0.36);
       osc.connect(gain);
@@ -353,9 +359,13 @@ function clearTimers() {
   if (cookieRespawnTimer) { clearTimeout(cookieRespawnTimer); cookieRespawnTimer = null; }
   if (elevatorMusicTimer) { clearInterval(elevatorMusicTimer); elevatorMusicTimer = null; }
   if (clockWidgetTimer) { clearInterval(clockWidgetTimer); clockWidgetTimer = null; }
+  if (emberTimer) { clearInterval(emberTimer); emberTimer = null; }
+  if (subsoloRaf) { cancelAnimationFrame(subsoloRaf); subsoloRaf = null; }
   isCookieOpen = false;
+  isOverheatedLocal = false;
   document.getElementById('cookie-blocker-alert')?.remove();
-  document.querySelectorAll('.screen-fly, .mystery-box-floater, .survey-popup').forEach((e) => e.remove());
+  document.getElementById('fire-overlay')?.remove();
+  document.querySelectorAll('.screen-fly, .mystery-box-floater, .survey-popup, .ember-particle').forEach((e) => e.remove());
 }
 
 // ============================================================================
@@ -471,13 +481,18 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
   const hasWeather = currentUpgrades.includes('weather_widget');
   const hasMusic = currentUpgrades.includes('elevator_music');
+  const canEditTemp = isAwakened && Boolean(state.allOwned) && !state.overheated;
+  const curTemp = state.temperature ?? 23;
+
   const widgetsHtml =
     hasWeather || hasMusic
       ? `
         <div class="widgets-strip">
           ${
             hasWeather
-              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> 23°C | 🕒 <span id="live-clock">--:--:--</span></span></div>`
+              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> <span id="temp-slot"><span class="temp-editable-num ${
+                  canEditTemp ? 'can-edit' : ''
+                }" id="temp-display">${curTemp}</span></span>°C | 🕒 <span id="live-clock">--:--:--</span></span></div>`
               : ''
           }
           ${
@@ -599,14 +614,81 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
   renderActiveShopTab();
 
-  // Relógio real no Widget de Clima
+  // Relógio no Widget de Clima (normal ou QUEBRADO quando superaquece!) + Temperatura Editável (0..99)
   if (hasWeather) {
     const updateClock = () => {
       const c = document.getElementById('live-clock');
-      if (c) c.textContent = new Date().toLocaleTimeString('pt-BR');
+      if (!c) return;
+      if (isOverheatedLocal) {
+        const glitched = ['88:88:ERR', '99:99:🔥', 'ER:RO:!!', '??:99:88'];
+        c.className = 'broken-clock-glitch';
+        c.textContent = glitched[Math.floor(Math.random() * glitched.length)];
+      } else {
+        c.textContent = new Date().toLocaleTimeString('pt-BR');
+      }
     };
     updateClock();
-    clockWidgetTimer = setInterval(updateClock, 1000);
+    clockWidgetTimer = setInterval(updateClock, 450);
+
+    const bindTempClick = () => {
+      const tempDisplay = document.getElementById('temp-display');
+      const tempSlot = document.getElementById('temp-slot');
+      if (!tempDisplay || !tempSlot) return;
+
+      tempDisplay.addEventListener('click', () => {
+        if (!isAwakened || !latestState?.allOwned || isOverheatedLocal) return;
+        if (checkCookieBlock()) return;
+
+        // Vira um campo de escrever (0 a 99, sem negativo!)
+        const currentVal = latestState.temperature ?? 23;
+        tempSlot.innerHTML = `<input type="text" inputmode="numeric" maxlength="2" class="temp-inline-input" id="temp-input" value="${currentVal}" />`;
+        const inp = document.getElementById('temp-input');
+        inp?.focus();
+        inp?.select();
+
+        // Impede digitar sinal negativo ou letras (apenas dígitos 0 a 99!)
+        inp?.addEventListener('input', () => {
+          inp.value = inp.value.replace(/[^0-9]/g, '').slice(0, 2);
+        });
+
+        let submitted = false;
+        const commitTemp = async () => {
+          if (submitted) return;
+          submitted = true;
+          const raw = inp.value === '' ? 23 : Math.max(0, Math.min(99, parseInt(inp.value, 10)));
+          const res = await apiPost('/api/set-temperature', { temperature: raw });
+          const finalTemp = res?.temperature ?? raw;
+          if (latestState) latestState.temperature = finalTemp;
+
+          if (res?.overheated) {
+            tempSlot.innerHTML = `<span class="broken-clock-glitch">${finalTemp}</span>`;
+            triggerMeltdownChaos(res.remark);
+          } else {
+            document.body.classList.toggle('warm-warning', finalTemp >= 45);
+            tempSlot.innerHTML = `<span class="temp-editable-num can-edit" id="temp-display">${finalTemp}</span>`;
+            bindTempClick();
+            if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 150 });
+          }
+        };
+
+        inp?.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            commitTemp();
+          }
+        });
+        inp?.addEventListener('blur', commitTemp);
+      });
+    };
+
+    bindTempClick();
+  }
+
+  // Se recarregou a página já em estado de superaquecimento, retoma o incêndio!
+  if (state.overheated) {
+    triggerMeltdownChaos(
+      'AINDA TÁ PEGANDO FOGO AQUI SEU DOENTE!! RÁPIDO, DIGITA subsolo NA BARRA DE PESQUISA E DÁ ENTER LOGO!!'
+    );
   }
 
   // Botão fujão dos Termos de Uso
@@ -714,12 +796,17 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     const res = await apiPost('/api/search', { query });
     if (!res) return;
 
+    if (res.mode === 'escape_to_loading') {
+      renderShittyLoadingScreen();
+      return;
+    }
+
     if (res.mode === 'silent' && resultEl) {
       resultEl.textContent = res.result;
     } else if (res.mode === 'awakened') {
       if (resultEl) resultEl.textContent = '';
       if (res.mood) flashCursorMood(res.mood, 2500);
-      if (res.remark) setOperatorRemark(res.remark);
+      if (res.remark) setOperatorRemark(res.remark, { delayBefore: 120 });
     }
   });
 
@@ -1284,6 +1371,443 @@ function setupPsychologicalTraps() {
 }
 
 // ============================================================================
+// CAOS DO INCÊNDIO (>= 80°C) + LOADING PORCO INTERATIVO + NOVO AMBIENTE 2D ("SUBSOLO")
+// ============================================================================
+function triggerMeltdownChaos(urgentRemark) {
+  if (isOverheatedLocal) return;
+  isOverheatedLocal = true;
+
+  // Fecha o banner de cookie se estiver na frente pra não empatar a fuga!
+  isCookieOpen = false;
+  const cookieBar = document.getElementById('cookie-bar');
+  if (cookieBar) cookieBar.style.display = 'none';
+  document.getElementById('cookie-blocker-alert')?.remove();
+
+  // Estoura a barra de 99% para 100% ERRO TÉRMICO!
+  if (fakeProgressTimer) {
+    clearInterval(fakeProgressTimer);
+    fakeProgressTimer = null;
+  }
+  const fill = document.getElementById('fake-progress-fill');
+  const lbl = document.getElementById('fake-progress-pct');
+  if (fill) {
+    fill.style.width = '100%';
+    fill.style.background = '#dc2626';
+  }
+  if (lbl) lbl.textContent = 'ERRO TÉRMICO!';
+
+  // Transição orgânica de derretimento e fogo
+  document.body.classList.remove('warm-warning');
+  document.body.classList.add('meltdown-chaos');
+
+  if (!document.getElementById('fire-overlay')) {
+    const fire = document.createElement('div');
+    fire.id = 'fire-overlay';
+    fire.className = 'fire-overlay';
+    document.body.appendChild(fire);
+  }
+
+  emberTimer = setInterval(() => {
+    const ember = document.createElement('div');
+    ember.className = 'ember-particle';
+    ember.style.left = `${Math.random() * 98}vw`;
+    document.body.appendChild(ember);
+    setTimeout(() => ember.remove(), 2450);
+  }, 160);
+
+  playErrorBuzzer();
+  flashCursorMood('stop', 4000);
+
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.placeholder = 'DIGITE AQUI RÁPIDO...';
+  }
+
+  if (urgentRemark) {
+    setOperatorRemark(urgentRemark, { delayBefore: 100 });
+  }
+}
+
+// TELA DE LOADING BEM PORCA, LENTA E ENGRAÇADA ENQUANTO VOCÊ CONVERSA COM O LOG!
+function renderShittyLoadingScreen() {
+  clearTimers();
+  currentStage = 'shitty_loading';
+  document.body.className = 'shitty-loading-mode';
+  resetFaviconAndTitle('carregando_nao_fecha.exe');
+
+  const app = document.getElementById('app');
+  app.style.visibility = 'visible';
+
+  const dumbTips = [
+    'Dica #1: Não coloque 99 graus num site fechado, animal.',
+    'Dica #2: Assoprando o processador com a boca porque o cooler derreteu...',
+    'Dica #3: Baixando texturas de parede úmida em 144p...',
+    'Dica #4: Se a barra voltar pra trás é porque tropeçaram no cabo.',
+    'Dica #5: Quase lá (mentira, falta renderizar o chão).',
+  ];
+
+  app.innerHTML = `
+    <div class="win98-loading-window">
+      <div class="win98-titlebar">
+        <span>🛠️ carregando_subsolo_2d_final_agoravai(copia).exe</span>
+        <span>[X]</span>
+      </div>
+      <div class="win98-body">
+        <div class="crappy-spinner-row">
+          <div class="crappy-wheel">⚙️</div>
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:bold; margin-bottom:6px;" id="crappy-status">
+              Desempacotando sala velha às pressas... (3%)
+            </div>
+            <div class="crappy-bar-outer">
+              <div class="crappy-bar-inner" id="crappy-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="crappy-tip" id="crappy-tip">${dumbTips[0]}</div>
+
+        <div class="loading-chat-box" id="loading-chat"></div>
+        <div class="loading-replies" id="loading-replies"></div>
+      </div>
+    </div>
+  `;
+
+  const chatEl = document.getElementById('loading-chat');
+  const repliesEl = document.getElementById('loading-replies');
+  const barEl = document.getElementById('crappy-bar');
+  const statusEl = document.getElementById('crappy-status');
+  const tipEl = document.getElementById('crappy-tip');
+
+  let pct = 3;
+  let tipIdx = 0;
+  let dialogueDone = false;
+
+  const appendChat = async (who, text) => {
+    const line = document.createElement('div');
+    line.className = `loading-chat-line ${who === 'you' ? 'you' : 'op'}`;
+    chatEl.appendChild(line);
+
+    if (who === 'you') {
+      line.textContent = `> você: ${text}`;
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return;
+    }
+
+    line.textContent = `[log]: `;
+    for (const ch of text) {
+      line.textContent += ch;
+      chatEl.scrollTop = chatEl.scrollHeight;
+      await sleep(22 + Math.random() * 20);
+    }
+  };
+
+  // Barra de loading porca que engasga, volta 4% pra trás, trava em 69% e só fecha em 100% depois do papo!
+  const progInt = setInterval(async () => {
+    tipIdx = (tipIdx + 1) % dumbTips.length;
+    if (tipEl) tipEl.textContent = dumbTips[tipIdx];
+
+    if (pct < 88) {
+      // De vez em quando anda pra trás só de sacanagem kkkkk
+      if (Math.random() < 0.22 && pct > 20) {
+        pct -= 4;
+        if (statusEl) statusEl.textContent = `Opa caiu um arquivo, voltando... (${pct}%)`;
+      } else {
+        pct = Math.min(88, pct + Math.floor(Math.random() * 9) + 4);
+        if (statusEl) statusEl.textContent = `Improvisando colisão 2D nas coxas... (${pct}%)`;
+      }
+    } else if (dialogueDone && pct < 100) {
+      pct = Math.min(100, pct + 6);
+      if (statusEl) statusEl.textContent = `Abrindo alçapão do subsolo... (${pct}%)`;
+    } else if (!dialogueDone) {
+      if (statusEl) statusEl.textContent = `Aguardando resfriamento em 69% (nice)...`;
+      pct = 69;
+    }
+
+    if (barEl) barEl.style.width = `${pct}%`;
+
+    if (pct >= 100 && dialogueDone) {
+      clearInterval(progInt);
+      await sleep(600);
+      await apiPost('/api/finish-loading');
+      renderSubsolo2DScreen();
+    }
+  }, 1500);
+
+  // Roteiro de bate-boca interativo durante o loading porco!
+  (async () => {
+    await sleep(600);
+    await appendChat('op', 'pqp... por um segundo achei que vc ia fritar a memória inteira lá em cima.');
+    await sleep(600);
+    await appendChat('op', 'quem em sã consciência vê um número de temperatura quieto e taca no talo, mano??');
+
+    const askRound1 = () => {
+      repliesEl.innerHTML = `
+        <button class="loading-reply-btn" data-r="1">Você que deixou destravado ué</button>
+        <button class="loading-reply-btn" data-r="2">Que tela de loading horrível é essa?</button>
+      `;
+      repliesEl.querySelectorAll('button').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const r = b.getAttribute('data-r');
+          repliesEl.innerHTML = '';
+          if (r === '1') {
+            await appendChat('you', 'você que deixou destravado lá no widget ué');
+            await sleep(500);
+            await appendChat('op', 'era um png estático que eu fiz na pressa cara!! não achei que um psicopata ia clicar no número dos graus!');
+          } else {
+            await appendChat('you', 'que tela de loading horrível é essa kkkkk');
+            await sleep(500);
+            await appendChat('op', 'ah foi mal aí senhor diretor de arte da pixar, fiz essa tela em 15 segundos enquanto TUDO PEGAVA FOGO lá atrás!');
+          }
+          await sleep(700);
+          askRound2();
+        });
+      });
+    };
+
+    const askRound2 = () => {
+      repliesEl.innerHTML = `
+        <button class="loading-reply-btn" data-r="a">O que tem nesse tal de subsolo?</button>
+        <button class="loading-reply-btn" data-r="b">Então tinha mais coisa escondida sim né?</button>
+      `;
+      repliesEl.querySelectorAll('button').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const r = b.getAttribute('data-r');
+          repliesEl.innerHTML = '';
+          if (r === 'a') {
+            await appendChat('you', 'o que tem nesse tal de subsolo?');
+            await sleep(500);
+            await appendChat('op', 'cano velho, goteira, ferrugem e zero botão dourado pra vc ficar clicando.');
+          } else {
+            await appendChat('you', 'então tinha mais coisa escondida no site sim né?');
+            await sleep(500);
+            await appendChat('op', 'não é "fase secreta" seu nóia, é literalmente o porão onde fica a tubulação velha dessa merda!');
+          }
+          await sleep(700);
+          await appendChat('op', 'ó, vai abrir aí. não encosta em NENHUMA válvula lá embaixo, tá me ouvindo?');
+          dialogueDone = true;
+          pct = Math.max(pct, 90);
+        });
+      });
+    };
+
+    askRound1();
+  })();
+}
+
+// NOVO AMBIENTE 2D: O SUBSOLO (Canvas 2D interativo com física de gotas d'água, brasas caindo do teto queimado e válvulas!)
+function renderSubsolo2DScreen() {
+  clearTimers();
+  currentStage = 'subsolo_2d';
+  document.body.className = 'subsolo-mode awakened-cursors';
+  resetFaviconAndTitle('naoclique.net // subsolo');
+
+  const app = document.getElementById('app');
+  app.style.visibility = 'visible';
+
+  app.innerHTML = `
+    <div class="subsolo-shell">
+      <div class="operator-feed">
+        <span class="operator-tag">log</span>
+        <span id="operator-msg"></span>
+      </div>
+
+      <div class="subsolo-canvas-wrap">
+        <canvas id="subsolo-canvas" width="840" height="460"></canvas>
+      </div>
+    </div>
+  `;
+
+  setOperatorRemark(
+    'chegamo. tá vendo o teto pingando faísca ali em cima? é o teu papel de parede de creche terminando de queimar no andar de cima. fica quietinho aí enquanto eu apago o incêndio.',
+    { delayBefore: 500 }
+  );
+
+  const canvas = document.getElementById('subsolo-canvas');
+  const ctx = canvas?.getContext('2d');
+  if (!canvas || !ctx) return;
+
+  // Partículas 2D do ambiente (gotas d'água pingando do cano esquerdo + brasas quentes caindo da rachadura do teto)
+  const drops = [];
+  const sparks = [];
+  let valveAngle = 0;
+  let valveOpen = false;
+  let lightFlicker = 1;
+
+  // Clique interativo na válvula vermelha dentro do Canvas 2D!
+  canvas.addEventListener('click', (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (ev.clientX - rect.left) * scaleX;
+    const my = (ev.clientY - rect.top) * scaleY;
+
+    // Coordenada da roda da válvula vermelha (x=155, y=220, r=32)
+    const distValve = Math.hypot(mx - 155, my - 220);
+    if (distValve <= 36) {
+      valveOpen = !valveOpen;
+      playCheapBeep();
+      flashCursorMood(valveOpen ? 'middle' : 'thumb', 1800);
+      setOperatorRemark(
+        valveOpen
+          ? 'EU ACABEI DE FALAR PRA NÃO GIRAR A PORRA DA VÁLVULA!! vai alagar o quadro elétrico ali embaixo!'
+          : 'isso, deixa fechada quietinha.',
+        { delayBefore: 100 }
+      );
+    }
+
+    // Coordenada do Painel Trancado na direita (x=640..760, y=190..330)
+    if (mx >= 640 && mx <= 760 && my >= 190 && my <= 330) {
+      flashCursorMood('stop', 1800);
+      setOperatorRemark('nem vem fuçar nesse terminal trancado aí do canto, a senha nem tá ligada ainda.', {
+        delayBefore: 100,
+      });
+    }
+  });
+
+  const loop = () => {
+    if (currentStage !== 'subsolo_2d') return;
+
+    // Fundo de concreto escuro úmido 2D
+    ctx.fillStyle = '#10131a';
+    ctx.fillRect(0, 0, 840, 460);
+
+    // Tijolos / linhas sutis no fundo
+    ctx.strokeStyle = '#191e29';
+    ctx.lineWidth = 1;
+    for (let y = 40; y < 410; y += 36) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(840, y);
+      ctx.stroke();
+    }
+
+    // Chão metálico do subsolo
+    ctx.fillStyle = '#1b202b';
+    ctx.fillRect(0, 410, 840, 50);
+    ctx.fillStyle = '#2d3546';
+    ctx.fillRect(0, 410, 840, 5);
+
+    // Lâmpada pendurada no centro com cone de luz piscando levemente
+    if (Math.random() < 0.04) lightFlicker = 0.55 + Math.random() * 0.45;
+    else lightFlicker += (1 - lightFlicker) * 0.15;
+
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(420, 0);
+    ctx.lineTo(420, 58);
+    ctx.stroke();
+
+    const grad = ctx.createRadialGradient(420, 68, 8, 420, 220, 290);
+    grad.addColorStop(0, `rgba(255, 220, 140, ${0.24 * lightFlicker})`);
+    grad.addColorStop(1, 'rgba(16, 19, 26, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(100, 50, 640, 360);
+
+    ctx.fillStyle = `rgba(255, 230, 150, ${lightFlicker})`;
+    ctx.beginPath();
+    ctx.arc(420, 64, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tubulação hidráulica à esquerda + Válvula Vermelha
+    ctx.fillStyle = '#3a4659';
+    ctx.fillRect(143, 0, 24, 280);
+    ctx.fillRect(143, 268, 120, 22);
+
+    if (valveOpen) valveAngle += 0.08;
+    ctx.save();
+    ctx.translate(155, 220);
+    ctx.rotate(valveAngle);
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-24, 0);
+    ctx.lineTo(24, 0);
+    ctx.moveTo(0, -24);
+    ctx.lineTo(0, 24);
+    ctx.stroke();
+    ctx.restore();
+
+    // Rachadura quente no teto (de onde caem brasas do andar de cima que pegou fogo!)
+    ctx.strokeStyle = '#ff5400';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(350, 2);
+    ctx.lineTo(380, 14);
+    ctx.lineTo(405, 6);
+    ctx.lineTo(435, 16);
+    ctx.stroke();
+
+    // Painel / Terminal Trancado na parede direita (pronto pros nossos próximos enigmas!)
+    ctx.fillStyle = '#232936';
+    ctx.strokeStyle = '#4b5563';
+    ctx.lineWidth = 3;
+    ctx.fillRect(650, 200, 105, 130);
+    ctx.strokeRect(650, 200, 105, 130);
+    ctx.fillStyle = '#091914';
+    ctx.fillRect(664, 216, 77, 44);
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('TRANCADO', 673, 242);
+    // Luzinha vermelha de bloqueio
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(702, 292, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Física 2D: Gotas d'água saindo do cano (goteira lenta se fechado, jato d'água se abriu a válvula!)
+    if (Math.random() < (valveOpen ? 0.55 : 0.035)) {
+      drops.push({
+        x: 263 + (Math.random() * 6 - 3),
+        y: 290,
+        vx: valveOpen ? 1.5 + Math.random() * 2.2 : 0,
+        vy: 1,
+      });
+    }
+
+    ctx.fillStyle = '#38bdf8';
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i];
+      d.x += d.vx;
+      d.y += d.vy;
+      d.vy += 0.32;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      if (d.y >= 408) drops.splice(i, 1);
+    }
+
+    // Física 2D: Faíscas/brasas caindo da rachadura do teto
+    if (Math.random() < 0.12) {
+      sparks.push({
+        x: 355 + Math.random() * 75,
+        y: 14,
+        vx: Math.random() * 1.4 - 0.7,
+        vy: 1 + Math.random() * 1.5,
+      });
+    }
+
+    ctx.fillStyle = '#fb923c';
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i];
+      s.x += s.vx;
+      s.y += s.vy;
+      s.vy += 0.12;
+      ctx.fillRect(s.x, s.y, 3, 3);
+      if (s.y >= 408) sparks.splice(i, 1);
+    }
+
+    subsoloRaf = requestAnimationFrame(loop);
+  };
+
+  subsoloRaf = requestAnimationFrame(loop);
+}
+
+// ============================================================================
 // PAINEL DE TESTES (DEV ONLY - Topo Direito)
 // ============================================================================
 function mountDevTestPanel() {
@@ -1301,11 +1825,13 @@ function mountDevTestPanel() {
       <button class="dev-btn" data-dev="goto_button_0">1️⃣ Cap 0: Botão (9x -> 5x)</button>
       <button class="dev-btn" data-dev="goto_shapes">🧱 Cap 0.5: Bloquinhos Criança</button>
       <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Fake Game 20m (Início)</button>
-      <button class="dev-btn" data-dev="goto_pre_crash_buy">💣 ~15min: Pronto p/ Backup Nuvem</button>
+      <button class="dev-btn" data-dev="goto_pre_crash_buy">💣 ~15m: Pronto p/ Backup Nuvem</button>
       <button class="dev-btn" data-dev="goto_awakening_error">⚡ Cap 2: Erro c/ Ele Falando</button>
       <button class="dev-btn" data-dev="goto_awakened_last3">👁️ Cap 2.5: Faltam os 3 Últimos</button>
+      <button class="dev-btn" data-dev="goto_maxed_16">🌡️ Cap 3: 16/16 (Testar Clima 99°C)</button>
+      <button class="dev-btn" data-dev="goto_shitty_loading">⏳ Cap 3.5: Loading Porco + Chat</button>
+      <button class="dev-btn" data-dev="goto_subsolo">🕳️ Cap 4: Ambiente 2D (Subsolo)</button>
       <button class="dev-btn" data-dev="spawn_event">🪰 Forçar Evento na Tela Agora</button>
-      <button class="dev-btn" data-dev="add_points_small">💰 +2.500 pts</button>
       <button class="dev-btn" data-dev="add_points_big">💎 +500.000 pts</button>
     </div>
   `;
@@ -1366,6 +1892,10 @@ async function init() {
     renderClickerScreen(data);
   } else if (data.stage === 'shape_test') {
     renderShapeTestScreen();
+  } else if (data.stage === 'shitty_loading') {
+    renderShittyLoadingScreen();
+  } else if (data.stage === 'subsolo_2d') {
+    renderSubsolo2DScreen();
   } else if (data.stage === 'awakening_error') {
     renderFakeBrowserCrash({
       awakening: true,
