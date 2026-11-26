@@ -1,30 +1,52 @@
-# 🚫 Don't Click
+# 🚫 Don't Click (`naoclique.net`)
 
 > *"Isso não é um jogo. Não clique."*
 
-Jogo web de enigmas, meta-puzzles e cliques interativos inspirado em *Don't Believe His Lies*, *There Is No Game* e *Clicker Games*.
+Meta-jogo / ARG web em português com progressão psicológica, falso clicker, mutação visual e enigmas.
 
-## 📁 Estrutura do Repositório (Monorepo)
+---
 
-- **`client/`** — Frontend do jogo no navegador (UI enganosa, puzzles visuais, áudio, interações de clique e inspeção).
-- **`server/`** — Backend e API (validação segura de respostas dos enigmas para ninguém descobrir olhando o código-fonte do navegador, progresso global/rede, placares ou eventos em tempo real).
-- **`shared/`** — Tipos, constantes e utilitários compartilhados entre `client` e `server`.
+## 💻 Como clonar e rodar em qualquer outra máquina
 
-## 🚀 Como rodar localmente (Em breve)
+Pré-requisito único: **Node.js 18+** (recomendado Node 20 ou 22) e **Git**.
 
 ```bash
-# Instalar dependências
+# 1. Clonar o repositório
+git clone https://github.com/ThiagoAndradeSilvano/dont-click.git
+cd dont-click
+
+# 2. Instalar todas as dependências (raiz + client + server automaticamente)
 npm install
 
-# Rodar ambiente de desenvolvimento (client + server)
+# 3. Rodar Front-end + Back-end juntos em modo dev
 npm run dev
 ```
 
-## 📌 Padrão de Commits
+Depois é só abrir no navegador:
+- **Jogo (Client):** http://localhost:3690/
+- **API / Debug (Server):** http://localhost:3088/api/_debug
 
-Usamos mensagens claras para facilitar o histórico:
-- `feat:` nova mecânica, fase ou enigma (ex: `feat: adiciona botão que foge do mouse na fase 1`)
-- `fix:` correção de bug (ex: `fix: corrige validação de senha na rota /api/check`)
-- `style:` ajustes visuais, CSS, animações
-- `chore:` configurações de projeto, dependências, deploy
-- `docs:` documentação
+*(O banco local `server/data/players.json` é criado sozinho automaticamente na primeira vez que rodar — não precisa configurar nada!)*
+
+---
+
+## 🔄 Fluxo para trabalhar entre duas máquinas (Git)
+
+- **Antes de começar a mexer na máquina:**
+  ```bash
+  git pull origin main
+  ```
+- **Para salvar e enviar suas alterações:**
+  ```bash
+  git add .
+  git commit -m "feat: descricao da alteracao"
+  git push origin main
+  ```
+
+---
+
+## 📁 Estrutura do Monorepo
+
+- `client/` — Front-end Vite + Vanilla JS/CSS/Canvas + assets locais (`public/cursors`, `public/cave`).
+- `server/` — Back-end Node.js + Express (validação de enigmas no servidor, sessão, persistência).
+- `shared/` — Reservado para contratos/utilitários compartilhados.
