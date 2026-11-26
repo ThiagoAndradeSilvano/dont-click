@@ -154,7 +154,7 @@ function resetFaviconAndTitle(title = 'Início') {
   document.title = title;
   const link = document.getElementById('dynamic-favicon');
   if (link) {
-    link.href = 'data:,';
+    link.href = '/favicon.png';
   }
 }
 
