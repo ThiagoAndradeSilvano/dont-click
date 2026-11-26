@@ -1,0 +1,33 @@
+# Dependências
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / Produção
+dist/
+build/
+.output/
+
+# Variáveis de ambiente e segredos (NUNCA subir senhas/respostas dos enigmas se ficarem em .env!)
+.env
+.env.local
+.env.*.local
+
+# Banco de dados local (caso use SQLite em dev)
+*.sqlite
+*.sqlite3
+*.db
+
+# Sistema Operacional / Editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs e Temporários
+logs/
+*.log
+*.tmp

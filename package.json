@@ -1,0 +1,16 @@
+{
+  "name": "dont-click",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Don't Click - Meta-puzzle, riddle & clicker web game",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev:client": "npm --workspace=client run dev",
+    "dev:server": "npm --workspace=server run dev",
+    "build": "npm --workspaces --if-present run build"
+  }
+}
