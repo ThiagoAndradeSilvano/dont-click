@@ -129,7 +129,7 @@ app.post('/api/session', (req, res) => {
 
   res.json({
     token: player.id,
-    buttonLabel: 'Botão',
+    buttonLabel: 'Não clique',
   });
 });
 
@@ -147,11 +147,11 @@ app.post('/api/click', (req, res) => {
   });
 
   // Regra da tela atual:
-  // Cliques 1, 2, 3: "Botão" -> após o 3º clique vira "Não clique"
-  // Cliques 4, 5, 6, 7: "Não clique" (totalizando 7 cliques sem cair)
+  // O botão já começa como "Não clique" desde o início.
+  // Cliques 1 até 7: nada muda na tela.
   // No 8º clique: dispara a tela de erro!
   const shouldCrash = player.sessionClicks >= 8;
-  const buttonLabel = player.sessionClicks >= 3 ? 'Não clique' : 'Botão';
+  const buttonLabel = 'Não clique';
 
   saveDb(db);
 
