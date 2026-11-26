@@ -1,0 +1,194 @@
+/* ===== TELA INICIAL (Exatamente o botão cru anos 90) ===== */
+body {
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+.box-button {
+  cursor: pointer;
+  border: 4px solid black;
+  background-color: gray;
+  padding-bottom: 10px;
+  transition: 0.1s ease-in-out;
+  user-select: none;
+}
+
+.button {
+  background-color: #dddddd;
+  border: 4px solid #fff;
+  padding: 3px 8px;
+}
+
+.button span {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 1.2em;
+  letter-spacing: 1px;
+  color: #000;
+}
+
+.box-button:active {
+  padding: 0;
+  margin-bottom: 10px;
+  transform: translateY(10px);
+}
+
+/* ===== FALSO ERRO NATIVO CHROMIUM (Chrome / Edge / Brave / Opera) ===== */
+body.native-error-mode {
+  display: block;
+  min-height: 100vh;
+  margin: 0;
+  background-color: #ffffff;
+  color: #5f6368;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 75%;
+  user-select: text;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Só aplica dark mode na tela de erro se o navegador do usuário estiver em dark mode (igual ao Chrome real!) */
+  body.native-error-mode {
+    background-color: #202124;
+    color: #9aa0a6;
+  }
+  body.native-error-mode .neterror-title {
+    color: #e8eaed;
+  }
+  body.native-error-mode .neterror-code {
+    color: #9aa0a6;
+  }
+  body.native-error-mode .neterror-btn-reload {
+    background-color: #8ab4f8;
+    color: #202124;
+  }
+  body.native-error-mode .neterror-btn-reload:hover {
+    background-color: #aecbfa;
+  }
+  body.native-error-mode .neterror-btn-details {
+    border-color: #5f6368;
+    color: #8ab4f8;
+  }
+}
+
+.neterror-wrapper {
+  box-sizing: border-box;
+  max-width: 600px;
+  margin: 14vh auto 0;
+  padding: 0 24px;
+}
+
+.neterror-icon {
+  margin-bottom: 28px;
+}
+
+.neterror-title {
+  color: #202124;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.25;
+  margin: 0 0 16px 0;
+}
+
+.neterror-desc {
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0 0 12px 0;
+}
+
+.neterror-list {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 18px 0;
+  padding-left: 24px;
+}
+
+.neterror-code {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #5f6368;
+  margin: 16px 0 36px 0;
+  text-transform: uppercase;
+}
+
+.neterror-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 36px;
+}
+
+.neterror-btn-reload {
+  background-color: #1a73e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.neterror-btn-reload:hover {
+  background-color: #1967d2;
+}
+
+.neterror-btn-details {
+  background: transparent;
+  color: #1a73e8;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 7px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.neterror-details-panel {
+  display: none;
+  margin-top: 28px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.neterror-details-panel.open {
+  display: block;
+}
+
+/* ===== FALSO ERRO NATIVO FIREFOX ===== */
+body.firefox-error-mode {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 14vh;
+  background-color: #ffffff;
+  color: #15141a;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.firefox-error-mode {
+    background-color: #1c1b22;
+    color: #fbfbfe;
+  }
+}
+
+.ff-wrapper {
+  max-width: 560px;
+  padding: 0 24px;
+}
+
+.ff-title {
+  font-size: 28px;
+  font-weight: 300;
+  margin: 0 0 16px 0;
+}
+
+.ff-desc {
+  font-size: 15px;
+  line-height: 1.6;
+}

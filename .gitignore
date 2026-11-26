@@ -15,10 +15,11 @@ build/
 .env.local
 .env.*.local
 
-# Banco de dados local (caso use SQLite em dev)
+# Banco de dados local (caso use SQLite ou JSON em dev)
 *.sqlite
 *.sqlite3
 *.db
+server/data/
 
 # Sistema Operacional / Editores
 .DS_Store

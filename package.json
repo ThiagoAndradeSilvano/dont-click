@@ -9,8 +9,12 @@
     "shared"
   ],
   "scripts": {
+    "dev": "concurrently -n SERVER,CLIENT -c cyan,magenta \"npm --workspace=server run dev\" \"npm --workspace=client run dev\"",
     "dev:client": "npm --workspace=client run dev",
     "dev:server": "npm --workspace=server run dev",
     "build": "npm --workspaces --if-present run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
