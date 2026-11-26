@@ -1012,51 +1012,51 @@ if (process.env.NODE_ENV !== 'production') {
 
     const { db, player } = resolvePlayer(req, res, req.body);
 
-    if (action === 'goto_button_0') {
+    // Reseta sempre estados sujos de fases avançadas (fogo, temperatura, lâmpada quebrada, etc.)
+    // antes de aplicar a página escolhida pra NUNCA vazar fogo ou travamento entre capítulos!
+    const cleanBase = () => {
+      player.sessionClicks = 0;
+      player.sessionClickTimestamps = [];
+      player.temperature = 23;
+      player.overheated = false;
+      player.forcedSubsolo = false;
+      player.postMaxClicks = 0;
+      player.lampBroken = false;
+      player.subsoloSolved = false;
+      player.flags = [];
+    };
+
+    if (action === 'goto_page_1_button') {
+      // Página 1: Botão Branco Inicial
+      cleanBase();
       player.stage = 'button';
       player.crashes = 0;
-      player.sessionClicks = 0;
       player.clicks = 0;
       player.points = 0;
       player.upgrades = [];
       player.generators = {};
-      player.flags = [];
       player.clickerStartedAt = null;
-    } else if (action === 'goto_shapes') {
+    } else if (action === 'goto_page_2_shapes') {
+      // Página 2: Bloquinhos de Criança
+      cleanBase();
       player.stage = 'shape_test';
       player.crashes = 2;
-      if (player.clicks < 14) player.clicks = 14;
-    } else if (action === 'goto_mundane') {
+      player.clicks = 14;
+    } else if (action === 'goto_page_3_clicker_start') {
+      // Página 3: Fake Game Clicker (Mudo - Começo 0/16)
+      cleanBase();
       player.stage = 'mundane_clicker';
       player.crashes = 3;
       player.upgrades = [];
       player.generators = {};
       player.points = 0;
+      player.clicks = 14;
       player.clickerStartedAt = new Date().toISOString();
-    } else if (action === 'goto_pre_crash_buy') {
-      // Simula ~15 minutos jogados: 12 upgrades comprados, geradores rodando e saldo pronto pra comprar "Backup em Nuvem" (175k)!
-      player.stage = 'mundane_clicker';
-      player.crashes = 3;
-      player.upgrades = SHOP_ITEMS.slice(0, 12).map((i) => i.id);
-      player.generators = {
-        ghost_finger: 12,
-        pigeon: 10,
-        oscillating_fan: 8,
-        nephew: 6,
-        excel_macro: 4,
-        lan_house: 2,
-      };
-      player.points = 185000;
-      player.clicks = 640;
-      player.clickerStartedAt = new Date(Date.now() - 16 * 60000).toISOString();
-    } else if (action === 'goto_awakening_error') {
+    } else if (action === 'goto_page_4_awakening_error') {
+      // Página 4: Tela de Erro onde Ele Fala pela 1ª Vez (após Backup em Nuvem)
+      cleanBase();
       player.stage = 'awakening_error';
-      player.upgrades = SHOP_ITEMS.slice(0, 13).map((i) => i.id);
-      player.generators = { pigeon: 8, oscillating_fan: 6, nephew: 4, lan_house: 1 };
-      player.clicks = 640;
-      player.clickerStartedAt = new Date(Date.now() - 16 * 60000).toISOString();
-    } else if (action === 'goto_awakened_last3') {
-      player.stage = 'awakened_clicker';
+      player.crashes = 4;
       player.upgrades = SHOP_ITEMS.slice(0, 13).map((i) => i.id);
       player.generators = {
         ghost_finger: 12,
@@ -1067,32 +1067,40 @@ if (process.env.NODE_ENV !== 'production') {
         lan_house: 3,
       };
       player.points = 300000;
-      player.clicks = 680;
-      player.temperature = 23;
-      player.overheated = false;
-      player.clickerStartedAt = new Date(Date.now() - 17 * 60000).toISOString();
-    } else if (action === 'goto_maxed_16') {
-      // 16/16 zerado, pronto pra descobrir o enigma da temperatura (23°C -> 99°C)!
+      player.clicks = 640;
+      player.clickerStartedAt = new Date(Date.now() - 16 * 60000).toISOString();
+    } else if (action === 'goto_page_5_clicker_end') {
+      // Página 5: Clicker com Ele Acordado + 16/16 Zerado (Enigma da Temperatura -> Incêndio -> "subsolo")
+      cleanBase();
       player.stage = 'awakened_clicker';
+      player.crashes = 4;
       player.upgrades = SHOP_ITEMS.map((i) => i.id);
-      player.generators = { ghost_finger: 15, pigeon: 12, oscillating_fan: 10, nephew: 8, excel_macro: 6, lan_house: 4 };
+      player.generators = {
+        ghost_finger: 15,
+        pigeon: 12,
+        oscillating_fan: 10,
+        nephew: 8,
+        excel_macro: 6,
+        lan_house: 4,
+      };
       player.points = 125000;
-      player.temperature = 23;
-      player.overheated = false;
-      player.postMaxClicks = 0;
-      player.clickerStartedAt = new Date(Date.now() - 21 * 60000).toISOString();
-    } else if (action === 'goto_shitty_loading') {
+      player.clicks = 720;
+      player.clickerStartedAt = new Date(Date.now() - 20 * 60000).toISOString();
+    } else if (action === 'goto_page_6_loading') {
+      // Página 6: Loading Porco Windows 98 + Chat Interativo
+      cleanBase();
       player.stage = 'shitty_loading';
       player.overheated = true;
-      player.forcedSubsolo = false;
       player.temperature = 99;
-    } else if (action === 'goto_subsolo') {
+    } else if (action === 'goto_page_7_subsolo') {
+      // Página 7: Porão / Subsolo 2D (Morse + Água/Ralo/Vapor + Lâmpada -> Senha 244)
+      cleanBase();
       player.stage = 'subsolo_2d';
       player.overheated = true;
-      player.lampBroken = false;
-      player.subsoloSolved = false;
       player.temperature = 99;
-    } else if (action === 'goto_cave') {
+    } else if (action === 'goto_page_8_cave') {
+      // Página 8: Caverna Pixel Art (WASD + Eco + Mochila + Cadeado + Dinamite)
+      cleanBase();
       player.stage = 'cave_2d';
       player.subsoloSolved = true;
       player.caveState = {
@@ -1103,10 +1111,10 @@ if (process.env.NODE_ENV !== 'production') {
         plungerArmed: false,
         introDone: false,
       };
-    } else if (action === 'add_points_small') {
-      player.points = Math.round((player.points + 2500) * 10) / 10;
     } else if (action === 'add_points_big') {
-      player.points = Math.round((player.points + 500000) * 10) / 10;
+      if (player.stage === 'mundane_clicker' || player.stage === 'awakened_clicker') {
+        player.points = Math.round((player.points + 500000) * 10) / 10;
+      }
     }
 
     saveDb(db);

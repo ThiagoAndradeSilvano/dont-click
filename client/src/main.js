@@ -3111,11 +3111,13 @@ function renderCaveEscapedScreen() {
 }
 
 // ============================================================================
-// PAINEL DE TESTES (DEV ONLY - Topo Direito)
+// PAINEL DE TESTES (DEV ONLY - Topo Direito — Limpo, na Ordem Exata das 8 Páginas Reais!)
 // ============================================================================
 function mountDevTestPanel() {
   if (!import.meta.env.DEV) return;
   if (document.getElementById('dev-test-panel')) return;
+
+  const isClickerNow = () => currentStage === 'mundane_clicker' || currentStage === 'awakened_clicker';
 
   const panel = document.createElement('div');
   panel.id = 'dev-test-panel';
@@ -3123,20 +3125,19 @@ function mountDevTestPanel() {
   panel.innerHTML = `
     <button class="dev-toggle" id="dev-toggle-btn">⚙️ DEV</button>
     <div class="dev-menu" id="dev-menu">
-      <div class="dev-menu-title">🛠️ Testes & Capítulos (Dev)</div>
-      <button class="dev-btn danger" data-dev="reset">🔄 Resetar Jogo do Zero</button>
-      <button class="dev-btn" data-dev="goto_button_0">1️⃣ Cap 0: Botão (9x -> 5x)</button>
-      <button class="dev-btn" data-dev="goto_shapes">🧱 Cap 0.5: Bloquinhos Criança</button>
-      <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Fake Game 20m (Início)</button>
-      <button class="dev-btn" data-dev="goto_pre_crash_buy">💣 ~15m: Pronto p/ Backup Nuvem</button>
-      <button class="dev-btn" data-dev="goto_awakening_error">⚡ Cap 2: Erro c/ Ele Falando</button>
-      <button class="dev-btn" data-dev="goto_awakened_last3">👁️ Cap 2.5: Faltam os 3 Últimos</button>
-      <button class="dev-btn" data-dev="goto_maxed_16">🌡️ Cap 3: 16/16 (Testar Clima 99°C)</button>
-      <button class="dev-btn" data-dev="goto_shitty_loading">⏳ Cap 3.5: Loading Porco + Chat</button>
-      <button class="dev-btn" data-dev="goto_subsolo">🕳️ Cap 4: Ambiente 2D (Subsolo)</button>
-      <button class="dev-btn" data-dev="goto_cave">⛏️ Cap 5: Caverna (WASD + Eco)</button>
-      <button class="dev-btn" data-dev="spawn_event">🪰 Forçar Evento na Tela Agora</button>
-      <button class="dev-btn" data-dev="add_points_big">💎 +500.000 pts</button>
+      <div class="dev-menu-title">🗺️ Ordem das Páginas do Jogo</div>
+      <button class="dev-btn danger" data-dev="reset">🔄 Resetar Tudo do Zero</button>
+      <button class="dev-btn" data-dev="goto_page_1_button">1. Botão Inicial (9x → 5x)</button>
+      <button class="dev-btn" data-dev="goto_page_2_shapes">2. Bloquinhos de Criança</button>
+      <button class="dev-btn" data-dev="goto_page_3_clicker_start">3. Clicker Mudo (Início 0/16)</button>
+      <button class="dev-btn" data-dev="goto_page_4_awakening_error">4. Erro c/ Ele Falando (13/16)</button>
+      <button class="dev-btn" data-dev="goto_page_5_clicker_end">5. Clicker Final (Enigma 99°C)</button>
+      <button class="dev-btn" data-dev="goto_page_6_loading">6. Loading Porco + Chat</button>
+      <button class="dev-btn" data-dev="goto_page_7_subsolo">7. Porão 2D (Morse + Vapor)</button>
+      <button class="dev-btn" data-dev="goto_page_8_cave">8. Caverna (WASD + Eco)</button>
+      <div class="dev-menu-title" id="dev-clicker-tools-hdr" style="margin-top:6px;">🧰 Ferramentas (Só Clicker)</div>
+      <button class="dev-btn" id="dev-btn-pts" data-dev="add_points_big">💎 +500.000 pts (Sem Reload)</button>
+      <button class="dev-btn" id="dev-btn-evt" data-dev="spawn_event">🪰 Testar Evento (Mosca/Caixa)</button>
     </div>
   `;
   document.body.appendChild(panel);
@@ -3144,14 +3145,38 @@ function mountDevTestPanel() {
   const toggleBtn = document.getElementById('dev-toggle-btn');
   const menu = document.getElementById('dev-menu');
 
-  toggleBtn?.addEventListener('click', () => menu?.classList.toggle('open'));
+  const syncContextualTools = () => {
+    const show = isClickerNow();
+    const hdr = document.getElementById('dev-clicker-tools-hdr');
+    const bPts = document.getElementById('dev-btn-pts');
+    const bEvt = document.getElementById('dev-btn-evt');
+    if (hdr) hdr.style.display = show ? 'block' : 'none';
+    if (bPts) bPts.style.display = show ? 'block' : 'none';
+    if (bEvt) bEvt.style.display = show ? 'block' : 'none';
+  };
+
+  toggleBtn?.addEventListener('click', () => {
+    syncContextualTools();
+    menu?.classList.toggle('open');
+  });
 
   panel.querySelectorAll('[data-dev]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const action = btn.getAttribute('data-dev');
       if (action === 'spawn_event') {
         menu?.classList.remove('open');
-        spawnRandomScreenEvent();
+        if (isClickerNow()) spawnRandomScreenEvent();
+        return;
+      }
+      if (action === 'add_points_big') {
+        menu?.classList.remove('open');
+        if (!isClickerNow()) return;
+        const res = await apiPost('/api/_dev/action', { action });
+        if (res && latestState) {
+          latestState.points = res.points;
+          updatePointsAndCpsUI(res.points, latestState.cps || 0);
+          refreshShopAffordability();
+        }
         return;
       }
       if (action === 'reset') {
