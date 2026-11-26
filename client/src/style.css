@@ -1275,6 +1275,97 @@ body.subsolo-mode {
   height: auto;
 }
 
+/* Teclado Numérico Industrial do Painel do Subsolo */
+.keypad-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  padding: 16px;
+}
+
+.keypad-box {
+  background: #1c212b;
+  border: 3px solid #475569;
+  border-radius: 10px;
+  padding: 18px;
+  width: 270px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85);
+}
+
+.keypad-screen {
+  background: #071712;
+  border: 2px inset #334155;
+  color: #34d399;
+  font-family: 'Consolas', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 10px 8px;
+  margin-bottom: 14px;
+  min-height: 42px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.keypad-screen.err {
+  color: #f87171;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.keypad-key {
+  background: #334155;
+  color: #f1f5f9;
+  border-top: 2px solid #64748b;
+  border-left: 2px solid #64748b;
+  border-right: 2px solid #0f172a;
+  border-bottom: 2px solid #0f172a;
+  border-radius: 4px;
+  padding: 10px 0;
+  font-family: 'Consolas', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: inherit;
+}
+
+.keypad-key:active {
+  transform: translateY(2px);
+}
+
+.keypad-key.confirm {
+  background: #065f46;
+  border-top-color: #10b981;
+}
+
+.keypad-key.clear {
+  background: #7f1d1d;
+  border-top-color: #ef4444;
+}
+
+.keypad-close {
+  margin-top: 12px;
+  width: 100%;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  padding: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: inherit;
+}
+
 /* ===== PAINEL DE TESTES (DEV ONLY - Canto Superior Direito) ===== */
 .dev-panel {
   position: fixed;

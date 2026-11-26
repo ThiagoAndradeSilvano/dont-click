@@ -14,6 +14,8 @@ let cookieRespawnTimer = null;
 let elevatorMusicTimer = null;
 let clockWidgetTimer = null;
 let emberTimer = null;
+let meltdownInactivityTimers = [];
+let idleNudgeTimer = null;
 let subsoloRaf = null;
 let isOverheatedLocal = false;
 let isMusicMuted = false;
@@ -81,7 +83,7 @@ function ensureAudio() {
 }
 
 function flashCursorMood(mood, durationMs = 2000) {
-  if (currentStage !== 'awakened_clicker') return;
+  if (currentStage !== 'awakened_clicker' && currentStage !== 'subsolo_2d') return;
   const classes = [
     'cursor-mood-middle',
     'cursor-mood-thumb',
@@ -104,14 +106,35 @@ function flashCursorMood(mood, durationMs = 2000) {
 
 function resetIdleChillTimer() {
   if (idleTimeout) clearTimeout(idleTimeout);
+  if (idleNudgeTimer) clearTimeout(idleNudgeTimer);
   document.body.classList.remove('cursor-mood-chill');
-  if (currentStage !== 'awakened_clicker') return;
+  if (currentStage !== 'awakened_clicker' && currentStage !== 'subsolo_2d') return;
 
   idleTimeout = setTimeout(() => {
-    if (currentStage === 'awakened_clicker' && !document.body.className.includes('cursor-mood-')) {
+    if (
+      (currentStage === 'awakened_clicker' || currentStage === 'subsolo_2d') &&
+      !document.body.className.includes('cursor-mood-')
+    ) {
       document.body.classList.add('cursor-mood-chill');
     }
   }, 9000);
+
+  // Interação de Inatividade: Se o jogador ficar 26 segundos sem fazer nada quando tem objetivo pendente!
+  idleNudgeTimer = setTimeout(() => {
+    if (isOverheatedLocal) return; // O incêndio já tem seu próprio timer de urgência!
+    if (currentStage === 'awakened_clicker' && !latestState?.allOwned) {
+      setOperatorRemark('congelou aí pq? compra logo o resto das coisas pra acabar com isso.', {
+        priority: 'ambient',
+      });
+    } else if (currentStage === 'subsolo_2d') {
+      const nudges = [
+        'vai ficar só parado no escuro olhando a goteira pingar no ralo?',
+        'essa lâmpada velha dando mau contato tá me dando nos nervos já...',
+        'pelo visto vc desistiu de mexer nas minhas coisas né? ótimo, continua estátua aí.',
+      ];
+      setOperatorRemark(nudges[Math.floor(Math.random() * nudges.length)], { priority: 'ambient' });
+    }
+  }, 26000);
 }
 
 function playCheapBeep() {
@@ -360,11 +383,17 @@ function clearTimers() {
   if (elevatorMusicTimer) { clearInterval(elevatorMusicTimer); elevatorMusicTimer = null; }
   if (clockWidgetTimer) { clearInterval(clockWidgetTimer); clockWidgetTimer = null; }
   if (emberTimer) { clearInterval(emberTimer); emberTimer = null; }
+  if (idleNudgeTimer) { clearTimeout(idleNudgeTimer); idleNudgeTimer = null; }
+  meltdownInactivityTimers.forEach((t) => clearTimeout(t));
+  meltdownInactivityTimers = [];
   if (subsoloRaf) { cancelAnimationFrame(subsoloRaf); subsoloRaf = null; }
+  remarkQueue.length = 0;
+  isProcessingQueue = false;
   isCookieOpen = false;
   isOverheatedLocal = false;
   document.getElementById('cookie-blocker-alert')?.remove();
   document.getElementById('fire-overlay')?.remove();
+  document.getElementById('keypad-backdrop')?.remove();
   document.querySelectorAll('.screen-fly, .mystery-box-floater, .survey-popup, .ember-particle').forEach((e) => e.remove());
 }
 
@@ -664,11 +693,11 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
           if (res?.overheated) {
             tempSlot.innerHTML = `<span class="broken-clock-glitch">${finalTemp}</span>`;
-            triggerMeltdownChaos(res.remark);
+            triggerMeltdownChaos(res.remarksBurst || (res.remark ? [res.remark] : null));
           } else {
             document.body.classList.toggle('warm-warning', finalTemp >= 45);
             tempSlot.innerHTML = `<span class="temp-editable-num" id="temp-display">${finalTemp}</span>`;
-            if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 150, force: true });
+            if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 120, priority: 'action' });
           }
         };
 
@@ -687,9 +716,10 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
   // Se recarregou a página já em estado de superaquecimento, retoma o incêndio!
   if (state.overheated) {
-    triggerMeltdownChaos(
-      'AINDA TÁ PEGANDO FOGO AQUI SEU DOENTE!! RÁPIDO, DIGITA subsolo NA BARRA DE PESQUISA E DÁ ENTER LOGO!!'
-    );
+    triggerMeltdownChaos([
+      'AINDA TÁ PEGANDO FOGO AQUI SEU DOENTE!!',
+      'DIGITA subsolo NA BARRA DE PESQUISA AÍ EM CIMA E DÁ ENTER LOGO!!',
+    ]);
   }
 
   // Botão fujão dos Termos de Uso
@@ -857,7 +887,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     }
 
     if (res.remark) {
-      setOperatorRemark(res.remark);
+      setOperatorRemark(res.remark, { priority: 'ambient' });
       flashCursorMood('thumb', 1800);
     }
     resetIdleChillTimer();
@@ -1302,46 +1332,99 @@ async function runAwakeningSequence(_totalClicks, ownedUpgrades, _minutesPlayed,
   }
 }
 
-let isRemarkTyping = false;
-let lastRemarkFinishedAt = 0;
-const REMARK_COOLDOWN_MS = 6500; // Tempo obrigatório mínimo entre uma fala e outra para nunca cortar nem espamar!
+// ============================================================================
+// FILA INTELIGENTE DE MENSAGENS DO LOG (Pula antigas se necessário, enfileira ações e NUNCA espama!)
+// ============================================================================
+const remarkQueue = [];
+let isProcessingQueue = false;
+let lastAmbientAt = 0;
 
-async function setOperatorRemark(text, { delayBefore = 350, force = false } = {}) {
-  const el = document.getElementById('operator-msg');
-  if (!el || !text) return;
+/*
+ * priority:
+ * - 'urgent'  -> Limpa a fila secundária e corta na hora (ex: incêndio / quebra de lâmpada)
+ * - 'action'  -> Resposta direta a algo que o jogador fez (comprar, mexer na temp, girar válvula, busca). Entra na fila!
+ * - 'ambient' -> Comentário passivo de clique/ociosidade. Ignorado se já tiver fala rolando ou fila cheia (zero spam!).
+ */
+function setOperatorRemark(textOrArray, { delayBefore = 220, priority = 'action', force = false } = {}) {
+  if (!textOrArray) return;
+  const effPriority = force ? 'urgent' : priority;
+  const items = Array.isArray(textOrArray) ? textOrArray.filter(Boolean) : [textOrArray];
+  if (items.length === 0) return;
 
-  // Se ele já estiver digitando OU ainda estiver no tempo de respiro após terminar a última frase,
-  // ignora mensagens normais para NUNCA interromper nem ficar espamando!
-  const now = Date.now();
-  if (!force && (isRemarkTyping || now - lastRemarkFinishedAt < REMARK_COOLDOWN_MS)) {
-    return;
+  if (effPriority === 'ambient') {
+    if (isProcessingQueue || remarkQueue.length > 0 || Date.now() - lastAmbientAt < 8000) {
+      return;
+    }
+    lastAmbientAt = Date.now();
   }
 
-  const myId = ++remarkTypingId;
-  isRemarkTyping = true;
-  el.innerHTML = '';
-  const cursor = document.createElement('span');
-  cursor.className = 'typing-cursor';
-  el.appendChild(cursor);
-
-  if (delayBefore > 0) await sleep(delayBefore);
-  if (myId !== remarkTypingId) return;
-
-  const span = document.createElement('span');
-  el.insertBefore(span, cursor);
-
-  for (const ch of text) {
-    if (myId !== remarkTypingId) return;
-    span.textContent += ch;
-    await sleep(22 + Math.random() * 24);
+  if (effPriority === 'urgent') {
+    remarkQueue.length = 0;
+    remarkTypingId += 1; // Cancela imediatamente a digitação atual pra dar lugar à urgência!
+    isProcessingQueue = false;
+  } else if (effPriority === 'action') {
+    // Se tiver mais de 2 falas velhas acumuladas, enxuga pra não atrasar a resposta da ação nova,
+    // e se a fala atual já terminou de digitar e está só esperando pausa, pula pro próximo!
+    while (remarkQueue.length >= 2) {
+      remarkQueue.shift();
+    }
   }
 
-  isRemarkTyping = false;
-  lastRemarkFinishedAt = Date.now();
+  items.forEach((txt, idx) => {
+    remarkQueue.push({
+      text: txt,
+      delayBefore: idx === 0 ? delayBefore : 180,
+      holdAfterMs: items.length > 1 && idx < items.length - 1 ? 950 : 650,
+    });
+  });
 
-  setTimeout(() => {
-    if (myId === remarkTypingId) cursor.remove();
-  }, 1200);
+  if (!isProcessingQueue) {
+    processRemarkQueue();
+  }
+}
+
+async function processRemarkQueue() {
+  isProcessingQueue = true;
+
+  while (remarkQueue.length > 0) {
+    const el = document.getElementById('operator-msg');
+    if (!el) {
+      remarkQueue.length = 0;
+      break;
+    }
+
+    const current = remarkQueue.shift();
+    const myId = ++remarkTypingId;
+
+    el.innerHTML = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    el.appendChild(cursor);
+
+    if (current.delayBefore > 0) await sleep(current.delayBefore);
+    if (myId !== remarkTypingId) return; // interrompido por 'urgent'
+
+    const span = document.createElement('span');
+    el.insertBefore(span, cursor);
+
+    for (const ch of current.text) {
+      if (myId !== remarkTypingId) return;
+      span.textContent += ch;
+      // Se chegou outra ação do jogador na fila, acelera levemente o fim desta frase pra ficar ágil!
+      const speedMul = remarkQueue.length > 0 ? 0.55 : 1;
+      await sleep((18 + Math.random() * 20) * speedMul);
+    }
+
+    // Pausa rápida entre uma mensagem da fila e a próxima (pra dar tempo de ler sem travar!)
+    await sleep(remarkQueue.length > 0 ? Math.min(current.holdAfterMs, 850) : 500);
+    if (myId === remarkTypingId && remarkQueue.length === 0) {
+      setTimeout(() => {
+        if (myId === remarkTypingId) cursor.remove();
+      }, 900);
+    }
+  }
+
+  isProcessingQueue = false;
 }
 
 // ============================================================================
@@ -1351,7 +1434,7 @@ function setupPsychologicalTraps() {
   let originalTitle = document.title;
 
   document.addEventListener('visibilitychange', async () => {
-    if (currentStage !== 'awakened_clicker') return;
+    if (currentStage !== 'awakened_clicker' && currentStage !== 'subsolo_2d') return;
 
     if (document.hidden) {
       originalTitle = document.title;
@@ -1359,11 +1442,12 @@ function setupPsychologicalTraps() {
     } else {
       document.title = originalTitle;
       const res = await apiPost('/api/behavior', { type: 'tab_return' });
-      if (res?.remark) setOperatorRemark(res.remark);
+      if (res?.remark) setOperatorRemark(res.remark, { priority: 'ambient' });
     }
   });
 
   document.addEventListener('keydown', async (e) => {
+    resetIdleChillTimer();
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2500);
       const res = await apiPost('/api/behavior', { type: 'select_all' });
@@ -1372,6 +1456,7 @@ function setupPsychologicalTraps() {
   });
 
   document.addEventListener('contextmenu', async () => {
+    resetIdleChillTimer();
     if (currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2500);
       const res = await apiPost('/api/behavior', { type: 'context_menu' });
@@ -1380,26 +1465,24 @@ function setupPsychologicalTraps() {
   });
 
   document.addEventListener('mousemove', () => {
-    if (currentStage === 'awakened_clicker' && document.body.classList.contains('cursor-mood-chill')) {
+    if (document.body.classList.contains('cursor-mood-chill')) {
       resetIdleChillTimer();
     }
   });
 }
 
 // ============================================================================
-// CAOS DO INCÊNDIO (>= 80°C) + LOADING PORCO INTERATIVO + NOVO AMBIENTE 2D ("SUBSOLO")
+// CAOS DO INCÊNDIO (>= 80°C) + O QUE ACONTECE SE O JOGADOR NÃO FIZER NADA!
 // ============================================================================
-function triggerMeltdownChaos(urgentRemark) {
+function triggerMeltdownChaos(burstOrText) {
   if (isOverheatedLocal) return;
   isOverheatedLocal = true;
 
-  // Fecha o banner de cookie se estiver na frente pra não empatar a fuga!
   isCookieOpen = false;
   const cookieBar = document.getElementById('cookie-bar');
   if (cookieBar) cookieBar.style.display = 'none';
   document.getElementById('cookie-blocker-alert')?.remove();
 
-  // Estoura a barra de 99% para 100% ERRO TÉRMICO!
   if (fakeProgressTimer) {
     clearInterval(fakeProgressTimer);
     fakeProgressTimer = null;
@@ -1412,7 +1495,6 @@ function triggerMeltdownChaos(urgentRemark) {
   }
   if (lbl) lbl.textContent = 'ERRO TÉRMICO!';
 
-  // Transição orgânica de derretimento e fogo
   document.body.classList.remove('warm-warning');
   document.body.classList.add('meltdown-chaos');
 
@@ -1429,23 +1511,63 @@ function triggerMeltdownChaos(urgentRemark) {
     ember.style.left = `${Math.random() * 98}vw`;
     document.body.appendChild(ember);
     setTimeout(() => ember.remove(), 2450);
-  }, 160);
+  }, 150);
 
   playErrorBuzzer();
-  flashCursorMood('stop', 4000);
+  flashCursorMood('stop', 3500);
 
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
-    searchInput.placeholder = 'DIGITE AQUI RÁPIDO...';
+    searchInput.placeholder = 'DIGITE subsolo AQUI...';
   }
 
-  if (urgentRemark) {
-    setOperatorRemark(urgentRemark, { delayBefore: 100, force: true });
+  if (burstOrText) {
+    setOperatorRemark(burstOrText, { delayBefore: 80, priority: 'urgent' });
   }
+
+  // E SE O JOGADOR FICAR PARADO OLHANDO O FOGO E NÃO ESCREVER "subsolo"?!
+  // 12s sem digitar: ele grita cobrando!
+  const t1 = setTimeout(() => {
+    if (!isOverheatedLocal || currentStage !== 'awakened_clicker') return;
+    flashCursorMood('middle', 2500);
+    setOperatorRemark(
+      ['TÁ PARADO OLHANDO PRO FOGO PQ SEU POSTE?!', 'ESCREVE subsolo NA BARRA DE PESQUISA LÁ EM CIMA AGORA!!'],
+      { priority: 'urgent' }
+    );
+  }, 13000);
+
+  // 25s sem digitar: ele perde a paciência, toma controle da barra de busca, digita "subsolo" SOZINHO letra por letra e puxa vc à força!
+  const t2 = setTimeout(async () => {
+    if (!isOverheatedLocal || currentStage !== 'awakened_clicker') return;
+    setOperatorRemark('PQP VAI FRITAR TUDO, SAI DA FRENTE QUE EU MESMO DIGITO ESSA MERDA!!', {
+      priority: 'urgent',
+    });
+    flashCursorMood('stop', 4000);
+
+    await sleep(1400);
+    const inp = document.getElementById('search-input');
+    if (inp) {
+      inp.value = '';
+      inp.focus();
+      for (const ch of 'subsolo') {
+        if (currentStage !== 'awakened_clicker') return;
+        inp.value += ch;
+        playCheapBeep();
+        await sleep(130);
+      }
+    }
+    await sleep(500);
+    await apiPost('/api/force-subsolo-escape');
+    renderShittyLoadingScreen({ forcedByOperator: true });
+  }, 26000);
+
+  meltdownInactivityTimers.push(t1, t2);
 }
 
-// TELA DE LOADING BEM PORCA, LENTA E ENGRAÇADA ENQUANTO VOCÊ CONVERSA COM O LOG!
-function renderShittyLoadingScreen() {
+// ============================================================================
+// TELA DE LOADING PORCA + CONVERSA COM TEMPO DE LEITURA + INATIVIDADE
+// ============================================================================
+function renderShittyLoadingScreen({ forcedByOperator = false } = {}) {
   clearTimers();
   currentStage = 'shitty_loading';
   document.body.className = 'shitty-loading-mode';
@@ -1459,7 +1581,7 @@ function renderShittyLoadingScreen() {
     'Dica #2: Assoprando o processador com a boca porque o cooler derreteu...',
     'Dica #3: Baixando texturas de parede úmida em 144p...',
     'Dica #4: Se a barra voltar pra trás é porque tropeçaram no cabo.',
-    'Dica #5: Quase lá (mentira, falta renderizar o chão).',
+    'Dica #5: Quase lá (mentira, falta renderizar o ralo).',
   ];
 
   app.innerHTML = `
@@ -1497,7 +1619,8 @@ function renderShittyLoadingScreen() {
 
   let pct = 3;
   let tipIdx = 0;
-  let dialogueDone = false;
+  let readyToTransition = false;
+  let replyIdleTimer = null;
 
   const appendChat = async (who, text) => {
     const line = document.createElement('div');
@@ -1514,47 +1637,55 @@ function renderShittyLoadingScreen() {
     for (const ch of text) {
       line.textContent += ch;
       chatEl.scrollTop = chatEl.scrollHeight;
-      await sleep(22 + Math.random() * 20);
+      await sleep(22 + Math.random() * 18);
     }
   };
 
-  // Barra de loading porca que engasga, volta 4% pra trás, trava em 69% e só fecha em 100% depois do papo!
   const progInt = setInterval(async () => {
     tipIdx = (tipIdx + 1) % dumbTips.length;
     if (tipEl) tipEl.textContent = dumbTips[tipIdx];
 
-    if (pct < 88) {
-      // De vez em quando anda pra trás só de sacanagem kkkkk
+    if (pct < 85 && !readyToTransition) {
       if (Math.random() < 0.22 && pct > 20) {
         pct -= 4;
         if (statusEl) statusEl.textContent = `Opa caiu um arquivo, voltando... (${pct}%)`;
       } else {
-        pct = Math.min(88, pct + Math.floor(Math.random() * 9) + 4);
+        pct = Math.min(85, pct + Math.floor(Math.random() * 8) + 4);
         if (statusEl) statusEl.textContent = `Improvisando colisão 2D nas coxas... (${pct}%)`;
       }
-    } else if (dialogueDone && pct < 100) {
-      pct = Math.min(100, pct + 6);
-      if (statusEl) statusEl.textContent = `Abrindo alçapão do subsolo... (${pct}%)`;
-    } else if (!dialogueDone) {
-      if (statusEl) statusEl.textContent = `Aguardando resfriamento em 69% (nice)...`;
+    } else if (!readyToTransition) {
       pct = 69;
+      if (statusEl) statusEl.textContent = `Aguardando em 69% (nice)...`;
+    } else if (pct < 100) {
+      pct = Math.min(100, pct + 10);
+      if (statusEl) statusEl.textContent = `Abrindo alçapão do subsolo... (${pct}%)`;
     }
 
     if (barEl) barEl.style.width = `${pct}%`;
 
-    if (pct >= 100 && dialogueDone) {
+    if (pct >= 100 && readyToTransition) {
       clearInterval(progInt);
-      await sleep(600);
-      await apiPost('/api/finish-loading');
-      renderSubsolo2DScreen();
+      if (replyIdleTimer) clearTimeout(replyIdleTimer);
+      const st = await apiPost('/api/finish-loading');
+      renderSubsolo2DScreen(st);
     }
-  }, 1500);
+  }, 1300);
 
-  // Roteiro de bate-boca interativo durante o loading porco!
+  const armReplyIdle = (msg) => {
+    if (replyIdleTimer) clearTimeout(replyIdleTimer);
+    replyIdleTimer = setTimeout(() => {
+      appendChat('op', msg);
+    }, 13000);
+  };
+
   (async () => {
-    await sleep(600);
-    await appendChat('op', 'pqp... por um segundo achei que vc ia fritar a memória inteira lá em cima.');
-    await sleep(600);
+    await sleep(500);
+    if (forcedByOperator || latestState?.forcedSubsolo) {
+      await appendChat('op', 'se eu não digito "subsolo" por vc a gente tinha virado carvão né seu lerdo do caralho.');
+    } else {
+      await appendChat('op', 'pqp... por um segundo achei que vc ia fritar a memória inteira lá em cima.');
+    }
+    await sleep(500);
     await appendChat('op', 'quem em sã consciência vê um número de temperatura quieto e taca no talo, mano??');
 
     const askRound1 = () => {
@@ -1562,20 +1693,23 @@ function renderShittyLoadingScreen() {
         <button class="loading-reply-btn" data-r="1">Você que deixou destravado ué</button>
         <button class="loading-reply-btn" data-r="2">Que tela de loading horrível é essa?</button>
       `;
+      armReplyIdle('ficou mudo pq? o fogo queimou tua língua tbm? clica numa resposta aí pô.');
+
       repliesEl.querySelectorAll('button').forEach((b) => {
         b.addEventListener('click', async () => {
+          if (replyIdleTimer) clearTimeout(replyIdleTimer);
           const r = b.getAttribute('data-r');
           repliesEl.innerHTML = '';
           if (r === '1') {
             await appendChat('you', 'você que deixou destravado lá no widget ué');
-            await sleep(500);
-            await appendChat('op', 'era um png estático que eu fiz na pressa cara!! não achei que um psicopata ia clicar no número dos graus!');
+            await sleep(450);
+            await appendChat('op', 'era um widget porqueira que eu copiei na pressa cara!! não achei que um psicopata ia clicar nos graus!');
           } else {
             await appendChat('you', 'que tela de loading horrível é essa kkkkk');
-            await sleep(500);
-            await appendChat('op', 'ah foi mal aí senhor diretor de arte da pixar, fiz essa tela em 15 segundos enquanto TUDO PEGAVA FOGO lá atrás!');
+            await sleep(450);
+            await appendChat('op', 'ah foi mal aí diretor de arte da pixar, fiz essa janela em 15 segundos enquanto TUDO PEGAVA FOGO lá atrás!');
           }
-          await sleep(700);
+          await sleep(800);
           askRound2();
         });
       });
@@ -1586,23 +1720,28 @@ function renderShittyLoadingScreen() {
         <button class="loading-reply-btn" data-r="a">O que tem nesse tal de subsolo?</button>
         <button class="loading-reply-btn" data-r="b">Então tinha mais coisa escondida sim né?</button>
       `;
+      armReplyIdle('tá dormindo na frente do monitor mano? escolhe logo aí.');
+
       repliesEl.querySelectorAll('button').forEach((b) => {
         b.addEventListener('click', async () => {
+          if (replyIdleTimer) clearTimeout(replyIdleTimer);
           const r = b.getAttribute('data-r');
           repliesEl.innerHTML = '';
           if (r === 'a') {
             await appendChat('you', 'o que tem nesse tal de subsolo?');
-            await sleep(500);
-            await appendChat('op', 'cano velho, goteira, ferrugem e zero botão dourado pra vc ficar clicando.');
+            await sleep(450);
+            await appendChat('op', 'cano velho, ralo entupido, mau contato na luz e zero botão dourado pra vc ficar clicando.');
           } else {
             await appendChat('you', 'então tinha mais coisa escondida no site sim né?');
-            await sleep(500);
-            await appendChat('op', 'não é "fase secreta" seu nóia, é literalmente o porão onde fica a tubulação velha dessa merda!');
+            await sleep(450);
+            await appendChat('op', 'não é "fase secreta" seu nóia, é literalmente o porão onde passa a tubulação velha dessa merda!');
           }
-          await sleep(700);
-          await appendChat('op', 'ó, vai abrir aí. não encosta em NENHUMA válvula lá embaixo, tá me ouvindo?');
-          dialogueDone = true;
-          pct = Math.max(pct, 90);
+          await sleep(800);
+          await appendChat('op', 'ó, terminou de carregar. não encosta na torneira nem no terminal lá embaixo, tá me ouvindo?');
+          // Espera 4.2 segundos inteiros DEPOIS que ele termina de escrever pra você conseguir ler tranquilo!
+          await sleep(4200);
+          readyToTransition = true;
+          pct = 90;
         });
       });
     };
@@ -1611,9 +1750,77 @@ function renderShittyLoadingScreen() {
   })();
 }
 
-// NOVO AMBIENTE 2D: O SUBSOLO (Canvas 2D interativo com física de gotas d'água, brasas caindo do teto queimado e válvulas!)
-function renderSubsolo2DScreen() {
+// ============================================================================
+// AMBIENTE 2D DETALHADO: O SUBSOLO + ENIGMA MORSE + ÁGUA/FAÍSCA/RALO/VAPOR + LÂMPADA!
+// ============================================================================
+/*
+ * COMO FUNCIONA O ENIGMA DO PORÃO:
+ * 1. A lâmpada do teto pisca ciclicamente em Código Morse: 7 (--...)  4 (....-)  2 (..---) -> 742
+ * 2. Se abrir a válvula vermelha e DEIXAR ABERTA, a água enche o piso mais rápido do que o ralo no centro escoa.
+ * 3. Quando a poça d'água alcança a zona onde caem as faíscas do teto, sobe VAPOR denso!
+ * 4. Depois de alguns segundos de vapor contínuo, o quadro de vidro na parede embaça e revela escrito a dedo:
+ *      "ESPELHE A LUZ
+ *       - OS CANOS"
+ *    (Se fechar a torneira, a água desce pelo ralo e o vapor/texto some aos poucos!)
+ * 5. Espelhar 742 = 247. Na parede existem 3 canos verticais numerados (I, II, III) -> 247 - 3 = 244!
+ * 6. Ao digitar 244 no Terminal, dá "FALHA: LUZ NO SENSOR ÓPTICO" se a lâmpada estiver inteira!
+ *    O jogador precisa clicar 3x na lâmpada pendurada até ESTILHAÇAR ela, deixando o porão no escuro, e confirmar 244!
+ */
+const MORSE_TIMELINE = (() => {
+  // 7 = --... | 4 = ....- | 2 = ..--- (tempos claros e legíveis!)
+  const digits = ['--...', '....-', '..---'];
+  const seq = [];
+  digits.forEach((pattern, dIdx) => {
+    for (let i = 0; i < pattern.length; i++) {
+      const isDash = pattern[i] === '-';
+      seq.push({ on: true, ms: isDash ? 620 : 210 }); // traço longo vs ponto curto bem nítido
+      if (i < pattern.length - 1) seq.push({ on: false, ms: 220 }); // pausa entre pulsos do mesmo número
+    }
+    if (dIdx < digits.length - 1) {
+      seq.push({ on: false, ms: 950 }); // pausa média entre um dígito e outro
+    }
+  });
+  seq.push({ on: false, ms: 2600 }); // pausa longa de apagão antes de repetir o ciclo 7 - 4 - 2!
+  return seq;
+})();
+
+const MORSE_TOTAL_MS = MORSE_TIMELINE.reduce((acc, s) => acc + s.ms, 0);
+
+function getMorseLampState(nowMs) {
+  let t = nowMs % MORSE_TOTAL_MS;
+  for (const step of MORSE_TIMELINE) {
+    if (t < step.ms) return step.on;
+    t -= step.ms;
+  }
+  return false;
+}
+
+function playGlassShatterSound() {
+  try {
+    const ctx = ensureAudio();
+    const bufferSize = ctx.sampleRate * 0.28;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.06));
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 1600;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.25;
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start();
+  } catch {}
+}
+
+function renderSubsolo2DScreen(initialState = null) {
   clearTimers();
+  if (initialState) latestState = initialState;
   currentStage = 'subsolo_2d';
   document.body.className = 'subsolo-mode awakened-cursors';
   resetFaviconAndTitle('naoclique.net // subsolo');
@@ -1635,192 +1842,568 @@ function renderSubsolo2DScreen() {
   `;
 
   setOperatorRemark(
-    'chegamo. tá vendo o teto pingando faísca ali em cima? é o teu papel de parede de creche terminando de queimar no andar de cima. fica quietinho aí enquanto eu apago o incêndio.',
-    { delayBefore: 500 }
+    'chegamo. tá vendo o teto soltando faísca ali? é o teu incêndio lá de cima. fica quieto aí no canto enquanto eu resolvo essa bagunça.',
+    { delayBefore: 400 }
   );
+  resetIdleChillTimer();
 
   const canvas = document.getElementById('subsolo-canvas');
   const ctx = canvas?.getContext('2d');
   if (!canvas || !ctx) return;
 
-  // Partículas 2D do ambiente (gotas d'água pingando do cano esquerdo + brasas quentes caindo da rachadura do teto)
+  // Pré-gera tijolos irregulares da parede do porão para um visual 2D rico e detalhado!
+  const bricks = [];
+  for (let row = 0; row < 12; row++) {
+    const y = 26 + row * 32;
+    const offset = (row % 2) * 34;
+    for (let col = -1; col < 14; col++) {
+      const x = col * 68 + offset;
+      const shade = 18 + ((row * 7 + col * 13) % 9);
+      bricks.push({ x, y, w: 64, h: 28, color: `rgb(${shade}, ${shade + 4}, ${shade + 11})` });
+    }
+  }
+
   const drops = [];
   const sparks = [];
+  const steamClouds = [];
+  const glassShards = [];
+
   let valveAngle = 0;
   let valveOpen = false;
-  let lightFlicker = 1;
+  let waterLevel = 0; // 0 a 100 (sobe quando a torneira está aberta, desce pelo ralo sempre!)
+  let glassFog = 0; // 0 a 1 (só sobe quando tem água suficiente batendo nas faíscas gerando vapor!)
+  let lampHits = latestState?.lampBroken ? 3 : 0;
+  let lampBroken = Boolean(latestState?.lampBroken);
+  let lampSwing = 0;
+  let lampSwingVel = 0;
+  let hintedSteamOnce = false;
+  const morseStartOffset = performance.now();
 
-  // Clique interativo na válvula vermelha dentro do Canvas 2D!
-  canvas.addEventListener('click', (ev) => {
+  function openTerminalKeypad() {
+    if (document.getElementById('keypad-backdrop')) return;
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'keypad-backdrop';
+    backdrop.className = 'keypad-backdrop';
+    backdrop.innerHTML = `
+      <div class="keypad-box">
+        <div class="keypad-screen" id="kp-screen">_ _ _</div>
+        <div class="keypad-grid">
+          ${[1, 2, 3, 4, 5, 6, 7, 8, 9]
+            .map((n) => `<button type="button" class="keypad-key" data-k="${n}">${n}</button>`)
+            .join('')}
+          <button type="button" class="keypad-key clear" data-k="C">CLR</button>
+          <button type="button" class="keypad-key" data-k="0">0</button>
+          <button type="button" class="keypad-key confirm" data-k="OK">OK</button>
+        </div>
+        <button type="button" class="keypad-close" id="kp-close">Largá mão e fechar</button>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    let typed = '';
+    const scr = document.getElementById('kp-screen');
+    const updateScr = () => {
+      if (!scr) return;
+      scr.classList.remove('err');
+      scr.textContent = typed.padEnd(3, '_').split('').join(' ');
+    };
+
+    backdrop.querySelectorAll('.keypad-key').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        resetIdleChillTimer();
+        const k = btn.getAttribute('data-k');
+        playCheapBeep();
+
+        if (k === 'C') {
+          typed = '';
+          updateScr();
+          return;
+        }
+        if (k === 'OK') {
+          if (!typed) return;
+          const res = await apiPost('/api/subsolo/unlock', { code: typed });
+          if (!res) return;
+
+          if (res.ok) {
+            scr.classList.remove('err');
+            scr.textContent = res.screenMsg;
+            if (res.remark) setOperatorRemark(res.remark, { priority: 'urgent' });
+            setTimeout(() => {
+              backdrop.remove();
+              renderDeepSectorScreen();
+            }, 2200);
+          } else {
+            scr.classList.add('err');
+            scr.textContent = res.screenMsg || 'NEGADO';
+            flashCursorMood(res.errorType === 'glare' ? 'point' : 'middle', 2200);
+            if (res.remark) setOperatorRemark(res.remark, { priority: 'action' });
+            typed = '';
+          }
+          return;
+        }
+
+        if (typed.length < 4) {
+          typed += k;
+          updateScr();
+        }
+      });
+    });
+
+    document.getElementById('kp-close')?.addEventListener('click', () => backdrop.remove());
+  }
+
+  canvas.addEventListener('click', async (ev) => {
+    resetIdleChillTimer();
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const mx = (ev.clientX - rect.left) * scaleX;
-    const my = (ev.clientY - rect.top) * scaleY;
+    const mx = ((ev.clientX - rect.left) * canvas.width) / rect.width;
+    const my = ((ev.clientY - rect.top) * canvas.height) / rect.height;
 
-    // Coordenada da roda da válvula vermelha (x=155, y=220, r=32)
-    const distValve = Math.hypot(mx - 155, my - 220);
-    if (distValve <= 36) {
+    // 1. Clicou no Registro / Válvula Vermelha (x=130, y=225)
+    if (Math.hypot(mx - 130, my - 225) <= 36) {
       valveOpen = !valveOpen;
       playCheapBeep();
-      flashCursorMood(valveOpen ? 'middle' : 'thumb', 1800);
+      flashCursorMood(valveOpen ? 'stop' : 'thumb', 1600);
       setOperatorRemark(
         valveOpen
-          ? 'EU ACABEI DE FALAR PRA NÃO GIRAR A PORRA DA VÁLVULA!! vai alagar o quadro elétrico ali embaixo!'
-          : 'isso, deixa fechada quietinha.',
-        { delayBefore: 100 }
+          ? 'mano fecha essa torneira, se juntar água demais no chão antes de descer pelo ralo vai fazer uma fumaceira com essas faíscas!'
+          : 'isso, deixa o registro fechado e a água escoar pro ralo.',
+        { priority: 'action' }
       );
+      return;
     }
 
-    // Coordenada do Painel Trancado na direita (x=640..760, y=190..330)
-    if (mx >= 640 && mx <= 760 && my >= 190 && my <= 330) {
-      flashCursorMood('stop', 1800);
-      setOperatorRemark('nem vem fuçar nesse terminal trancado aí do canto, a senha nem tá ligada ainda.', {
-        delayBefore: 100,
-      });
+    // 2. Clicou na Lâmpada Pendurada no Teto (x=420, y=74) -> Balança e no 3º golpe ESTILHAÇA!
+    if (!lampBroken && Math.hypot(mx - 420, my - 74) <= 34) {
+      lampHits += 1;
+      lampSwingVel = (mx < 420 ? 1 : -1) * 0.14;
+      playCheapBeep();
+
+      if (lampHits === 1) {
+        setOperatorRemark('tá dando peteleco na lâmpada pq? ela já tá piscando toda ferrada sozinha!', {
+          priority: 'action',
+        });
+      } else if (lampHits === 2) {
+        setOperatorRemark('ei!! vai trincar o vidro dessa merda se bater de novo, para!!', {
+          priority: 'action',
+        });
+      } else if (lampHits >= 3) {
+        lampBroken = true;
+        playGlassShatterSound();
+        for (let i = 0; i < 18; i++) {
+          glassShards.push({
+            x: 420 + (Math.random() * 16 - 8),
+            y: 74,
+            vx: Math.random() * 6 - 3,
+            vy: Math.random() * 2,
+          });
+        }
+        const res = await apiPost('/api/subsolo/break-lamp');
+        flashCursorMood('middle', 2600);
+        if (res?.remark) setOperatorRemark(res.remark, { priority: 'urgent' });
+      }
+      return;
+    }
+
+    // 3. Clicou no Quadro de Vidro na parede (x=455..605, y=155..275)
+    if (mx >= 455 && mx <= 605 && my >= 155 && my <= 275) {
+      setOperatorRemark(
+        glassFog > 0.45
+          ? 'que rabisco é esse aparecendo no vidro sujo com o vapor??'
+          : 'é só um vidro velho engordurado na parede, não dá pra ver nada nele seco.',
+        { priority: 'action' }
+      );
+      return;
+    }
+
+    // 4. Clicou no Terminal Trancado na parede direita (x=665..780, y=185..335)
+    if (mx >= 665 && mx <= 780 && my >= 185 && my <= 335) {
+      openTerminalKeypad();
     }
   });
 
   const loop = () => {
     if (currentStage !== 'subsolo_2d') return;
 
-    // Fundo de concreto escuro úmido 2D
-    ctx.fillStyle = '#10131a';
+    const now = performance.now();
+    const morseOn = !lampBroken && getMorseLampState(now - morseStartOffset);
+
+    // Balanço físico do pendente da lâmpada
+    lampSwing += lampSwingVel;
+    lampSwingVel -= lampSwing * 0.04;
+    lampSwingVel *= 0.94;
+    const lampX = 420 + Math.sin(lampSwing) * 28;
+    const lampY = 72;
+
+    // 1. PAREDE DE TIJOLOS ESCUROS DETALHADA
+    ctx.fillStyle = '#0c0f15';
     ctx.fillRect(0, 0, 840, 460);
 
-    // Tijolos / linhas sutis no fundo
-    ctx.strokeStyle = '#191e29';
-    ctx.lineWidth = 1;
-    for (let y = 40; y < 410; y += 36) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(840, y);
-      ctx.stroke();
+    for (const b of bricks) {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.025)';
+      ctx.fillRect(b.x, b.y, b.w, 2);
     }
 
-    // Chão metálico do subsolo
-    ctx.fillStyle = '#1b202b';
-    ctx.fillRect(0, 410, 840, 50);
-    ctx.fillStyle = '#2d3546';
-    ctx.fillRect(0, 410, 840, 5);
-
-    // Lâmpada pendurada no centro com cone de luz piscando levemente
-    if (Math.random() < 0.04) lightFlicker = 0.55 + Math.random() * 0.45;
-    else lightFlicker += (1 - lightFlicker) * 0.15;
-
-    ctx.strokeStyle = '#444';
-    ctx.lineWidth = 3;
+    // Manchas escuras de umidade nas paredes
+    ctx.fillStyle = 'rgba(6, 10, 16, 0.55)';
     ctx.beginPath();
-    ctx.moveTo(420, 0);
-    ctx.lineTo(420, 58);
-    ctx.stroke();
-
-    const grad = ctx.createRadialGradient(420, 68, 8, 420, 220, 290);
-    grad.addColorStop(0, `rgba(255, 220, 140, ${0.24 * lightFlicker})`);
-    grad.addColorStop(1, 'rgba(16, 19, 26, 0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(100, 50, 640, 360);
-
-    ctx.fillStyle = `rgba(255, 230, 150, ${lightFlicker})`;
-    ctx.beginPath();
-    ctx.arc(420, 64, 9, 0, Math.PI * 2);
+    ctx.ellipse(220, 340, 95, 55, 0, 0, Math.PI * 2);
+    ctx.ellipse(560, 360, 110, 45, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tubulação hidráulica à esquerda + Válvula Vermelha
-    ctx.fillStyle = '#3a4659';
-    ctx.fillRect(143, 0, 24, 280);
-    ctx.fillRect(143, 268, 120, 22);
+    // Viga de concreto superior (teto do porão)
+    ctx.fillStyle = '#181d27';
+    ctx.fillRect(0, 0, 840, 26);
+    ctx.fillStyle = '#0f131a';
+    ctx.fillRect(0, 24, 840, 4);
 
-    if (valveOpen) valveAngle += 0.08;
+    // 2. OS 3 CANOS VERTICAIS NUMERADOS DA PAREDE (Pista "OS CANOS" = 3!)
+    const pipeXs = [68, 130, 295];
+    pipeXs.forEach((px, idx) => {
+      // Sombra projetada do cano
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(px - 7, 26, 24, 378);
+
+      // Corpo cilíndrico metálico com brilho lateral
+      const pGrad = ctx.createLinearGradient(px - 11, 0, px + 11, 0);
+      pGrad.addColorStop(0, '#252f3f');
+      pGrad.addColorStop(0.4, '#4b5b73');
+      pGrad.addColorStop(1, '#1d2532');
+      ctx.fillStyle = pGrad;
+      const pipeH = idx === 1 ? 255 : 378;
+      ctx.fillRect(px - 11, 26, 22, pipeH);
+
+      // Flanges / abraçadeiras com rebites
+      [95, 190, 320].forEach((fy) => {
+        if (fy < pipeH + 20) {
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(px - 14, fy, 28, 8);
+        }
+      });
+
+      // Plaquinha discreta "I", "II", "III" em cada um dos 3 canos
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText(['I', 'II', 'III'][idx], px - 4, 135);
+    });
+
+    // Cotovelo horizontal da torneira saindo do Cano II (x=130 -> bico em x=235, y=282)
+    ctx.fillStyle = '#3b495e';
+    ctx.fillRect(119, 268, 122, 18);
+    ctx.fillRect(227, 268, 16, 28); // bico virado pra baixo
+
+    // Manômetro de pressão acima da válvula no Cano II
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(130, 162, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(130, 162);
+    const needleAng = valveOpen ? -0.3 + Math.random() * 0.25 : -2.2;
+    ctx.lineTo(130 + Math.cos(needleAng) * 10, 162 + Math.sin(needleAng) * 10);
+    ctx.stroke();
+
+    // Roda da Válvula Vermelha (x=130, y=225)
+    if (valveOpen) valveAngle += 0.07;
     ctx.save();
-    ctx.translate(155, 220);
+    ctx.translate(130, 225);
     ctx.rotate(valveAngle);
     ctx.strokeStyle = '#dc2626';
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.arc(0, 0, 23, 0, Math.PI * 2);
     ctx.stroke();
+    for (let r = 0; r < 4; r++) {
+      ctx.beginPath();
+      ctx.rotate(Math.PI / 4);
+      ctx.moveTo(-23, 0);
+      ctx.lineTo(23, 0);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#7f1d1d';
     ctx.beginPath();
-    ctx.moveTo(-24, 0);
-    ctx.lineTo(24, 0);
-    ctx.moveTo(0, -24);
-    ctx.lineTo(0, 24);
-    ctx.stroke();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 
-    // Rachadura quente no teto (de onde caem brasas do andar de cima que pegou fogo!)
-    ctx.strokeStyle = '#ff5400';
-    ctx.lineWidth = 3;
+    // 3. QUADRO DE VIDRO / ESPELHO DE INSPEÇÃO NA PAREDE (x=460..605, y=160..272)
+    ctx.fillStyle = '#27303f';
+    ctx.fillRect(454, 154, 157, 124);
+    ctx.fillStyle = '#141c26';
+    ctx.fillRect(462, 162, 141, 108);
+
+    // Reflexo sutil diagonal do vidro seco
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(350, 2);
-    ctx.lineTo(380, 14);
-    ctx.lineTo(405, 6);
-    ctx.lineTo(435, 16);
+    ctx.moveTo(472, 258);
+    ctx.lineTo(525, 172);
     ctx.stroke();
 
-    // Painel / Terminal Trancado na parede direita (pronto pros nossos próximos enigmas!)
-    ctx.fillStyle = '#232936';
-    ctx.strokeStyle = '#4b5563';
-    ctx.lineWidth = 3;
-    ctx.fillRect(650, 200, 105, 130);
-    ctx.strokeRect(650, 200, 105, 130);
-    ctx.fillStyle = '#091914';
-    ctx.fillRect(664, 216, 77, 44);
-    ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText('TRANCADO', 673, 242);
-    // Luzinha vermelha de bloqueio
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(702, 292, 6, 0, Math.PI * 2);
-    ctx.fill();
+    // Camada de VAPOR condensado no vidro (só aparece conforme glassFog > 0!)
+    if (glassFog > 0.02) {
+      ctx.fillStyle = `rgba(205, 224, 238, ${0.42 * glassFog})`;
+      ctx.fillRect(462, 162, 141, 108);
 
-    // Física 2D: Gotas d'água saindo do cano (goteira lenta se fechado, jato d'água se abriu a válvula!)
-    if (Math.random() < (valveOpen ? 0.55 : 0.035)) {
-      drops.push({
-        x: 263 + (Math.random() * 6 - 3),
-        y: 290,
-        vx: valveOpen ? 1.5 + Math.random() * 2.2 : 0,
-        vy: 1,
-      });
+      // Quando embaça bem (> 0.35), revela a pista escrita a dedo no vidro!
+      if (glassFog > 0.35) {
+        const textAlpha = Math.min(1, (glassFog - 0.35) / 0.45);
+        ctx.save();
+        ctx.fillStyle = `rgba(18, 26, 36, ${0.92 * textAlpha})`;
+        ctx.font = 'bold 13px "Comic Sans MS", cursive, monospace';
+        ctx.fillText('ESPELHE A LUZ', 478, 206);
+        ctx.fillText('MENOS OS CANOS', 473, 234);
+        ctx.restore();
+      }
     }
 
+    // 4. PAINEL / TERMINAL DE SEGURANÇA NA DIREITA (x=670..775, y=190..330)
+    ctx.fillStyle = '#1f2633';
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 3;
+    ctx.fillRect(670, 190, 106, 138);
+    ctx.strokeRect(670, 190, 106, 138);
+
+    // Visor iluminado próprio (continua aceso no escuro quando quebra a lâmpada!)
+    ctx.fillStyle = '#061a14';
+    ctx.fillRect(684, 206, 78, 42);
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('PAINEL #02', 690, 224);
+    ctx.fillStyle = morseOn ? '#fbbf24' : '#34d399';
+    ctx.fillText(morseOn ? '[REFLEXO!]' : '[DIGITAR]', 692, 240);
+
+    // Teclinhas desenhadas no painel
+    ctx.fillStyle = '#334155';
+    for (let kr = 0; kr < 3; kr++) {
+      for (let kc = 0; kc < 3; kc++) {
+        ctx.fillRect(690 + kc * 24, 260 + kr * 16, 18, 11);
+      }
+    }
+
+    // 5. CHÃO DE CONCRETO + RALO DE ESCOAMENTO NO CENTRO (x=375..435)
+    ctx.fillStyle = '#151922';
+    ctx.fillRect(0, 404, 840, 56);
+    ctx.fillStyle = '#262f3f';
+    ctx.fillRect(0, 404, 840, 4);
+
+    // Grade do Ralo no piso (x=378..434, y=404)
+    ctx.fillStyle = '#090b10';
+    ctx.fillRect(378, 404, 56, 10);
+    ctx.fillStyle = '#475569';
+    for (let gx = 384; gx <= 428; gx += 9) {
+      ctx.fillRect(gx, 404, 4, 10);
+    }
+
+    // 6. FÍSICA DA POÇA D'ÁGUA + RALO + FAÍSCAS = VAPOR!
+    // Se a torneira está aberta, entra água (+0.34/frame); o ralo SEMPRE drena (-0.16/frame)!
+    if (valveOpen) {
+      waterLevel = Math.min(100, waterLevel + 0.34);
+    } else {
+      waterLevel = Math.max(0, waterLevel - 0.22);
+    }
+
+    if (waterLevel > 1) {
+      // A poça se espalha debaixo do bico (x=235) até passar pela zona de faíscas (x=380..490) e o ralo!
+      const puddleWidth = 50 + waterLevel * 4.1;
+      const puddleHeight = Math.min(12, 2 + waterLevel * 0.1);
+      const puddleGrad = ctx.createLinearGradient(0, 404 - puddleHeight, 0, 408);
+      puddleGrad.addColorStop(0, 'rgba(56, 189, 248, 0.55)');
+      puddleGrad.addColorStop(1, 'rgba(14, 116, 144, 0.8)');
+      ctx.fillStyle = puddleGrad;
+      ctx.beginPath();
+      ctx.ellipse(235 + puddleWidth * 0.32, 405, puddleWidth * 0.65, puddleHeight, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Se a poça passou de 48% (água chegou na zona onde as brasas quentes caem em x=460..520!): GERA VAPOR!
+    const isSteaming = waterLevel >= 48;
+    if (isSteaming) {
+      glassFog = Math.min(1, glassFog + 0.0045); // precisa ficar ligado um tempinho pra embaçar o vidro!
+      if (!hintedSteamOnce && glassFog > 0.5) {
+        hintedSteamOnce = true;
+        setOperatorRemark('ó a merda que eu falei, a água bateu nas brasas e tá embaçando o vidro todo ali!', {
+          priority: 'ambient',
+        });
+      }
+      if (Math.random() < 0.45) {
+        steamClouds.push({
+          x: 475 + Math.random() * 75,
+          y: 398,
+          r: 8 + Math.random() * 10,
+          vy: -0.9 - Math.random() * 0.8,
+          vx: Math.random() * 0.6 - 0.3,
+          alpha: 0.36,
+        });
+      }
+    } else {
+      // Quando fecha a torneira e a água desce pelo ralo, o vapor para e o vidro desembaça!
+      glassFog = Math.max(0, glassFog - 0.0038);
+    }
+
+    // Desenha nuvens suaves de vapor subindo até o vidro
+    for (let i = steamClouds.length - 1; i >= 0; i--) {
+      const st = steamClouds[i];
+      st.x += st.vx;
+      st.y += st.vy;
+      st.r += 0.22;
+      st.alpha -= 0.0028;
+      if (st.alpha <= 0 || st.y < 120) {
+        steamClouds.splice(i, 1);
+        continue;
+      }
+      ctx.fillStyle = `rgba(226, 232, 240, ${st.alpha})`;
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Gotas saindo do bico da torneira (x=235, y=296)
+    if (Math.random() < (valveOpen ? 0.75 : 0.03)) {
+      drops.push({
+        x: 235 + (Math.random() * 5 - 2.5),
+        y: 296,
+        vx: valveOpen ? 0.4 + Math.random() * 0.8 : 0,
+        vy: valveOpen ? 2.8 : 1.0,
+      });
+    }
     ctx.fillStyle = '#38bdf8';
     for (let i = drops.length - 1; i >= 0; i--) {
       const d = drops[i];
       d.x += d.vx;
       d.y += d.vy;
-      d.vy += 0.32;
+      d.vy += 0.34;
       ctx.beginPath();
-      ctx.arc(d.x, d.y, 3.5, 0, Math.PI * 2);
+      ctx.arc(d.x, d.y, 3.2, 0, Math.PI * 2);
       ctx.fill();
-      if (d.y >= 408) drops.splice(i, 1);
+      if (d.y >= 404) drops.splice(i, 1);
     }
 
-    // Física 2D: Faíscas/brasas caindo da rachadura do teto
-    if (Math.random() < 0.12) {
+    // Rachadura incandescente no teto (x=465..540) pingando brasas bem embaixo do quadro de vidro!
+    ctx.strokeStyle = '#fb923c';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(468, 25);
+    ctx.lineTo(492, 33);
+    ctx.lineTo(515, 27);
+    ctx.lineTo(542, 35);
+    ctx.stroke();
+
+    if (Math.random() < 0.16) {
       sparks.push({
-        x: 355 + Math.random() * 75,
-        y: 14,
-        vx: Math.random() * 1.4 - 0.7,
-        vy: 1 + Math.random() * 1.5,
+        x: 472 + Math.random() * 65,
+        y: 32,
+        vx: Math.random() * 1.2 - 0.6,
+        vy: 1.4 + Math.random() * 1.6,
       });
     }
-
-    ctx.fillStyle = '#fb923c';
+    ctx.fillStyle = '#f97316';
     for (let i = sparks.length - 1; i >= 0; i--) {
       const s = sparks[i];
       s.x += s.vx;
       s.y += s.vy;
-      s.vy += 0.12;
+      s.vy += 0.14;
       ctx.fillRect(s.x, s.y, 3, 3);
-      if (s.y >= 408) sparks.splice(i, 1);
+      if (s.y >= 403) sparks.splice(i, 1);
+    }
+
+    // Cacos de vidro caindo caso acabou de quebrar a lâmpada
+    ctx.fillStyle = '#fef08a';
+    for (let i = glassShards.length - 1; i >= 0; i--) {
+      const g = glassShards[i];
+      g.x += g.vx;
+      g.y += g.vy;
+      g.vy += 0.35;
+      ctx.fillRect(g.x, g.y, 4, 4);
+      if (g.y >= 405) glassShards.splice(i, 1);
+    }
+
+    // 7. FIO PENDENTE + CÚPULA INDUSTRIAL + ILUMINAÇÃO RADIAL 100% CIRCULAR (ZERO CORTE RETO EM CIMA!)
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(420, 24);
+    ctx.lineTo(lampX, lampY - 12);
+    ctx.stroke();
+
+    // Cúpula metálica da lâmpada
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(lampX - 22, lampY - 2);
+    ctx.lineTo(lampX + 22, lampY - 2);
+    ctx.lineTo(lampX + 10, lampY - 14);
+    ctx.lineTo(lampX - 10, lampY - 14);
+    ctx.closePath();
+    ctx.fill();
+
+    if (!lampBroken) {
+      // Bulbo da lâmpada
+      ctx.fillStyle = morseOn ? '#fef08a' : '#475569';
+      ctx.beginPath();
+      ctx.arc(lampX, lampY + 5, 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      // HALO CIRCULAR COMPLETO (Desenhado em 0,0,840,460 inteiro para NUNCA cortar linha reta no topo!)
+      if (morseOn) {
+        const halo = ctx.createRadialGradient(lampX, lampY + 6, 4, lampX, lampY + 6, 360);
+        halo.addColorStop(0, 'rgba(254, 240, 138, 0.34)');
+        halo.addColorStop(0.35, 'rgba(253, 224, 71, 0.12)');
+        halo.addColorStop(1, 'rgba(253, 224, 71, 0)');
+        ctx.fillStyle = halo;
+        ctx.fillRect(0, 0, 840, 460);
+      }
+    } else {
+      // Soquete quebrado + escuridão densa no porão (deixando só o visor verde do painel brilhar!)
+      ctx.fillStyle = 'rgba(3, 5, 9, 0.62)';
+      ctx.fillRect(0, 0, 840, 460);
+
+      const termGlow = ctx.createRadialGradient(723, 227, 6, 723, 227, 130);
+      termGlow.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+      termGlow.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      ctx.fillStyle = termGlow;
+      ctx.fillRect(0, 0, 840, 460);
     }
 
     subsoloRaf = requestAnimationFrame(loop);
   };
 
   subsoloRaf = requestAnimationFrame(loop);
+}
+
+// Tela de chegada após abrir a comporta do Subsolo (Gancho pro próximo Capítulo!)
+function renderDeepSectorScreen() {
+  clearTimers();
+  currentStage = 'deep_sector';
+  document.body.className = 'subsolo-mode awakened-cursors';
+  resetFaviconAndTitle('naoclique.net // nível -2');
+
+  const app = document.getElementById('app');
+  app.style.visibility = 'visible';
+
+  app.innerHTML = `
+    <div class="subsolo-shell" style="text-align:center; padding:40px 20px;">
+      <div class="operator-feed" style="text-align:left;">
+        <span class="operator-tag">log</span>
+        <span id="operator-msg"></span>
+      </div>
+      <div style="margin-top:48px; border:2px dashed #334155; padding:40px; background:#0f131a;">
+        <h2 style="color:#34d399; margin:0 0 12px;">🔓 COMPORTA DO SUBSOLO ABERTA (SENHA 244)</h2>
+        <p style="color:#94a3b8; font-size:14px;">Fim do bloco atual — pronto para construirmos o próximo nível!</p>
+      </div>
+    </div>
+  `;
+
+  setOperatorRemark(
+    '...mano. vc leu código morse numa lâmpada velha, usou vapor pra ler o vidro e ainda estourou minha luz no soco. quem caralhos é vc??',
+    { delayBefore: 400, priority: 'urgent' }
+  );
 }
 
 // ============================================================================
@@ -1909,9 +2492,12 @@ async function init() {
   } else if (data.stage === 'shape_test') {
     renderShapeTestScreen();
   } else if (data.stage === 'shitty_loading') {
-    renderShittyLoadingScreen();
+    latestState = data;
+    renderShittyLoadingScreen({ forcedByOperator: Boolean(data.forcedSubsolo) });
   } else if (data.stage === 'subsolo_2d') {
-    renderSubsolo2DScreen();
+    renderSubsolo2DScreen(data);
+  } else if (data.stage === 'deep_sector') {
+    renderDeepSectorScreen();
   } else if (data.stage === 'awakening_error') {
     renderFakeBrowserCrash({
       awakening: true,

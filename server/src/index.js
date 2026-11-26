@@ -232,6 +232,7 @@ function normalizePlayer(player) {
     'awakened_clicker',
     'shitty_loading',
     'subsolo_2d',
+    'deep_sector',
   ];
   if (!validStages.includes(player.stage)) player.stage = 'button';
   if (typeof player.sessionClicks !== 'number') player.sessionClicks = 0;
@@ -241,6 +242,9 @@ function normalizePlayer(player) {
   if (typeof player.temperature !== 'number') player.temperature = 23;
   if (typeof player.postMaxClicks !== 'number') player.postMaxClicks = 0;
   if (typeof player.overheated !== 'boolean') player.overheated = false;
+  if (typeof player.forcedSubsolo !== 'boolean') player.forcedSubsolo = false;
+  if (typeof player.lampBroken !== 'boolean') player.lampBroken = false;
+  if (typeof player.subsoloSolved !== 'boolean') player.subsoloSolved = false;
   if (!Array.isArray(player.upgrades)) player.upgrades = [];
   if (!player.generators || typeof player.generators !== 'object') player.generators = {};
   if (!Array.isArray(player.flags)) player.flags = [];
@@ -423,6 +427,9 @@ function buildClientPayload(player) {
     allOwned: isAllUpgradesOwned(player),
     temperature: player.temperature,
     overheated: player.overheated,
+    forcedSubsolo: player.forcedSubsolo,
+    lampBroken: player.lampBroken,
+    subsoloSolved: player.subsoloSolved,
     minutesPlayed: getMinutesInClicker(player),
     shop: buildShopState(player),
     buttonLabel: 'Botão',
@@ -765,16 +772,19 @@ app.post('/api/set-temperature', (req, res) => {
   player.temperature = clamped;
 
   let remark = null;
+  let remarksBurst = null;
   if (clamped >= 80) {
     player.overheated = true;
-    remark =
-      'PUTA QUE PARIU VC BOTOU ' +
-      clamped +
-      ' GRAUS?! QUEBROU O RELÓGIO E TRAVOU TUDO, VAI DERRETER A PÁGINA INTEIRA!! RÁPIDO, VAMOS SAIR DAQUI, DIGITA subsolo NA BARRA DE PESQUISA E APERTA ENTER AGORA!!';
+    // Em vez de um textão gigante, manda rajadas curtas e rápidas de desespero!
+    remarksBurst = [
+      `PUTA QUE PARIU VC BOTOU ${clamped} GRAUS?!`,
+      'QUEBROU A PORRA DO RELÓGIO, NÃO VOLTA MAIS PRO 23!! VAI DERRETER TUDO!',
+      'RÁPIDO, DIGITA subsolo NA BARRA DE PESQUISA AÍ EM CIMA E APERTA ENTER AGORA!!',
+    ];
   } else if (clamped >= 45) {
-    remark = `tá maluco botando ${clamped} graus aqui dentro?! tá começando a cheirar queimado, volta isso pro 23 seu doente!`;
+    remark = `tá maluco botando ${clamped} graus aqui dentro?! tá cheirando queimado, volta pro 23!`;
   } else if (clamped < 12) {
-    remark = `${clamped} graus? quer congelar a porra dos pombos? para de fuçar nesse número mano`;
+    remark = `${clamped} graus? quer congelar os pombos? para de fuçar nesse número mano`;
   } else if (clamped !== 23) {
     remark = 'ei!! quem mandou clicar na temperatura?? deixa no 23 quieto!';
   }
@@ -785,7 +795,18 @@ app.post('/api/set-temperature', (req, res) => {
     temperature: player.temperature,
     overheated: player.overheated,
     remark,
+    remarksBurst,
   });
+});
+
+// Caso o jogador fique parado olhando pro fogo e NÃO escreva "subsolo", ele mesmo digita à força pra salvar tudo!
+app.post('/api/force-subsolo-escape', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  player.overheated = true;
+  player.forcedSubsolo = true;
+  player.stage = 'shitty_loading';
+  saveDb(db);
+  res.json({ ok: true, stage: 'shitty_loading', forcedSubsolo: true });
 });
 
 // Conclui o Loading Porco e entra oficialmente no Novo Ambiente 2D ("Subsolo")!
@@ -793,7 +814,82 @@ app.post('/api/finish-loading', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.stage = 'subsolo_2d';
   saveDb(db);
-  res.json({ ok: true, stage: 'subsolo_2d' });
+  res.json({ ok: true, ...buildClientPayload(player) });
+});
+
+// Quebrar a lâmpada do Subsolo (necessário para tirar o reflexo de luz do visor sem cortar a energia!)
+app.post('/api/subsolo/break-lamp', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  player.lampBroken = true;
+  saveDb(db);
+  res.json({
+    ok: true,
+    lampBroken: true,
+    remark: 'CARALHO VC ESTOUROU A ÚNICA LÂMPADA DO PORÃO NA PORRADA?! agora fica no escuro aí igual morcego!',
+  });
+});
+
+/*
+ * VALIDAÇÃO DO ENIGMA DO SUBSOLO 2D (100% no servidor para ninguém colar no F12!):
+ * - A lâmpada pisca em Código Morse: 7 (--...)  4 (....-)  2 (..---)  -> 742
+ * - O vapor no vidro (água acumulada + faísca antes de escoar pelo ralo) revela a regra escrita a dedo:
+ *   "ESPELHE A LUZ  E  DESCONTE OS CANOS"
+ *   -> Espelhar 742 = 247
+ *   -> Na parede do porão há exatamente 3 canos verticais numerados/visíveis -> 247 - 3 = 244!
+ * - E o visor do painel exige que a luz do teto esteja apagada (lâmpada quebrada!), senão dá erro de reflexo óptico!
+ */
+app.post('/api/subsolo/unlock', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const code = String(req.body?.code || '').trim();
+
+  if (code === '742') {
+    return res.json({
+      ok: false,
+      errorType: 'raw_morse',
+      screenMsg: 'ERRO: SINAL BRUTO',
+      remark: 'kkkkkk achou msm que era só anotar a piscadinha da lâmpada crua? tá faltando metade do cérebro aí.',
+    });
+  }
+
+  if (code === '247') {
+    return res.json({
+      ok: false,
+      errorType: 'almost',
+      screenMsg: 'ERRO: FALTA AJUSTE',
+      remark: 'espelhou certinho hein... pena que não leu o resto do vidro embaçado.',
+    });
+  }
+
+  if (code !== '244') {
+    return res.json({
+      ok: false,
+      errorType: 'wrong',
+      screenMsg: 'SENHA INCORRETA',
+      remark: `digitou "${code.slice(0, 6)}" no chute? vai ficar tentando até amanhã assim.`,
+    });
+  }
+
+  // Acertou o 244, mas a lâmpada ainda está acesa dando reflexo no sensor óptico do painel!
+  if (!player.lampBroken) {
+    return res.json({
+      ok: false,
+      errorType: 'glare',
+      screenMsg: 'FALHA: LUZ NO SENSOR',
+      remark: 'ih ó lá, o leitor óptico velho tá cego com o reflexo dessa lâmpada na cara dele... e nem tem interruptor nessa bosta.',
+    });
+  }
+
+  // ACERTOU 244 COM A LÂMPADA QUEBRADA NO ESCURO! DESTRAVA A COMPORTA DO SUBSOLO!
+  player.subsoloSolved = true;
+  player.stage = 'deep_sector';
+  saveDb(db);
+
+  return res.json({
+    ok: true,
+    stage: 'deep_sector',
+    screenMsg: 'ACESSO LIBERADO',
+    remark: '...espera. como caralhos vc decifrou isso no escuro?! EI, NÃO ABRE ESSA PORTA DE FERRO NÃO!!',
+  });
 });
 
 app.post('/api/behavior', (req, res) => {
@@ -916,10 +1012,13 @@ if (process.env.NODE_ENV !== 'production') {
     } else if (action === 'goto_shitty_loading') {
       player.stage = 'shitty_loading';
       player.overheated = true;
+      player.forcedSubsolo = false;
       player.temperature = 99;
     } else if (action === 'goto_subsolo') {
       player.stage = 'subsolo_2d';
       player.overheated = true;
+      player.lampBroken = false;
+      player.subsoloSolved = false;
       player.temperature = 99;
     } else if (action === 'add_points_small') {
       player.points = Math.round((player.points + 2500) * 10) / 10;
