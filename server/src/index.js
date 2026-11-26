@@ -111,7 +111,7 @@ function resolvePlayer(req, res, clientMeta = {}) {
   return { db, player };
 }
 
-// Chamado silenciosamente quando a página abre (não revela contagem na UI, só registra visita)
+// Chamado silenciosamente quando a página abre
 app.post('/api/session', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.visits += 1;
@@ -121,8 +121,14 @@ app.post('/api/session', (req, res) => {
     `[VISITA] Jogador ${player.id.slice(0, 8)} | Visitas: ${player.visits} | Cliques acumulados no sistema: ${player.clicks}`
   );
 
-  // Retornamos apenas o token pro client sincronizar, sem expor nada visualmente na tela
-  res.json({ token: player.id });
+  // Servidor decide o texto do botão para ninguém ver a regra antes da hora no código do client:
+  // Antes de 3 cliques: "Botão" | A partir de 3 cliques: "Não clique"
+  const buttonLabel = player.clicks >= 3 ? 'Não clique' : 'Botão';
+
+  res.json({
+    token: player.id,
+    buttonLabel,
+  });
 });
 
 // Chamado exatamente no momento em que o jogador clica no botão
@@ -145,10 +151,17 @@ app.post('/api/click', (req, res) => {
   res.json({ ok: true, token: player.id });
 });
 
-// Rota interna só pra você (dev) inspecionar o estado do servidor em localhost:3001/api/_debug
+// Rotas internas só pra você (dev) inspecionar ou zerar o estado em localhost:3690/api/_debug
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/_debug', (_req, res) => {
     res.json(loadDb());
+  });
+
+  app.get('/api/_reset', (_req, res) => {
+    const empty = { totalGlobalClicks: 0, players: {} };
+    saveDb(empty);
+    res.clearCookie(COOKIE_NAME);
+    res.json({ reset: true, message: 'Cliques zerados para teste!' });
   });
 }
 

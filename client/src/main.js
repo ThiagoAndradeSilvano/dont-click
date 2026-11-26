@@ -27,8 +27,11 @@ function saveLocalToken(token) {
   }
 }
 
-// Registra visita silenciosamente ao abrir a página (nada muda visualmente!)
+// Registra visita silenciosamente ao abrir a página e recebe o rótulo atual do botão do servidor
 async function initSession() {
+  const appEl = document.getElementById('app');
+  const labelEl = document.getElementById('button-label');
+
   try {
     const res = await fetch('/api/session', {
       method: 'POST',
@@ -39,9 +42,16 @@ async function initSession() {
     if (res.ok) {
       const data = await res.json();
       saveLocalToken(data.token);
+      if (labelEl && data.buttonLabel) {
+        labelEl.textContent = data.buttonLabel;
+      }
     }
   } catch {
     // Falha silenciosa para nunca quebrar a ilusão
+  } finally {
+    if (appEl) {
+      appEl.style.visibility = 'visible';
+    }
   }
 }
 
