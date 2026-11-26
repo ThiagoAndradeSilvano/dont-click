@@ -1,6 +1,16 @@
-/* ===== TELA INICIAL (Exatamente o botão cru anos 90) ===== */
+/* ===== BASE & BOTÃO SECO ANOS 90 ===== */
 * {
   box-sizing: border-box;
+}
+
+:root {
+  --cur-user-blue: url('/cursors/user-blue.png') 15 5, pointer;
+  --cur-op-point: url('/cursors/op-point.png') 18 4, pointer;
+  --cur-op-stop: url('/cursors/op-stop.png') 26 26, not-allowed;
+  --cur-op-middle: url('/cursors/op-middle.png') 26 8, not-allowed;
+  --cur-op-thumb: url('/cursors/op-thumb.png') 26 26, pointer;
+  --cur-op-chill: url('/cursors/op-chill.png') 26 26, default;
+  --cur-op-hd: url('/cursors/op-hd.png') 16 5, pointer;
 }
 
 body {
@@ -42,23 +52,7 @@ body {
   transform: translateY(10px);
 }
 
-/* Isca psicológica escondida pra quem dá Ctrl+A na tela branca */
-.ctrl-a-bait {
-  position: fixed;
-  bottom: 10px;
-  left: 14px;
-  font-family: monospace;
-  font-size: 11px;
-  color: #ffffff;
-  background: transparent;
-  pointer-events: none;
-}
-.ctrl-a-bait::selection {
-  background: #1a73e8;
-  color: #ffffff;
-}
-
-/* ===== FALSO ERRO NATIVO CHROMIUM (Chrome / Edge / Brave / Opera) ===== */
+/* ===== FALSO ERRO NATIVO CHROMIUM ===== */
 body.native-error-mode {
   display: block;
   min-height: 100vh;
@@ -139,7 +133,6 @@ body.native-error-mode {
   font-family: monospace;
 }
 
-/* Caixa de invasão do operador na tela de erro */
 .hijack-box {
   margin: 20px 0 28px;
   padding: 14px 16px;
@@ -163,9 +156,7 @@ body.native-error-mode {
 }
 
 @keyframes blink {
-  50% {
-    opacity: 0;
-  }
+  50% { opacity: 0; }
 }
 
 .neterror-actions {
@@ -202,10 +193,6 @@ body.native-error-mode {
   50% { transform: scale(1.05); }
 }
 
-.neterror-btn-reload:hover:not(:disabled) {
-  background-color: #1967d2;
-}
-
 .neterror-btn-details {
   background: transparent;
   color: #1a73e8;
@@ -229,7 +216,6 @@ body.native-error-mode {
   display: block;
 }
 
-/* ===== FALSO ERRO NATIVO FIREFOX ===== */
 body.firefox-error-mode {
   display: flex;
   justify-content: center;
@@ -240,121 +226,123 @@ body.firefox-error-mode {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  body.firefox-error-mode {
-    background-color: #1c1b22;
-    color: #fbfbfe;
-  }
-}
-
-.ff-wrapper {
-  max-width: 560px;
-  padding: 0 24px 60px;
-}
-
-.ff-title {
-  font-size: 28px;
-  font-weight: 300;
-  margin: 0 0 16px 0;
-}
-
-.ff-desc {
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-/* ===== ESTÁGIO 2: A GAIOLA DE DOPAMINA + CURSORES VIVOS ===== */
-:root {
-  --cur-user-blue: url('/cursors/user-blue.png') 15 5, pointer;
-  --cur-op-point: url('/cursors/op-point.png') 18 4, pointer;
-  --cur-op-stop: url('/cursors/op-stop.png') 26 26, not-allowed;
-  --cur-op-middle: url('/cursors/op-middle.png') 26 8, not-allowed;
-  --cur-op-thumb: url('/cursors/op-thumb.png') 26 26, pointer;
-  --cur-op-chill: url('/cursors/op-chill.png') 26 26, default;
-  --cur-op-hd: url('/cursors/op-hd.png') 16 5, pointer;
-}
-
-body.cage-mode {
+/* ===== ESTÁGIO CLICKER (Mudo no Cap 1 / Acordado no Cap 2) ===== */
+body.clicker-mode {
   display: block;
   min-height: 100vh;
-  background-color: #f4f3ee;
-  background-image: radial-gradient(#d6d3c9 1px, transparent 1px);
-  background-size: 18px 18px;
-  color: #111;
-  font-family: 'Courier New', Courier, monospace;
+  background-color: #ececec;
+  color: #1f1f1f;
+  font-family: Arial, Helvetica, sans-serif;
   padding: 24px;
   cursor: var(--cur-user-blue);
+  position: relative;
 }
 
-/* Elementos clicáveis normais na Gaiola usam a mão azul do jogador ou a mão vermelha apontando */
-body.cage-mode .box-button {
+body.clicker-mode .box-button {
   cursor: var(--cur-user-blue);
 }
 
-body.cage-mode .shop-buy-btn:not(:disabled) {
+/* QUANDO COMPRA O UPGRADE "TEMA COLORIDO": Vira um Papel de Parede Infantil Tosco feito no Paint! */
+body.clicker-mode.kids-theme-active {
+  background-color: #b5e8ff;
+  background-image:
+    radial-gradient(circle at 18% 22%, #fff 22px, transparent 23px),
+    radial-gradient(circle at 21% 21%, #fff 28px, transparent 29px),
+    radial-gradient(circle at 24% 23%, #fff 20px, transparent 21px),
+    radial-gradient(circle at 76% 18%, #fff 24px, transparent 25px),
+    radial-gradient(circle at 79% 17%, #fff 30px, transparent 31px),
+    radial-gradient(circle at 82% 19%, #fff 22px, transparent 23px),
+    linear-gradient(to top, #74c365 0px, #74c365 54px, transparent 54px);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+}
+
+body.clicker-mode.kids-theme-active .clicker-arena {
+  background: #fffbe6;
+  border: 4px dashed #ff6b6b;
+  border-radius: 22px;
+}
+
+body.clicker-mode.kids-theme-active .clicker-shop {
+  background: #fff7fa;
+  border: 3px solid #4ecdc4;
+  border-radius: 18px;
+}
+
+/* Solzinho idiota desenhado no canto quando o tema infantil está ativo */
+.derpy-sun {
+  position: fixed;
+  top: 18px;
+  left: 22px;
+  width: 74px;
+  height: 74px;
+  z-index: 5;
+  user-select: none;
+  transition: transform 0.2s;
+}
+.derpy-sun:hover {
+  transform: rotate(12deg) scale(1.06);
+}
+
+/* CURSORES COMUNICATIVOS (SÓ ATIVAM DEPOIS QUE ELE ACORDA NO CAP 2!) */
+body.awakened-cursors .operator-feed {
+  cursor: var(--cur-op-stop);
+}
+body.awakened-cursors .shop-buy-btn:not(:disabled) {
   cursor: var(--cur-op-point);
 }
-
-/* HOVER COMUNICATIVO: Passar o mouse na barra do Operador -> Mão Aberta Vermelha ("Pare / Não encosta em mim") */
-body.cage-mode .operator-feed {
+body.awakened-cursors .shop-buy-btn:disabled {
   cursor: var(--cur-op-stop);
 }
-
-/* HOVER COMUNICATIVO: Passar o mouse em botão sem saldo -> Mão Aberta Vermelha ("Sem grana") */
-body.cage-mode .shop-buy-btn:disabled {
-  cursor: var(--cur-op-stop);
-}
-
-/* HOVER COMUNICATIVO: Passar o mouse em item já comprado -> Joinha Vermelho irônico */
-body.cage-mode .shop-item.owned,
-body.cage-mode .shop-item.owned .shop-buy-btn {
+body.awakened-cursors .shop-item.owned,
+body.awakened-cursors .shop-item.owned .shop-buy-btn {
   cursor: var(--cur-op-thumb);
 }
-
-/* HOVER COMUNICATIVO: Passar o mouse na nota do Estagiário Invisível -> Hang Loose Vermelho ("De boa") */
-body.cage-mode .cage-subnote.has-intern {
-  cursor: var(--cur-op-chill);
+body.awakened-cursors .derpy-sun {
+  cursor: var(--cur-op-middle);
 }
 
-/* OVERRIDES TEMPORÁRIOS DE HUMOR DO PONTEIRO (Quando o Operador "possui" seu mouse por alguns instantes!) */
-body.cage-mode.cursor-mood-middle,
-body.cage-mode.cursor-mood-middle * {
+body.awakened-cursors.cursor-mood-middle,
+body.awakened-cursors.cursor-mood-middle * {
   cursor: var(--cur-op-middle) !important;
 }
-
-body.cage-mode.cursor-mood-thumb,
-body.cage-mode.cursor-mood-thumb * {
+body.awakened-cursors.cursor-mood-thumb,
+body.awakened-cursors.cursor-mood-thumb * {
   cursor: var(--cur-op-thumb) !important;
 }
-
-body.cage-mode.cursor-mood-stop,
-body.cage-mode.cursor-mood-stop * {
+body.awakened-cursors.cursor-mood-stop,
+body.awakened-cursors.cursor-mood-stop * {
   cursor: var(--cur-op-stop) !important;
 }
-
-body.cage-mode.cursor-mood-chill,
-body.cage-mode.cursor-mood-chill * {
+body.awakened-cursors.cursor-mood-chill,
+body.awakened-cursors.cursor-mood-chill * {
   cursor: var(--cur-op-chill) !important;
 }
-
-.cage-layout {
-  max-width: 920px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+body.awakened-cursors.cursor-mood-point,
+body.awakened-cursors.cursor-mood-point * {
+  cursor: var(--cur-op-point) !important;
 }
 
-/* Barra de fala do Operador no topo */
+.clicker-layout {
+  max-width: 920px;
+  margin: 16px auto 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Barra de fala dele (SÓ EXISTE NO CAP 2 QUANDO ELE ACORDA!) */
 .operator-feed {
   background: #111111;
   color: #e5e5e5;
   border: 2px solid #000;
-  box-shadow: 4px 4px 0 #00000033;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
   padding: 12px 16px;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 13.5px;
   line-height: 1.5;
-  min-height: 54px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -366,47 +354,103 @@ body.cage-mode.cursor-mood-chill * {
   font-weight: bold;
   font-size: 11px;
   padding: 2px 6px;
-  letter-spacing: 0.5px;
   flex-shrink: 0;
-  text-transform: uppercase;
 }
 
-.cage-main {
+/* Upgrade Idiota: Barra de Pesquisa */
+.useless-search-wrap {
+  background: #fff;
+  border: 2px solid #aaa;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.useless-search-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 6px 10px;
+  border: 1px solid #888;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.useless-search-btn {
+  padding: 6px 12px;
+  background: #ddd;
+  border: 1px solid #777;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: inherit;
+}
+
+.useless-search-result {
+  width: 100%;
+  font-size: 11.5px;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Upgrade Idiota: Barra de Progresso que trava em 99% e zera */
+.fake-progress-wrap {
+  background: #fff;
+  border: 1px solid #999;
+  padding: 6px 10px;
+}
+
+.fake-progress-label {
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.fake-progress-track {
+  height: 14px;
+  background: #e0e0e0;
+  border: 1px inset #bbb;
+  overflow: hidden;
+}
+
+.fake-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: repeating-linear-gradient(
+    45deg,
+    #4caf50,
+    #4caf50 8px,
+    #66bb6a 8px,
+    #66bb6a 16px
+  );
+  transition: width 0.25s linear;
+}
+
+.clicker-main {
   display: grid;
   grid-template-columns: 1fr 340px;
-  gap: 24px;
+  gap: 20px;
   align-items: start;
 }
 
 @media (max-width: 760px) {
-  .cage-main {
+  .clicker-main {
     grid-template-columns: 1fr;
   }
 }
 
-.cage-arena {
+.clicker-arena {
   background: #ffffff;
-  border: 3px dashed #222;
-  padding: 40px 24px;
-  min-height: 360px;
+  border: 1px solid #bbb;
+  padding: 44px 24px;
+  min-height: 340px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  position: relative;
-  gap: 28px;
-}
-
-.cage-arena-label {
-  position: absolute;
-  top: -11px;
-  left: 14px;
-  background: #f4f3ee;
-  padding: 0 8px;
-  font-size: 11px;
-  font-weight: bold;
-  color: #555;
-  text-transform: uppercase;
+  gap: 26px;
 }
 
 .score-board {
@@ -415,115 +459,58 @@ body.cage-mode.cursor-mood-chill * {
 
 .score-title {
   font-size: 12px;
-  text-transform: uppercase;
   color: #666;
   margin-bottom: 4px;
 }
 
 .score-value {
-  font-size: 38px;
+  font-size: 36px;
   font-weight: bold;
-  letter-spacing: -1px;
 }
 
-.cage-subnote {
-  font-size: 11px;
-  color: #888;
-}
-
-/* Flutuadores de +1 / +2 / -1 imposto */
-.float-num {
-  position: fixed;
-  pointer-events: none;
-  font-family: 'Courier New', monospace;
-  font-weight: bold;
-  font-size: 16px;
-  animation: floatUp 0.9s ease-out forwards;
-  z-index: 999;
-}
-
-.float-num.gain {
-  color: #137333;
-}
-
-.float-num.tax {
-  color: #c5221f;
-  font-size: 13px;
-}
-
-@keyframes floatUp {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-42px);
-  }
-}
-
-/* Partículas de confete vagabundo */
-.ego-particle {
-  position: fixed;
-  width: 8px;
-  height: 8px;
-  pointer-events: none;
-  z-index: 998;
-}
-
-/* Lojinha Sarcástica */
-.cage-shop {
-  background: #fffdf7;
-  border: 2px solid #111;
-  box-shadow: 5px 5px 0 #111;
-  padding: 16px;
+.clicker-shop {
+  background: #ffffff;
+  border: 1px solid #bbb;
+  padding: 14px;
 }
 
 .shop-header {
-  border-bottom: 2px solid #111;
-  padding-bottom: 10px;
-  margin-bottom: 14px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .shop-title {
   margin: 0;
   font-size: 14px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.shop-subtitle {
-  margin: 4px 0 0;
-  font-size: 11px;
-  color: #666;
 }
 
 .shop-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  max-height: 440px;
+  overflow-y: auto;
 }
 
 .shop-item {
-  border: 1.5px solid #222;
-  background: #fff;
-  padding: 10px;
+  border: 1px solid #ccc;
+  background: #fafafa;
+  padding: 9px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: background 0.12s;
+  gap: 5px;
 }
 
 .shop-item.owned {
-  background: #ecebe6;
-  border-style: dotted;
-  opacity: 0.72;
+  opacity: 0.55;
+  background: #efefef;
 }
 
 .shop-item-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
 }
 
@@ -533,40 +520,227 @@ body.cage-mode.cursor-mood-chill * {
 }
 
 .shop-item-cost {
-  font-size: 11.5px;
-  font-weight: bold;
-  background: #eee;
+  font-size: 11px;
+  background: #eaeaea;
   padding: 2px 6px;
-  border: 1px solid #999;
-  white-space: nowrap;
+  border: 1px solid #ccc;
 }
 
 .shop-item-desc {
   font-size: 11.5px;
-  color: #444;
-  line-height: 1.4;
+  color: #555;
 }
 
 .shop-buy-btn {
   align-self: flex-end;
-  cursor: pointer;
   font-family: inherit;
-  font-size: 11.5px;
-  font-weight: bold;
+  font-size: 11px;
   padding: 4px 10px;
-  background: #111;
+  background: #333;
   color: #fff;
   border: none;
-}
-
-.shop-buy-btn:hover:not(:disabled) {
-  background: #333;
+  cursor: inherit;
 }
 
 .shop-buy-btn:disabled {
-  background: #bbb;
+  background: #ccc;
+  color: #777;
+}
+
+/* Upgrade Idiota: Banner irritante de Cookies no rodapé */
+.annoying-cookie-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #222;
+  color: #eee;
+  padding: 12px 20px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  z-index: 900;
+}
+
+.annoying-cookie-bar button {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  cursor: inherit;
+}
+
+/* Flutuadores +1 / +2 / -1 tarifa */
+.float-num {
+  position: fixed;
+  pointer-events: none;
+  font-weight: bold;
+  font-size: 15px;
+  animation: floatUp 0.85s ease-out forwards;
+  z-index: 999;
+}
+.float-num.gain { color: #137333; }
+.float-num.tax { color: #c5221f; font-size: 12px; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-38px); }
+}
+
+/* ===== ESTÁGIO 3: TESTE DOS BLOQUINHOS DE ENCAIXAR DE CRIANÇA ===== */
+body.shapes-mode {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #fff6d6;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+  cursor: var(--cur-user-blue);
+  padding: 20px;
+}
+
+.shapes-card {
+  background: #ffffff;
+  border: 5px solid #ffb703;
+  border-radius: 26px;
+  padding: 28px 32px;
+  max-width: 560px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 0 #fb8500;
+}
+
+.shapes-title {
+  margin: 0 0 6px;
+  color: #fb8500;
+  font-size: 22px;
+}
+
+.shapes-sub {
+  margin: 0 0 24px;
   color: #555;
-  cursor: not-allowed;
+  font-size: 14px;
+}
+
+.wood-board {
+  background: #eac086;
+  border: 4px solid #b6894c;
+  border-radius: 16px;
+  padding: 24px 16px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 26px;
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.hole-slot {
+  width: 86px;
+  height: 86px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.hole-shape {
+  background: #6b4c28;
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.55);
+  transition: transform 0.15s;
+}
+
+.hole-shape.square {
+  width: 68px;
+  height: 68px;
+  border-radius: 6px;
+}
+
+.hole-shape.circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+}
+
+.hole-shape.triangle {
+  width: 0;
+  height: 0;
+  background: transparent;
+  box-shadow: none;
+  border-left: 38px solid transparent;
+  border-right: 38px solid transparent;
+  border-bottom: 66px solid #6b4c28;
+}
+
+.hole-slot.filled .hole-shape.square { background: #ef476f; box-shadow: none; }
+.hole-slot.filled .hole-shape.circle { background: #118ab2; box-shadow: none; }
+.hole-slot.filled .hole-shape.triangle { border-bottom-color: #06d6a0; }
+
+.pieces-tray {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  min-height: 82px;
+  align-items: center;
+}
+
+.toy-piece {
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.15s;
+}
+.toy-piece:hover {
+  transform: scale(1.08);
+}
+.toy-piece.placed {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.toy-piece.square {
+  width: 64px;
+  height: 64px;
+  background: #ef476f;
+  border: 3px solid #b5173e;
+  border-radius: 6px;
+}
+
+.toy-piece.circle {
+  width: 66px;
+  height: 66px;
+  background: #118ab2;
+  border: 3px solid #075975;
+  border-radius: 50%;
+}
+
+.toy-piece.triangle {
+  width: 0;
+  height: 0;
+  border-left: 36px solid transparent;
+  border-right: 36px solid transparent;
+  border-bottom: 64px solid #06d6a0;
+  filter: drop-shadow(0 3px 0 #048a67);
+}
+
+.shapes-finish-box {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 2px dashed #ffd166;
+}
+
+.shapes-enter-btn {
+  margin-top: 10px;
+  background: #06d6a0;
+  color: #073b4c;
+  border: 3px solid #048a67;
+  border-radius: 12px;
+  padding: 10px 22px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: var(--cur-user-blue);
 }
 
 /* Tela de rota falsa (/admin, /segredo, etc.) */
@@ -588,7 +762,7 @@ body.cage-mode.cursor-mood-chill * {
 }
 
 .dev-toggle {
-  background: rgba(17, 17, 17, 0.85);
+  background: rgba(17, 17, 17, 0.88);
   color: #00ff9d;
   border: 1px solid #333;
   border-radius: 6px;
@@ -596,21 +770,16 @@ body.cage-mode.cursor-mood-chill * {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer !important;
-  backdrop-filter: blur(4px);
-}
-
-.dev-toggle:hover {
-  background: #111;
 }
 
 .dev-menu {
   display: none;
   margin-bottom: 6px;
-  background: rgba(18, 18, 20, 0.95);
+  background: rgba(18, 18, 20, 0.96);
   border: 1px solid #3f3f46;
   border-radius: 8px;
   padding: 10px;
-  min-width: 210px;
+  min-width: 235px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   color: #f4f4f5;
   flex-direction: column;
@@ -626,7 +795,6 @@ body.cage-mode.cursor-mood-chill * {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #a1a1aa;
-  margin-bottom: 2px;
   border-bottom: 1px solid #27272a;
   padding-bottom: 4px;
 }
@@ -640,19 +808,8 @@ body.cage-mode.cursor-mood-chill * {
   font-size: 11.5px;
   text-align: left;
   cursor: pointer !important;
-  transition: background 0.12s;
 }
 
-.dev-btn:hover {
-  background: #3f3f46;
-}
-
-.dev-btn.danger {
-  border-color: #7f1d1d;
-  color: #fca5a5;
-}
-
-.dev-btn.danger:hover {
-  background: #7f1d1d;
-  color: #fff;
-}
+.dev-btn:hover { background: #3f3f46; }
+.dev-btn.danger { border-color: #7f1d1d; color: #fca5a5; }
+.dev-btn.danger:hover { background: #7f1d1d; color: #fff; }
