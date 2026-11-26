@@ -374,7 +374,7 @@ app.post('/api/behavior', (req, res) => {
   res.json({ ok: true, remark: reactions[type] || null });
 });
 
-// Rotas internas de dev
+// Rotas internas de dev (Painel de Testes no canto da tela)
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/_debug', (_req, res) => {
     res.json(loadDb());
@@ -385,6 +385,49 @@ if (process.env.NODE_ENV !== 'production') {
     saveDb(empty);
     res.clearCookie(COOKIE_NAME);
     res.json({ reset: true, message: 'Estado zerado! Pode testar do início em http://localhost:3690/' });
+  });
+
+  app.post('/api/_dev/action', (req, res) => {
+    const { action } = req.body || {};
+
+    if (action === 'reset') {
+      const empty = { totalGlobalClicks: 0, players: {} };
+      saveDb(empty);
+      res.clearCookie(COOKIE_NAME);
+      return res.json({ ok: true });
+    }
+
+    const { db, player } = resolvePlayer(req, res, req.body);
+
+    if (action === 'goto_button_0') {
+      player.stage = 'button';
+      player.crashes = 0;
+      player.sessionClicks = 0;
+      player.clicks = 0;
+      player.points = 0;
+      player.upgrades = [];
+      player.flags = [];
+    } else if (action === 'goto_button_1') {
+      player.stage = 'button';
+      player.crashes = 1;
+      player.sessionClicks = 0;
+      if (player.clicks < 9) player.clicks = 9;
+    } else if (action === 'goto_hijack') {
+      player.stage = 'intercepted_error';
+      player.crashes = 2;
+      player.sessionClicks = 0;
+      if (player.clicks < 14) player.clicks = 14;
+    } else if (action === 'goto_cage') {
+      player.stage = 'cage';
+      if (player.crashes < 2) player.crashes = 2;
+      if (player.clicks < 14) player.clicks = 14;
+    } else if (action === 'add_points') {
+      player.stage = 'cage';
+      player.points = Math.round((player.points + 100) * 10) / 10;
+    }
+
+    saveDb(db);
+    res.json({ ok: true, stage: player.stage, points: player.points });
   });
 }
 

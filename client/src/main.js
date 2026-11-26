@@ -3,6 +3,38 @@ let currentStage = 'button';
 let currentUpgrades = [];
 let passiveInterval = null;
 let audioCtx = null;
+let moodTimeout = null;
+let idleTimeout = null;
+
+// Faz o Operador "possuir" o ponteiro do mouse do jogador temporariamente pra mandar um recado mudo!
+function flashCursorMood(mood, durationMs = 2000) {
+  if (currentStage !== 'cage') return;
+  const classes = ['cursor-mood-middle', 'cursor-mood-thumb', 'cursor-mood-stop', 'cursor-mood-chill'];
+  document.body.classList.remove(...classes);
+  if (moodTimeout) clearTimeout(moodTimeout);
+
+  if (mood) {
+    document.body.classList.add(`cursor-mood-${mood}`);
+    if (durationMs > 0) {
+      moodTimeout = setTimeout(() => {
+        document.body.classList.remove(`cursor-mood-${mood}`);
+      }, durationMs);
+    }
+  }
+}
+
+function resetIdleChillTimer() {
+  if (idleTimeout) clearTimeout(idleTimeout);
+  document.body.classList.remove('cursor-mood-chill');
+  if (currentStage !== 'cage') return;
+
+  // Se o jogador parar de mexer/clicar por 9 segundos na Gaiola, o cursor relaxa pro Hang Loose 🤙!
+  idleTimeout = setTimeout(() => {
+    if (currentStage === 'cage' && !document.body.className.includes('cursor-mood-')) {
+      document.body.classList.add('cursor-mood-chill');
+    }
+  }, 9000);
+}
 
 // Mensagem no F12 (Console) esperando pelos "hackers" curiosos
 console.log(
@@ -376,7 +408,7 @@ function renderDopamineCage(state) {
           <div class="score-board">
             <div class="score-title">Pontos de Dopamina Barata</div>
             <div class="score-value" id="cage-points">${state.points ?? 0}</div>
-            <div class="cage-subnote" id="cage-rate">${
+            <div class="cage-subnote ${currentUpgrades.includes('auto_drip') ? 'has-intern' : ''}" id="cage-rate">${
               currentUpgrades.includes('auto_drip') ? '+0.2/s (Estagiário sofrendo)' : '0.0/s'
             }</div>
           </div>
@@ -431,10 +463,13 @@ function renderDopamineCage(state) {
 
     if (res.remark) {
       setOperatorRemark(res.remark);
+      flashCursorMood('thumb', 1800);
     }
+    resetIdleChillTimer();
   });
 
   syncPassiveTimer();
+  resetIdleChillTimer();
 }
 
 function setOperatorRemark(text) {
@@ -489,12 +524,33 @@ function updateShopUI(shopItems, currentPoints) {
       const rateEl = document.getElementById('cage-rate');
       if (rateEl && currentUpgrades.includes('auto_drip')) {
         rateEl.textContent = '+0.2/s (Estagiário sofrendo)';
+        rateEl.classList.add('has-intern');
+      }
+
+      // Reação visual pelo cursor do jogador conforme o que ele comprou!
+      if (res.bought === 'tax_mult') {
+        flashCursorMood('middle', 2800); // Comprou o golpe do imposto -> dedo do meio!
+      } else if (res.bought === 'auto_drip') {
+        flashCursorMood('chill', 2600); // Comprou o estagiário -> hang loose!
+      } else if (res.ok) {
+        flashCursorMood('thumb', 2000); // Outras compras -> joinha sarcástico!
       }
 
       if (res.remark) {
         setOperatorRemark(res.remark);
       }
       syncPassiveTimer();
+    });
+  });
+
+  // Se o jogador tentar clicar num card de loja sem ter saldo suficiente -> Mão aberta ou dedo do meio!
+  listEl.querySelectorAll('.shop-item').forEach((card) => {
+    card.addEventListener('click', (ev) => {
+      const btn = card.querySelector('.shop-buy-btn');
+      if (btn && btn.disabled && !card.classList.contains('owned') && ev.target !== btn) {
+        setOperatorRemark('Tá clicando no cartão sem saldo por quê? Aqui não tem fiado não.');
+        flashCursorMood('stop', 1800);
+      }
     });
   });
 }
@@ -534,26 +590,79 @@ function setupPsychologicalTraps() {
     }
   });
 
-  // 2. Detectar Ctrl+A na Gaiola
+  // 2. Detectar Ctrl+A na Gaiola -> Dedo do meio no cursor!
   document.addEventListener('keydown', async (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && currentStage === 'cage') {
+      flashCursorMood('middle', 2500);
       const res = await apiPost('/api/behavior', { type: 'select_all' });
       if (res?.remark) setOperatorRemark(res.remark);
     }
   });
 
-  // 3. Detectar Botão Direito na Gaiola
+  // 3. Detectar Botão Direito na Gaiola -> Dedo do meio no cursor!
   document.addEventListener('contextmenu', async () => {
     if (currentStage === 'cage') {
+      flashCursorMood('middle', 2500);
       const res = await apiPost('/api/behavior', { type: 'context_menu' });
       if (res?.remark) setOperatorRemark(res.remark);
     }
+  });
+
+  // 4. Resetar timer de ociosidade ao mexer o mouse
+  document.addEventListener('mousemove', () => {
+    if (currentStage === 'cage' && document.body.classList.contains('cursor-mood-chill')) {
+      resetIdleChillTimer();
+    }
+  });
+}
+
+// ===== PAINEL DE TESTES (Somente ambiente DEV - canto inferior direito) =====
+function mountDevTestPanel() {
+  if (!import.meta.env.DEV) return;
+  if (document.getElementById('dev-test-panel')) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'dev-test-panel';
+  panel.className = 'dev-panel';
+  panel.innerHTML = `
+    <div class="dev-menu" id="dev-menu">
+      <div class="dev-menu-title">🛠️ Testes & Capítulos (Dev)</div>
+      <button class="dev-btn danger" data-dev="reset">🔄 Resetar Jogo do Zero</button>
+      <button class="dev-btn" data-dev="goto_button_0">1️⃣ Cap 0: Botão (1ª vez - 9x)</button>
+      <button class="dev-btn" data-dev="goto_button_1">2️⃣ Cap 0: Botão (2ª vez - 5x)</button>
+      <button class="dev-btn" data-dev="goto_hijack">⚡ Cap 1: Tela Erro Invadida</button>
+      <button class="dev-btn" data-dev="goto_cage">🐒 Cap 2: Clicker (Gaiola)</button>
+      <button class="dev-btn" data-dev="add_points">💰 +100 Pontos no Clicker</button>
+    </div>
+    <button class="dev-toggle" id="dev-toggle-btn">⚙️ DEV</button>
+  `;
+  document.body.appendChild(panel);
+
+  const toggleBtn = document.getElementById('dev-toggle-btn');
+  const menu = document.getElementById('dev-menu');
+
+  toggleBtn?.addEventListener('click', () => {
+    menu?.classList.toggle('open');
+  });
+
+  panel.querySelectorAll('[data-dev]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const action = btn.getAttribute('data-dev');
+      if (action === 'reset') {
+        try {
+          localStorage.removeItem(TOKEN_KEY);
+        } catch {}
+      }
+      await apiPost('/api/_dev/action', { action });
+      window.location.href = '/';
+    });
   });
 }
 
 // ===== INICIALIZAÇÃO E INTERCEPTAÇÃO DE URLs FALSAS (/admin, /2, etc.) =====
 async function init() {
   setupPsychologicalTraps();
+  mountDevTestPanel();
 
   // Se o espertinho tentar chutar rotas na URL (ex: /admin, /fase2, /segredo)
   const path = window.location.pathname;

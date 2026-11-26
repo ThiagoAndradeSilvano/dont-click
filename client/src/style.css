@@ -263,7 +263,17 @@ body.firefox-error-mode {
   line-height: 1.6;
 }
 
-/* ===== ESTÁGIO 2: A GAIOLA DE DOPAMINA (Clicker Sarcástico Tosco) ===== */
+/* ===== ESTÁGIO 2: A GAIOLA DE DOPAMINA + CURSORES VIVOS ===== */
+:root {
+  --cur-user-blue: url('/cursors/user-blue.png') 15 5, pointer;
+  --cur-op-point: url('/cursors/op-point.png') 18 4, pointer;
+  --cur-op-stop: url('/cursors/op-stop.png') 26 26, not-allowed;
+  --cur-op-middle: url('/cursors/op-middle.png') 26 8, not-allowed;
+  --cur-op-thumb: url('/cursors/op-thumb.png') 26 26, pointer;
+  --cur-op-chill: url('/cursors/op-chill.png') 26 26, default;
+  --cur-op-hd: url('/cursors/op-hd.png') 16 5, pointer;
+}
+
 body.cage-mode {
   display: block;
   min-height: 100vh;
@@ -273,6 +283,58 @@ body.cage-mode {
   color: #111;
   font-family: 'Courier New', Courier, monospace;
   padding: 24px;
+  cursor: var(--cur-user-blue);
+}
+
+/* Elementos clicáveis normais na Gaiola usam a mão azul do jogador ou a mão vermelha apontando */
+body.cage-mode .box-button {
+  cursor: var(--cur-user-blue);
+}
+
+body.cage-mode .shop-buy-btn:not(:disabled) {
+  cursor: var(--cur-op-point);
+}
+
+/* HOVER COMUNICATIVO: Passar o mouse na barra do Operador -> Mão Aberta Vermelha ("Pare / Não encosta em mim") */
+body.cage-mode .operator-feed {
+  cursor: var(--cur-op-stop);
+}
+
+/* HOVER COMUNICATIVO: Passar o mouse em botão sem saldo -> Mão Aberta Vermelha ("Sem grana") */
+body.cage-mode .shop-buy-btn:disabled {
+  cursor: var(--cur-op-stop);
+}
+
+/* HOVER COMUNICATIVO: Passar o mouse em item já comprado -> Joinha Vermelho irônico */
+body.cage-mode .shop-item.owned,
+body.cage-mode .shop-item.owned .shop-buy-btn {
+  cursor: var(--cur-op-thumb);
+}
+
+/* HOVER COMUNICATIVO: Passar o mouse na nota do Estagiário Invisível -> Hang Loose Vermelho ("De boa") */
+body.cage-mode .cage-subnote.has-intern {
+  cursor: var(--cur-op-chill);
+}
+
+/* OVERRIDES TEMPORÁRIOS DE HUMOR DO PONTEIRO (Quando o Operador "possui" seu mouse por alguns instantes!) */
+body.cage-mode.cursor-mood-middle,
+body.cage-mode.cursor-mood-middle * {
+  cursor: var(--cur-op-middle) !important;
+}
+
+body.cage-mode.cursor-mood-thumb,
+body.cage-mode.cursor-mood-thumb * {
+  cursor: var(--cur-op-thumb) !important;
+}
+
+body.cage-mode.cursor-mood-stop,
+body.cage-mode.cursor-mood-stop * {
+  cursor: var(--cur-op-stop) !important;
+}
+
+body.cage-mode.cursor-mood-chill,
+body.cage-mode.cursor-mood-chill * {
+  cursor: var(--cur-op-chill) !important;
 }
 
 .cage-layout {
@@ -513,4 +575,84 @@ body.cage-mode {
   max-width: 560px;
   padding: 24px;
   line-height: 1.6;
+}
+
+/* ===== PAINEL DE TESTES (DEV ONLY - Canto Inferior Direito) ===== */
+.dev-panel {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 99999;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+}
+
+.dev-toggle {
+  background: rgba(17, 17, 17, 0.85);
+  color: #00ff9d;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer !important;
+  backdrop-filter: blur(4px);
+}
+
+.dev-toggle:hover {
+  background: #111;
+}
+
+.dev-menu {
+  display: none;
+  margin-bottom: 6px;
+  background: rgba(18, 18, 20, 0.95);
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 210px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: #f4f4f5;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dev-menu.open {
+  display: flex;
+}
+
+.dev-menu-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a1a1aa;
+  margin-bottom: 2px;
+  border-bottom: 1px solid #27272a;
+  padding-bottom: 4px;
+}
+
+.dev-btn {
+  background: #27272a;
+  color: #e4e4e7;
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 11.5px;
+  text-align: left;
+  cursor: pointer !important;
+  transition: background 0.12s;
+}
+
+.dev-btn:hover {
+  background: #3f3f46;
+}
+
+.dev-btn.danger {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.dev-btn.danger:hover {
+  background: #7f1d1d;
+  color: #fff;
 }
