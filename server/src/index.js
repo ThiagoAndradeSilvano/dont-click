@@ -18,35 +18,35 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Catálogo da primeira falsa loja ("Gaiola de Dopamina")
+// Catálogo da lojinha com escrita humana, crua e debochada (zero cara de IA)
 const CAGE_SHOP = {
   sound: {
     id: 'sound',
-    name: 'Barulhinho Satisfatório™',
+    name: 'barulhinho de clique',
     cost: 10,
-    desc: 'Faz "tec" quando você clica. Funciona com pombos em laboratório desde 1954.',
-    afterBuyRemark: 'Ótimo. Agora além de gastar o mouse você faz barulho. Feliz?',
+    desc: 'faz tec quando aperta. igual brinquedo de cachorro.',
+    afterBuyRemark: 'pronto, agora além de clicar igual maluco vc faz barulho. parabéns',
   },
   particles: {
     id: 'particles',
-    name: 'Confete de Validação Emocional',
+    name: 'confete vagabundo',
     cost: 25,
-    desc: 'Solta quadradinhos coloridos pra fingir que você conquistou algo hoje.',
-    afterBuyRemark: 'Olha lá as corzinhas voando! Seu córtex pré-frontal deve estar em festa.',
+    desc: 'solta umas corzinhas pra parecer que vc tá indo super bem.',
+    afterBuyRemark: 'olha lá que lindo os quadradinho caindo... emocionante né',
   },
   tax_mult: {
     id: 'tax_mult',
-    name: 'Multiplicador Quântico (x2)',
+    name: 'dobrar pontos (confia)',
     cost: 45,
-    desc: 'Dobra seus pontos por clique! (*Sujeito a retenção administrativa na fonte).',
-    afterBuyRemark: 'Você leu as letras miúdas? +2 de ganho, -1 de taxa de processamento de burrice. Matemática básica, campeão.',
+    desc: 'passa a ganhar +2 por clique. sem pegadinha.',
+    afterBuyRemark: 'ganha 2 e me paga 1 de aluguel do botão kkkkkk achou que era festa?',
   },
   auto_drip: {
     id: 'auto_drip',
-    name: 'Estagiário Invisível (0.2/s)',
+    name: 'script meia-boca',
     cost: 70,
-    desc: 'Clica por você numa velocidade agonizante pra você poder ficar olhando pro nada.',
-    afterBuyRemark: 'Parabéns, você automatizou a inutilidade.',
+    desc: 'clica sozinho bem devagar pq deu preguiça de otimizar.',
+    afterBuyRemark: 'boa, agora nem clicar vc precisa mais. pode ficar só olhando pro nada',
   },
 };
 
@@ -271,17 +271,17 @@ app.post('/api/click', (req, res) => {
 
   player.points = Math.round((player.points + netGain) * 10) / 10;
 
-  // Comentários reativos ocasionais conforme ele clica na gaiola
+  // Comentários reativos curtos e naturais conforme ele clica na gaiola
   let remark = null;
   if (player.sessionClicks === 15 && !player.flags.includes('cage_15')) {
     player.flags.push('cage_15');
-    remark = 'Olha que disciplina. Quinze cliques seguidos numa caixa que literalmente te chamou de primata.';
+    remark = '15 cliques já... vc realmente não tinha nada melhor pra fazer hoje né';
   } else if (player.sessionClicks === 40 && !player.flags.includes('cage_40')) {
     player.flags.push('cage_40');
-    remark = 'Você sabe que esse número não vale dinheiro de verdade, né? Só checando.';
+    remark = 'mano vc sabe que esse número não serve pra porra nenhuma né? só perguntando';
   } else if (player.sessionClicks === 85 && !player.flags.includes('cage_85')) {
     player.flags.push('cage_85');
-    remark = 'Impressionante. Se eu colocar uma roda de hamster aqui você gera energia pro meu servidor.';
+    remark = 'caralho vc ainda tá clicando nisso kkkkkk eu vou até pegar um café';
   }
 
   saveDb(db);
@@ -325,7 +325,7 @@ app.post('/api/buy', (req, res) => {
   if (player.upgrades.includes(item.id)) {
     return res.json({
       ok: false,
-      remark: 'Você já comprou essa porcaria. Quer comprar duas vezes o mesmo placebo?',
+      remark: 'já comprou esse pô, quer pagar duas vezes?',
       points: player.points,
       upgrades: player.upgrades,
       shop: buildShopState(player),
@@ -335,7 +335,7 @@ app.post('/api/buy', (req, res) => {
   if (player.points < item.cost) {
     return res.json({
       ok: false,
-      remark: `Faltam pontos, gênio da economia. Custa ${item.cost} e você tem ${player.points}. Vai clicar mais.`,
+      remark: `tá duro irmão, custa ${item.cost} e vc só tem ${player.points}. clica mais aí`,
       points: player.points,
       upgrades: player.upgrades,
       shop: buildShopState(player),
@@ -366,9 +366,9 @@ app.post('/api/behavior', (req, res) => {
   }
 
   const reactions = {
-    select_all: 'Texto branco no fundo branco? Sério? Achou que tava num ARG de 2009?',
-    context_menu: 'Botão direito não vai abrir um menu mágico escrito "Pular Fase", parceiro.',
-    tab_return: 'Voltou? E aí, o Google te deu alguma resposta útil ou só perdeu tempo?',
+    select_all: 'ctrl+a procurando texto escondido? para de viajar cara',
+    context_menu: 'botão direito não vai te dar resposta nenhuma não fi',
+    tab_return: 'ih voltou... foi pesquisar no google e quebrou a cara né',
   };
 
   res.json({ ok: true, remark: reactions[type] || null });

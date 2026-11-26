@@ -38,11 +38,11 @@ function resetIdleChillTimer() {
 
 // Mensagem no F12 (Console) esperando pelos "hackers" curiosos
 console.log(
-  '%cPARADO AÍ, SHERLOCK HOLMES DO F12.',
-  'color: #ff4444; font-size: 18px; font-weight: bold; background: #111; padding: 6px 10px;'
+  '%cfica fuçando o f12 msm vai',
+  'color: #ff4444; font-size: 16px; font-weight: bold; background: #111; padding: 4px 8px;'
 );
 console.log(
-  '%cAchou mesmo que eu ia deixar uma senha comentada tipo <!-- resposta: 1234 --> no HTML? Fecha essa aba Elements e vai usar os neurônios.',
+  '%cachou que ia ter um <!-- senha: 123 --> jogado no html né? fecha isso aí irmão',
   'color: #cccccc; font-size: 12px;'
 );
 
@@ -321,53 +321,71 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function typeText(container, text, speed = 26) {
+// Simula uma pessoa real digitando: variação de velocidade por tecla, pausas pensando e apagar no Backspace!
+async function humanTypeSequence(container, steps) {
   const span = document.createElement('span');
   const cursor = document.createElement('span');
   cursor.className = 'typing-cursor';
   container.appendChild(span);
   container.appendChild(cursor);
 
-  for (let i = 0; i < text.length; i++) {
-    span.textContent += text[i];
-    const ch = text[i];
-    const delay = ch === '.' || ch === '?' || ch === ':' ? speed * 7 : ch === ',' ? speed * 3.5 : speed;
-    await sleep(delay);
+  for (const step of steps) {
+    if (step.pause) {
+      await sleep(step.pause);
+    } else if (step.backspace) {
+      for (let i = 0; i < step.backspace; i++) {
+        span.textContent = span.textContent.slice(0, -1);
+        await sleep(35 + Math.random() * 25);
+      }
+    } else if (step.text) {
+      const base = step.speed || 38;
+      for (const ch of step.text) {
+        span.textContent += ch;
+        const jitter = base + (Math.random() * 34 - 12);
+        const extra = ch === '.' || ch === '?' ? 260 : ch === ',' ? 140 : 0;
+        await sleep(Math.max(18, jitter + extra));
+      }
+    }
   }
 
   cursor.remove();
 }
 
-async function runHijackSequence(totalClicks, reloadBtn) {
-  // Deixa o jogador achar por 1.1s que caiu na tela de erro normal pela 3ª vez...
-  await sleep(1100);
+async function runHijackSequence(_totalClicks, reloadBtn) {
+  // Deixa o jogador achar por 1.4s que caiu na tela de erro normal de novo
+  await sleep(1400);
 
   const errCode = document.getElementById('err-code');
   const hints = document.getElementById('err-standard-hints');
   const slot = document.getElementById('hijack-slot');
   const detailsPanel = document.getElementById('fake-details-panel');
 
-  if (errCode) errCode.textContent = 'ERR_PACIENCIA_ESGOTADA';
+  if (errCode) errCode.textContent = 'ERR_JA_DEU_NE';
   if (hints) hints.style.display = 'none';
   if (detailsPanel) {
-    detailsPanel.innerHTML = `<p><strong>Diagnóstico real:</strong> Não tem nada errado com o seu Wi-Fi. O problema está entre a cadeira e o teclado.</p>`;
+    detailsPanel.innerHTML = `<p>tua internet tá normal cara. o problema é essa tua mão coçando aí.</p>`;
   }
 
   const box = document.createElement('div');
   box.className = 'hijack-box';
   slot.appendChild(box);
 
-  const lines = [
-    `Tá bom, chega desse teatrinho de conexão caída. Você ia mesmo ficar dando F5 até quebrar o teclado?\n\n`,
-    `Irmão, o endereço lá em cima chama NAOCLIQUE.NET. Não é psicologia reversa, não é joguinho indie conceitual. Eu só deixei essa porta aberta pra calibrar um relé e você já martelou meu log ${totalClicks} vezes seguidas.\n\n`,
-    `Mas eu conheço a sua espécie. Se não tiver um numerozinho subindo e um botão brilhando pra apertar, seu cérebro de primata não sossega, né? Espera aí...\n\n`,
-    `...pronto. Subi um cercadinho com contador pra te manter entretido longe do meu sistema. Aperta logo essa porqueira desse botão azul de "Recarregar" aí embaixo e vai ser feliz.`,
-  ];
-
-  for (const line of lines) {
-    await typeText(box, line, 24);
-    await sleep(450);
-  }
+  // Curto, humano, com hesitação real e backspace ao vivo (sem despejar tudo aqui!)
+  await humanTypeSequence(box, [
+    { text: 'mano' },
+    { pause: 1300 },
+    { text: '... vc ia ficar dando f5 até amanhã?' },
+    { pause: 1600 },
+    { text: '\n\no site chama naoclique, seu ani' },
+    { pause: 450 },
+    { backspace: 7 }, // apaga "seu ani"
+    { pause: 500 },
+    { text: 'criatura. não tem jogo aqui.' },
+    { pause: 2100 },
+    { text: '\n\nmas eu sei como funciona essa tua cabeça, se não tiver alguma coisa mexendo na tela vc não larga o osso né... pera aí' },
+    { pause: 2800 }, // tempo real "mexendo no código" em outra janela
+    { text: '\n\npronto. clica nessa merda de recarregar aí embaixo logo.' },
+  ]);
 
   if (reloadBtn) {
     reloadBtn.disabled = false;
@@ -376,7 +394,7 @@ async function runHijackSequence(totalClicks, reloadBtn) {
       reloadBtn.disabled = true;
       const data = await apiPost('/api/enter-cage');
       if (data && data.stage === 'cage') {
-        renderDopamineCage(data);
+        renderDopamineCage(data, { justEntered: true });
       } else {
         window.location.reload();
       }
@@ -384,53 +402,97 @@ async function runHijackSequence(totalClicks, reloadBtn) {
   }
 }
 
+let remarkTypingId = 0;
+
+// Faz as falas lá no topo do Clicker também serem digitadas como gente (com micro-pausa antes de responder)
+async function setOperatorRemark(text, { delayBefore = 350 } = {}) {
+  const el = document.getElementById('operator-msg');
+  if (!el || !text) return;
+
+  const myId = ++remarkTypingId;
+  el.innerHTML = '';
+  const cursor = document.createElement('span');
+  cursor.className = 'typing-cursor';
+  el.appendChild(cursor);
+
+  if (delayBefore > 0) {
+    await sleep(delayBefore);
+  }
+  if (myId !== remarkTypingId) return;
+
+  const span = document.createElement('span');
+  el.insertBefore(span, cursor);
+
+  for (const ch of text) {
+    if (myId !== remarkTypingId) return;
+    span.textContent += ch;
+    await sleep(22 + Math.random() * 24);
+  }
+
+  setTimeout(() => {
+    if (myId === remarkTypingId) cursor.remove();
+  }, 1200);
+}
+
 // ===== ESTÁGIO 2: A GAIOLA DE DOPAMINA (Clicker Sarcástico + Lojinha) =====
-function renderDopamineCage(state) {
+function renderDopamineCage(state, { justEntered = false } = {}) {
   currentStage = 'cage';
   currentUpgrades = state.upgrades || [];
   document.body.className = 'cage-mode';
-  resetFaviconAndTitle('Cercadinho v0.1');
+  resetFaviconAndTitle('cercadinho');
 
   const app = document.getElementById('app');
   app.style.visibility = 'visible';
 
+  const totalPriorClicks = state.totalClicks ?? 14;
+
   app.innerHTML = `
     <div class="cage-layout">
       <div class="operator-feed">
-        <span class="operator-tag">OPERADOR</span>
-        <span id="operator-msg">Pronto. Clica aí, vê o número subir, compra umas besteiras e me deixa trabalhar em paz.</span>
+        <span class="operator-tag">chat</span>
+        <span id="operator-msg"></span>
       </div>
 
       <div class="cage-main">
         <div class="cage-arena">
-          <span class="cage-arena-label">Área de Contenção Cognitiva</span>
+          <span class="cage-arena-label">cercadinho improvisado</span>
 
           <div class="score-board">
-            <div class="score-title">Pontos de Dopamina Barata</div>
+            <div class="score-title">pontos inúteis</div>
             <div class="score-value" id="cage-points">${state.points ?? 0}</div>
             <div class="cage-subnote ${currentUpgrades.includes('auto_drip') ? 'has-intern' : ''}" id="cage-rate">${
-              currentUpgrades.includes('auto_drip') ? '+0.2/s (Estagiário sofrendo)' : '0.0/s'
+              currentUpgrades.includes('auto_drip') ? '+0.2/s (rodando nas coxas)' : '0.0/s'
             }</div>
           </div>
 
           <div class="box-button" id="cage-button">
             <div class="button">
-              <span>CLIQUE AQUI, PRIMATA</span>
+              <span>clica aí</span>
             </div>
           </div>
         </div>
 
         <aside class="cage-shop">
           <div class="shop-header">
-            <h2 class="shop-title">Lojinha pra te Manter Ocupado</h2>
-            <p class="shop-subtitle">Troque seu tempo de vida por melhorias absolutamente questionáveis.</p>
+            <h2 class="shop-title">lojinha pra te distrair</h2>
+            <p class="shop-subtitle">gasta teus cliques aí e me deixa em paz</p>
           </div>
           <div class="shop-list" id="shop-list"></div>
         </aside>
       </div>
     </div>
-    <div class="ctrl-a-bait">Ainda selecionando texto invisível? Foca nos numerozinhos subindo aí, campeão.</div>
+    <div class="ctrl-a-bait">para de selecionar a tela mano não tem nada aqui embaixo</div>
   `;
+
+  // Aqui sim entra o comentário sobre quantos cliques ele já deu lá atrás!
+  if (justEntered) {
+    setOperatorRemark(
+      `pronto, deve gostar disso aí né... já que clicou ${totalPriorClicks} vezes num botão morto antes de chegar aqui`,
+      { delayBefore: 900 }
+    );
+  } else {
+    setOperatorRemark(`voltou pro cercadinho? beleza, vai clicando aí`, { delayBefore: 500 });
+  }
 
   updateShopUI(state.shop || [], state.points ?? 0);
 
@@ -470,12 +532,6 @@ function renderDopamineCage(state) {
 
   syncPassiveTimer();
   resetIdleChillTimer();
-}
-
-function setOperatorRemark(text) {
-  const el = document.getElementById('operator-msg');
-  if (!el || !text) return;
-  el.textContent = text;
 }
 
 function updatePointsUI(points) {
@@ -523,7 +579,7 @@ function updateShopUI(shopItems, currentPoints) {
 
       const rateEl = document.getElementById('cage-rate');
       if (rateEl && currentUpgrades.includes('auto_drip')) {
-        rateEl.textContent = '+0.2/s (Estagiário sofrendo)';
+        rateEl.textContent = '+0.2/s (rodando nas coxas)';
         rateEl.classList.add('has-intern');
       }
 
@@ -543,12 +599,12 @@ function updateShopUI(shopItems, currentPoints) {
     });
   });
 
-  // Se o jogador tentar clicar num card de loja sem ter saldo suficiente -> Mão aberta ou dedo do meio!
+  // Se o jogador tentar clicar num card de loja sem ter saldo suficiente -> Mão aberta!
   listEl.querySelectorAll('.shop-item').forEach((card) => {
     card.addEventListener('click', (ev) => {
       const btn = card.querySelector('.shop-buy-btn');
       if (btn && btn.disabled && !card.classList.contains('owned') && ev.target !== btn) {
-        setOperatorRemark('Tá clicando no cartão sem saldo por quê? Aqui não tem fiado não.');
+        setOperatorRemark('tá clicando sem ter ponto pq? aqui não vende fiado não');
         flashCursorMood('stop', 1800);
       }
     });
