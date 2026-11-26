@@ -91,6 +91,7 @@ function resolvePlayer(req, res, clientMeta = {}) {
       ip,
       clicks: 0,
       sessionClicks: 0,
+      crashes: 0,
       visits: 0,
       firstSeenAt: now,
       lastSeenAt: now,
@@ -101,6 +102,9 @@ function resolvePlayer(req, res, clientMeta = {}) {
   const player = db.players[playerId];
   if (typeof player.sessionClicks !== 'number') {
     player.sessionClicks = 0;
+  }
+  if (typeof player.crashes !== 'number') {
+    player.crashes = 0;
   }
   player.lastSeenAt = now;
   player.fpHash = fpHash;
@@ -146,15 +150,21 @@ app.post('/api/click', (req, res) => {
     at: new Date().toISOString(),
   });
 
-  // Regra da tela atual:
-  // Fica escrito "Botão" desde o começo até dar erro no 8º clique!
-  const shouldCrash = player.sessionClicks >= 8;
+  // Regra de progressão de quedas:
+  // Na 1ª vez (crashes === 0): dá erro no 8º clique.
+  // Depois que recarregar após a 1ª queda (crashes >= 1): passa a dar o mesmo erro já no 4º clique!
+  const crashThreshold = player.crashes === 0 ? 8 : 4;
+  const shouldCrash = player.sessionClicks >= crashThreshold;
   const buttonLabel = 'Botão';
+
+  if (shouldCrash) {
+    player.crashes += 1;
+  }
 
   saveDb(db);
 
   console.log(
-    `[CLIQUE] Jogador ${player.id.slice(0, 8)} | Sessão: ${player.sessionClicks}/8 | Total Histórico: ${player.clicks} | Crash: ${shouldCrash}`
+    `[CLIQUE] Jogador ${player.id.slice(0, 8)} | Sessão: ${player.sessionClicks}/${crashThreshold} | Quedas: ${player.crashes} | Total Histórico: ${player.clicks} | Crash: ${shouldCrash}`
   );
 
   res.json({
