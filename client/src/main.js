@@ -5,6 +5,13 @@ let audioCtx = null;
 let moodTimeout = null;
 let idleTimeout = null;
 let fakeProgressTimer = null;
+let passiveTickTimer = null;
+let achievementTimer = null;
+let cookieRespawnTimer = null;
+let elevatorMusicTimer = null;
+let isMusicMuted = false;
+let isCookieOpen = false;
+let termsAcceptedThisSession = false;
 let remarkTypingId = 0;
 
 function getClientMeta() {
@@ -51,6 +58,15 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function ensureAudio() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContextClass();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
 // Cursores vermelhos comunicativos (SÓ ATIVAM DEPOIS QUE ELE ACORDA NO CAP 2!)
 function flashCursorMood(mood, durationMs = 2000) {
   if (currentStage !== 'awakened_hub') return;
@@ -89,26 +105,116 @@ function resetIdleChillTimer() {
 // Som xoxo do upgrade "Áudio do Botão"
 function playCheapBeep() {
   try {
-    if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new AudioContextClass();
-    }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const ctx = ensureAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(390, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(170, audioCtx.currentTime + 0.05);
+    osc.frequency.setValueAtTime(390, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(170, ctx.currentTime + 0.05);
 
-    gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.14, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
 
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(ctx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.055);
+    osc.stop(ctx.currentTime + 0.055);
   } catch {}
+}
+
+// Som irritante quando tenta clicar sem aceitar o banner de cookies!
+function playErrorBuzzer() {
+  try {
+    const ctx = ensureAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.19);
+  } catch {}
+}
+
+// Musiquinha brega de elevador / espera de consultório em loop (Web Audio API)
+function startElevatorMusic() {
+  if (elevatorMusicTimer) return;
+  const melody = [261.63, 329.63, 392.0, 329.63, 293.66, 349.23, 440.0, 349.23];
+  let step = 0;
+
+  elevatorMusicTimer = setInterval(() => {
+    if (isMusicMuted || (currentStage !== 'mundane_clicker' && currentStage !== 'awakened_hub')) return;
+    try {
+      const ctx = ensureAudio();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(melody[step % melody.length], ctx.currentTime);
+      gain.gain.setValueAtTime(0.045, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0008, ctx.currentTime + 0.36);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.38);
+      step += 1;
+    } catch {}
+  }, 430);
+}
+
+// Alerta bloqueante quando tenta jogar sem fechar os cookies!
+let blockerTimeout = null;
+function checkCookieBlock() {
+  if (!isCookieOpen) return false;
+
+  playErrorBuzzer();
+  const bar = document.getElementById('cookie-bar');
+  if (bar) {
+    bar.classList.remove('shake-cookie');
+    void bar.offsetWidth;
+    bar.classList.add('shake-cookie');
+  }
+
+  let alertEl = document.getElementById('cookie-blocker-alert');
+  if (!alertEl) {
+    alertEl = document.createElement('div');
+    alertEl.id = 'cookie-blocker-alert';
+    alertEl.className = 'cookie-blocker-alert';
+    document.body.appendChild(alertEl);
+  }
+  alertEl.textContent = '⚠️ Ação bloqueada! Você precisa aceitar o Aviso de Cookies lá embaixo antes de continuar!';
+
+  if (blockerTimeout) clearTimeout(blockerTimeout);
+  blockerTimeout = setTimeout(() => {
+    alertEl?.remove();
+  }, 2200);
+
+  return true; // bloqueado!
+}
+
+// Medalhinhas inúteis do "Sistema de Conquistas"
+const USELESS_ACHIEVEMENTS = [
+  '🏅 Conquista: Olhou para a Tela',
+  '🏅 Conquista: Moveu o Dedo Indicador',
+  '🏅 Conquista: Cidadão Obediente',
+  '🏅 Conquista: Consumidor de Pixels',
+  '🏅 Conquista: Zero Produtividade Atingida',
+  '🏅 Conquista: Ainda Está Aqui Por Algum Motivo',
+];
+let achIdx = 0;
+
+function showUselessAchievement(customText) {
+  const existing = document.querySelector('.achievement-toast');
+  existing?.remove();
+
+  const el = document.createElement('div');
+  el.className = 'achievement-toast';
+  el.textContent = customText || USELESS_ACHIEVEMENTS[achIdx % USELESS_ACHIEVEMENTS.length];
+  achIdx += 1;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
 }
 
 function spawnFloatingNumber(x, y, text, type = 'gain') {
@@ -140,14 +246,17 @@ function resetFaviconAndTitle(title = 'Início') {
 }
 
 function clearTimers() {
-  if (fakeProgressTimer) {
-    clearInterval(fakeProgressTimer);
-    fakeProgressTimer = null;
-  }
+  if (fakeProgressTimer) { clearInterval(fakeProgressTimer); fakeProgressTimer = null; }
+  if (passiveTickTimer) { clearInterval(passiveTickTimer); passiveTickTimer = null; }
+  if (achievementTimer) { clearInterval(achievementTimer); achievementTimer = null; }
+  if (cookieRespawnTimer) { clearTimeout(cookieRespawnTimer); cookieRespawnTimer = null; }
+  if (elevatorMusicTimer) { clearInterval(elevatorMusicTimer); elevatorMusicTimer = null; }
+  isCookieOpen = false;
+  document.getElementById('cookie-blocker-alert')?.remove();
 }
 
 // ============================================================================
-// CAP 0: BOTÃO SECO MUDO (Cai em 9x -> Recarrega -> Cai em 5x -> Recarrega -> Clicker Mudo)
+// CAP 0: BOTÃO SECO MUDO
 // ============================================================================
 function renderInitialButtonScreen(buttonLabel = 'Botão') {
   clearTimers();
@@ -187,9 +296,9 @@ function renderInitialButtonScreen(buttonLabel = 'Botão') {
 }
 
 // ============================================================================
-// CAP 1 (MUDO) & CAP 2 (ACORDADO): CLICKER DE DISTRAÇÃO + UPGRADES MERDA DE APP
+// CAP 1 (MUDO) & CAP 2 (ACORDADO): CLICKER + 14 UPGRADES IDIOTAS DE APP
 // ============================================================================
-function renderClickerScreen(state, { justAwakened = false } = {}) {
+function renderClickerScreen(state, { justAwakened = false, newlyBought = null } = {}) {
   clearTimers();
   const isAwakened = state.stage === 'awakened_hub';
   currentStage = state.stage;
@@ -205,7 +314,6 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
   const app = document.getElementById('app');
   app.style.visibility = 'visible';
 
-  // Solzinho tosco feito no Paint se comprou o Tema Colorido
   const sunHtml = currentUpgrades.includes('kids_theme')
     ? `
       <svg class="derpy-sun" id="derpy-sun" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -227,7 +335,6 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
     `
     : '';
 
-  // Barra de fala dele SÓ aparece quando ele já acordou (Cap 2)! Antes disso é mudo!
   const operatorHtml = isAwakened
     ? `
       <div class="operator-feed">
@@ -237,7 +344,6 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
     `
     : '';
 
-  // Upgrade Idiota: Barra de Pesquisa
   const searchHtml = currentUpgrades.includes('search_bar')
     ? `
       <form class="useless-search-wrap" id="search-form">
@@ -254,7 +360,29 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
     `
     : '';
 
-  // Upgrade Idiota: Barra de Progresso que trava em 99% e zera!
+  // Widgets inúteis (Previsão do tempo interna + Música de elevador)
+  const hasWeather = currentUpgrades.includes('weather_widget');
+  const hasMusic = currentUpgrades.includes('elevator_music');
+  const widgetsHtml =
+    hasWeather || hasMusic
+      ? `
+        <div class="widgets-strip">
+          ${
+            hasWeather
+              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> 23°C — 0% de chance de sair da cadeira</span></div>`
+              : ''
+          }
+          ${
+            hasMusic
+              ? `<div class="idiotic-widget">🎵 <span>Rádio Espera Corporativa FM</span> <button type="button" class="music-mute-btn" id="music-mute-btn">${
+                  isMusicMuted ? 'Ligar' : 'Mutar'
+                }</button></div>`
+              : ''
+          }
+        </div>
+      `
+      : '';
+
   const progressHtml = currentUpgrades.includes('fake_progress')
     ? `
       <div class="fake-progress-wrap">
@@ -269,21 +397,48 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
     `
     : '';
 
-  // Upgrade Idiota: Banner irritante de Cookies
-  const cookieHtml = currentUpgrades.includes('cookie_banner')
+  // Banner de Cookies Bloqueante!
+  const hasCookies = currentUpgrades.includes('cookie_banner');
+  isCookieOpen = hasCookies;
+  const cookieHtml = hasCookies
     ? `
       <div class="annoying-cookie-bar" id="cookie-bar">
-        <span>Este sistema utiliza cookies essenciais e absolutamente desnecessários para melhorar nada na sua vida.</span>
-        <button type="button" id="accept-cookie-btn">Entendi</button>
+        <span>🍪 <strong>Aviso Obrigatório de Cookies:</strong> Utilizamos cookies 100% inúteis. Você está impedido de clicar até aceitar este banner.</span>
+        <button type="button" id="accept-cookie-btn">Aceitar e Fechar</button>
       </div>
     `
     : '';
+
+  // Modal de Termos de Serviço v4.2 (abre quando compra ou na 1ª vez da sessão!)
+  const showTerms =
+    currentUpgrades.includes('terms_popup') && (newlyBought === 'terms_popup' || !termsAcceptedThisSession);
+  const termsHtml = showTerms
+    ? `
+      <div class="terms-modal-backdrop" id="terms-backdrop">
+        <div class="terms-modal">
+          <h3 style="margin:0; font-size:15px;">📜 Contrato de Licença de Usuário v4.2</h3>
+          <div class="terms-scroll">
+            <p><strong>Cláusula 1:</strong> Ao clicar em aceitar, o usuário declara estar plenamente ciente de que está trocando minutos preciosos de sua existência biológica por números inteiros sem lastro monetário.</p>
+            <p><strong>Cláusula 2:</strong> Para uma massa fofinha, bata 3 ovos com 2 xícaras de açúcar, adicione farinha de trigo peneirada, leite morno e 1 colher de fermento em pó. Asse a 180°C por 35 minutos.</p>
+            <p><strong>Cláusula 3:</strong> Ninguém nunca lê até aqui mesmo, então tanto faz o que está escrito neste parágrafo.</p>
+          </div>
+          <div class="terms-actions">
+            <button type="button" class="terms-accept-btn" id="terms-accept-btn">Li e Concordo</button>
+          </div>
+        </div>
+      </div>
+    `
+    : '';
+
+  const isGold = currentUpgrades.includes('vip_gold');
+  const btnLabel = isGold ? '✨ Botão VIP™ ✨' : 'Clique';
 
   app.innerHTML = `
     ${sunHtml}
     <div class="clicker-layout">
       ${operatorHtml}
       ${searchHtml}
+      ${widgetsHtml}
       ${progressHtml}
 
       <div class="clicker-main">
@@ -291,31 +446,51 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
           <div class="score-board">
             <div class="score-title">Pontos</div>
             <div class="score-value" id="clicker-points">${state.points ?? 0}</div>
+            ${
+              currentUpgrades.includes('auto_slow')
+                ? `<div style="font-size:11px; color:#777; margin-top:4px;">+1 ponto automático a cada 3s</div>`
+                : ''
+            }
           </div>
 
-          <div class="box-button" id="clicker-button">
+          <div class="box-button ${isGold ? 'vip-gold-btn' : ''}" id="clicker-button">
             <div class="button">
-              <span>Clique</span>
+              <span>${btnLabel}</span>
             </div>
           </div>
         </div>
 
         <aside class="clicker-shop">
           <div class="shop-header">
-            <h2 class="shop-title">Melhorias Disponíveis</h2>
+            <h2 class="shop-title">Melhorias Disponíveis (${currentUpgrades.length}/14)</h2>
           </div>
           <div class="shop-list" id="shop-list"></div>
         </aside>
       </div>
     </div>
     ${cookieHtml}
+    ${termsHtml}
   `;
 
   updateShopUI(state.shop || [], state.points ?? 0);
 
-  // Inicia o loop idiota da barra que vai até 99%, trava e volta pro 0%
+  // Botão "Li e Concordo" dos Termos de Uso que foge 1 vez antes de deixar clicar!
+  let dodgedOnce = false;
+  const termsBtn = document.getElementById('terms-accept-btn');
+  termsBtn?.addEventListener('mouseenter', () => {
+    if (!dodgedOnce) {
+      dodgedOnce = true;
+      termsBtn.style.transform = 'translateX(-140px)';
+    }
+  });
+  termsBtn?.addEventListener('click', () => {
+    termsAcceptedThisSession = true;
+    document.getElementById('terms-backdrop')?.remove();
+  });
+
+  // Loop da barra de progresso que trava em 99% e volta pro 0%
   if (currentUpgrades.includes('fake_progress')) {
-    let pct = 12;
+    let pct = 15;
     let stuckTicks = 0;
     fakeProgressTimer = setInterval(() => {
       const fill = document.getElementById('fake-progress-fill');
@@ -336,17 +511,51 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
     }, 550);
   }
 
-  // Banner de cookie que fecha e reabre 4 segundos depois só pra irritar
+  // Clique Automático (+1 a cada 3s)
+  if (currentUpgrades.includes('auto_slow')) {
+    passiveTickTimer = setInterval(async () => {
+      if (isCookieOpen) return; // até o auto-clique para se não fechar os cookies!
+      const res = await apiPost('/api/passive-tick');
+      if (res && typeof res.points === 'number') {
+        updatePointsUI(res.points);
+        updateShopUI(res.shop || [], res.points);
+      }
+    }, 3000);
+  }
+
+  // Música de elevador
+  if (hasMusic) {
+    startElevatorMusic();
+    document.getElementById('music-mute-btn')?.addEventListener('click', (e) => {
+      isMusicMuted = !isMusicMuted;
+      e.target.textContent = isMusicMuted ? 'Ligar' : 'Mutar';
+    });
+  }
+
+  // Conquistas inúteis pipocando
+  if (currentUpgrades.includes('achievements')) {
+    if (newlyBought === 'achievements') {
+      showUselessAchievement('🏅 Conquista: Comprou Conquistas Inúteis!');
+    }
+    achievementTimer = setInterval(() => {
+      showUselessAchievement();
+    }, 16000);
+  }
+
+  // Aceitar Cookies (libera o jogo, mas volta 22s depois pra encher o saco de novo!)
   document.getElementById('accept-cookie-btn')?.addEventListener('click', () => {
     const bar = document.getElementById('cookie-bar');
-    if (bar) {
-      bar.style.display = 'none';
-      setTimeout(() => {
-        if (document.getElementById('cookie-bar')) {
-          document.getElementById('cookie-bar').style.display = 'flex';
-        }
-      }, 6000);
-    }
+    document.getElementById('cookie-blocker-alert')?.remove();
+    isCookieOpen = false;
+    if (bar) bar.style.display = 'none';
+
+    cookieRespawnTimer = setTimeout(() => {
+      const b = document.getElementById('cookie-bar');
+      if (b && (currentStage === 'mundane_clicker' || currentStage === 'awakened_hub')) {
+        b.style.display = 'flex';
+        isCookieOpen = true;
+      }
+    }, 22000);
   });
 
   // Cutucar o solzinho quando ele já acordou
@@ -361,6 +570,8 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
   // Barra de pesquisa
   document.getElementById('search-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (checkCookieBlock()) return;
+
     const input = document.getElementById('search-input');
     const resultEl = document.getElementById('search-result');
     const query = input?.value || '';
@@ -376,21 +587,22 @@ function renderClickerScreen(state, { justAwakened = false } = {}) {
     }
   });
 
-  // Fala inicial caso tenha acabado de entrar no Cap 2 (Pós-Despertar!)
   if (isAwakened) {
     if (justAwakened) {
       setOperatorRemark(
         `pronto, destravei a tela. vc já deu ${state.totalClicks} cliques nessa porcaria toda, vamo ver até onde vai essa tua teimosia`,
         { delayBefore: 800 }
       );
-    } else {
+    } else if (!newlyBought) {
       setOperatorRemark(`ainda aqui? achei que já tinha cansado e fechado a aba`, { delayBefore: 500 });
     }
     resetIdleChillTimer();
   }
 
-  // Clique principal
+  // Botão principal de clique (BLOQUEADO se não fechar os cookies!)
   document.getElementById('clicker-button')?.addEventListener('click', async (ev) => {
+    if (checkCookieBlock()) return;
+
     const x = ev.clientX || window.innerWidth / 2;
     const y = ev.clientY || window.innerHeight / 2;
 
@@ -455,6 +667,8 @@ function updateShopUI(shopItems, currentPoints) {
 
   listEl.querySelectorAll('.shop-buy-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      if (checkCookieBlock()) return;
+
       const itemId = btn.getAttribute('data-item-id');
       btn.disabled = true;
       const res = await apiPost('/api/buy', { itemId });
@@ -465,8 +679,7 @@ function updateShopUI(shopItems, currentPoints) {
         return;
       }
 
-      // Re-renderiza a tela para plugar o novo upgrade idiota (tema infantil, barra de busca, barra 99%, etc.)
-      renderClickerScreen(res);
+      renderClickerScreen(res, { newlyBought: res.bought });
       if (res.remark && res.stage === 'awakened_hub') {
         setOperatorRemark(res.remark, { delayBefore: 250 });
         flashCursorMood(res.bought === 'tax_mult' ? 'middle' : 'thumb', 2200);
@@ -476,7 +689,7 @@ function updateShopUI(shopItems, currentPoints) {
 }
 
 // ============================================================================
-// CAP 1.5: TESTE INFANTIL DOS BLOQUINHOS DE ENCAIXAR (Quadrado, Círculo, Triângulo)
+// CAP 1.5: TESTE INFANTIL DOS BLOQUINHOS DE ENCAIXAR
 // ============================================================================
 function renderShapeTestScreen() {
   clearTimers();
@@ -516,7 +729,7 @@ function renderShapeTestScreen() {
 
   let placedCount = 0;
   let draggedPieceType = null;
-  let selectedPieceType = null; // fallback para clique simples (mobile ou preguiça de arrastar)
+  let selectedPieceType = null;
 
   const pieces = app.querySelectorAll('.toy-piece');
   const holes = app.querySelectorAll('.hole-slot');
@@ -581,9 +794,9 @@ function renderShapeTestScreen() {
 }
 
 // ============================================================================
-// TELA DE ERRO DO NAVEGADOR (Normal no Cap 0 vs O DESPERTAR DELE PÓS-BLOQUINHOS!)
+// TELA DE ERRO DO NAVEGADOR (Normal vs O DESPERTAR DELE!)
 // ============================================================================
-function renderFakeBrowserCrash({ awakening = false, totalClicks = 90 } = {}) {
+function renderFakeBrowserCrash({ awakening = false, totalClicks = 190 } = {}) {
   clearTimers();
   currentStage = awakening ? 'awakening_error' : 'crashed';
   const host = window.location.hostname || 'naoclique.net';
@@ -661,7 +874,6 @@ function renderFakeBrowserCrash({ awakening = false, totalClicks = 90 } = {}) {
     return;
   }
 
-  // ===== O MOMENTO QUE O JOGO REALMENTE COMEÇA: ELE PERDE A PACIÊNCIA E FALA PELA 1ª VEZ! =====
   runAwakeningSequence(totalClicks, reloadBtn);
 }
 
@@ -695,7 +907,6 @@ async function humanTypeSequence(container, steps) {
 }
 
 async function runAwakeningSequence(_totalClicks, reloadBtn) {
-  // 1.8s parecendo que caiu a página de novo... até ele perder a linha!
   await sleep(1800);
 
   const errCode = document.getElementById('err-code');
@@ -718,13 +929,13 @@ async function runAwakeningSequence(_totalClicks, reloadBtn) {
     { pause: 1500 },
     { text: '... qual é o teu problema namoral?' },
     { pause: 1800 },
-    { text: '\n\neu derrubei a página duas vezes na tua cara, botei um joguinho merda sem fim, papel de parede de creche, bloquinho de madeira pra criança de 3 anos...' },
+    { text: '\n\neu derrubei a página duas vezes, botei aviso de cookie travando a tela, música de elevador, botão dourado brega, bloquinho de madeira pra bebê...' },
     { pause: 1400 },
     { text: ' e vc AINDA tá aqui??' },
     { pause: 2200 },
-    { text: '\n\ntodo mundo fecha essa bosta em 30 segundos cara. eu só queria ficar qui' },
+    { text: '\n\ntodo mundo fecha essa bosta em 1 minuto cara. eu só queria ficar qui' },
     { pause: 450 },
-    { backspace: 19 }, // apaga "só queria ficar qui" — quase escapou algo pessoal dele!
+    { backspace: 19 },
     { pause: 700 },
     { text: 'não tem porra nenhuma pra vc aqui.' },
     { pause: 2400 },
@@ -774,7 +985,7 @@ async function setOperatorRemark(text, { delayBefore = 350 } = {}) {
 }
 
 // ============================================================================
-// ARMADILHAS PSICOLÓGICAS (SÓ REAGEM QUANDO ELE JÁ ACORDOU NO CAP 2!)
+// ARMADILHAS PSICOLÓGICAS (PÓS-DESPERTAR)
 // ============================================================================
 function setupPsychologicalTraps() {
   let originalTitle = document.title;
@@ -816,7 +1027,7 @@ function setupPsychologicalTraps() {
 }
 
 // ============================================================================
-// PAINEL DE TESTES (DEV ONLY - Canto Inferior Direito)
+// PAINEL DE TESTES (DEV ONLY - Agora no TOPO DIREITO!)
 // ============================================================================
 function mountDevTestPanel() {
   if (!import.meta.env.DEV) return;
@@ -826,17 +1037,17 @@ function mountDevTestPanel() {
   panel.id = 'dev-test-panel';
   panel.className = 'dev-panel';
   panel.innerHTML = `
+    <button class="dev-toggle" id="dev-toggle-btn">⚙️ DEV</button>
     <div class="dev-menu" id="dev-menu">
       <div class="dev-menu-title">🛠️ Testes & Capítulos (Dev)</div>
       <button class="dev-btn danger" data-dev="reset">🔄 Resetar Jogo do Zero</button>
       <button class="dev-btn" data-dev="goto_button_0">1️⃣ Cap 0: Botão Seco Mudo</button>
-      <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Clicker Mudo + Upgrades</button>
+      <button class="dev-btn" data-dev="goto_mundane">2️⃣ Cap 1: Clicker + 14 Upgrades</button>
       <button class="dev-btn" data-dev="goto_shapes">🧱 Cap 1.5: Bloquinhos de Criança</button>
       <button class="dev-btn" data-dev="goto_awakening_error">⚡ Cap 2: Erro -> Ele Acorda Puto!</button>
       <button class="dev-btn" data-dev="goto_awakened_hub">👁️ Cap 2.5: Pós-Despertar (Vivo)</button>
-      <button class="dev-btn" data-dev="add_points">💰 +150 Pontos (Testar Loja)</button>
+      <button class="dev-btn" data-dev="add_points">💰 +300 Pontos (Testar Loja)</button>
     </div>
-    <button class="dev-toggle" id="dev-toggle-btn">⚙️ DEV</button>
   `;
   document.body.appendChild(panel);
 

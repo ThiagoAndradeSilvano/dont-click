@@ -18,7 +18,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Catálogo de "Upgrades Merda" do Cap 1 (Sistema Automático Mudo pra fazer o curioso desistir de tédio)
+// Catálogo expandido de "Upgrades Merda / Funções Idiotas de App" (pra pessoa acreditar que esse é o jogo!)
 const BORING_SHOP = {
   sound: {
     id: 'sound',
@@ -28,39 +28,81 @@ const BORING_SHOP = {
   },
   fake_progress: {
     id: 'fake_progress',
-    name: 'Barra de Progresso',
-    cost: 18,
-    desc: 'Exibe indicador visual de evolução na interface.',
+    name: 'Barra de Carregamento',
+    cost: 20,
+    desc: 'Adiciona barra visual de sincronização do sistema.',
   },
   kids_theme: {
     id: 'kids_theme',
     name: 'Tema Colorido',
-    cost: 30,
-    desc: 'Substitui o fundo padrão por um plano de fundo amigável.',
+    cost: 35,
+    desc: 'Aplica plano de fundo alegre e tipografia amigável.',
+  },
+  cookie_banner: {
+    id: 'cookie_banner',
+    name: 'Conformidade de Cookies',
+    cost: 55,
+    desc: 'Implementa aviso obrigatório de privacidade no rodapé.',
   },
   search_bar: {
     id: 'search_bar',
     name: 'Barra de Pesquisa',
-    cost: 45,
-    desc: 'Adiciona campo de busca no topo da página.',
+    cost: 80,
+    desc: 'Libera campo de busca global no cabeçalho.',
   },
   tax_mult: {
     id: 'tax_mult',
     name: 'Multiplicador x2',
-    cost: 60,
-    desc: 'Aumenta o ganho bruto por clique em 100% (*sujeito a tarifa).',
+    cost: 110,
+    desc: 'Dobra os pontos por clique (*sujeito a tarifa operacional).',
   },
-  cookie_banner: {
-    id: 'cookie_banner',
-    name: 'Aviso de Privacidade',
-    cost: 75,
-    desc: 'Adiciona rodapé regulamentar de aceitação de termos.',
+  auto_slow: {
+    id: 'auto_slow',
+    name: 'Clique Automático Básico',
+    cost: 145,
+    desc: 'Gera +1 ponto automaticamente a cada 3 segundos.',
+  },
+  weather_widget: {
+    id: 'weather_widget',
+    name: 'Widget de Clima',
+    cost: 190,
+    desc: 'Exibe informações meteorológicas em tempo real.',
+  },
+  achievements: {
+    id: 'achievements',
+    name: 'Sistema de Conquistas',
+    cost: 240,
+    desc: 'Desbloqueia medalhas comemorativas para suas ações.',
+  },
+  terms_popup: {
+    id: 'terms_popup',
+    name: 'Termos de Serviço v4.2',
+    cost: 300,
+    desc: 'Adiciona contrato de licença de usuário final.',
+  },
+  elevator_music: {
+    id: 'elevator_music',
+    name: 'Música Ambiente',
+    cost: 370,
+    desc: 'Reproduz trilha instrumental de espera corporativa.',
+  },
+  turbo_click: {
+    id: 'turbo_click',
+    name: ' Impulso Triplo (+3)',
+    cost: 440,
+    desc: 'Aumenta o ganho base para +3 pontos por clique.',
+  },
+  vip_gold: {
+    id: 'vip_gold',
+    name: 'Acabamento Dourado VIP',
+    cost: 530,
+    desc: 'Reveste o botão principal com pintura especial.',
   },
   unlock_menu: {
     id: 'unlock_menu',
-    name: 'Liberar Acesso Completo',
-    cost: 95,
-    desc: 'Inicia verificação básica para abrir o painel principal.',
+    name: 'Liberar Painel Principal',
+    cost: 650,
+    desc: 'Inicia teste final de aptidão para acessar o sistema completo.',
   },
 };
 
@@ -103,14 +145,6 @@ function computeFingerprintHash(ip, clientMeta = {}) {
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 16);
 }
 
-/*
- * ESTÁGIOS DO JOGO (stages):
- * 1. 'button'            -> Botão seco mudo (cai em 9x, recarrega, cai em 5x, recarrega -> vai pro clicker mudo)
- * 2. 'mundane_clicker'   -> Clicker automático mudo e entediante com upgrades idiotas de app
- * 3. 'shape_test'        -> Teste dos bloquinhos de encaixar de criança (quadrado, círculo, triângulo)
- * 4. 'awakening_error'   -> Página dá erro após os bloquinhos e ELE finalmente perde a paciência e fala pela 1ª vez!
- * 5. 'awakened_hub'      -> O Jogo Realmente Começa! Ele acordou, cursores vermelhos ativos, barra de pesquisa vira terminal real, etc.
- */
 function normalizePlayer(player) {
   const validStages = ['button', 'mundane_clicker', 'shape_test', 'awakening_error', 'awakened_hub'];
   if (!validStages.includes(player.stage)) player.stage = 'button';
@@ -198,27 +232,19 @@ function buildClientPayload(player) {
   };
 }
 
-// Abertura / Reload da página
 app.post('/api/session', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.visits += 1;
   player.sessionClicks = 0;
 
-  // Após cair 2 vezes no botão seco e recarregar, entra silenciosamente no Clicker Automático Mudo!
   if (player.stage === 'button' && player.crashes >= 2) {
     player.stage = 'mundane_clicker';
   }
 
   saveDb(db);
-
-  console.log(
-    `[SESSÃO] Jogador ${player.id.slice(0, 8)} | Stage: ${player.stage} | Quedas: ${player.crashes} | Cliques: ${player.clicks}`
-  );
-
   return res.json(buildClientPayload(player));
 });
 
-// Clique no botão (muda conforme o estágio atual)
 app.post('/api/click', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.clicks += 1;
@@ -232,7 +258,7 @@ app.post('/api/click', (req, res) => {
     at: new Date().toISOString(),
   });
 
-  // ESTÁGIO 1: Botão Seco Mudo (9x na 1ª queda, 5x na 2ª queda)
+  // ESTÁGIO 1: Botão Seco Mudo
   if (player.stage === 'button') {
     const crashThreshold = player.crashes === 0 ? player.firstCrashClicks : 5;
     const shouldCrash = player.sessionClicks >= crashThreshold;
@@ -250,26 +276,35 @@ app.post('/api/click', (req, res) => {
     });
   }
 
-  // ESTÁGIO 2 ou 5: Clicker (Mudo no mundane_clicker, Com ele acordado no awakened_hub)
+  // Cálculo de ganho com os upgrades idiotas:
+  // Base = 1 (ou 3 se tiver turbo_click)
+  // Se tiver tax_mult (Multiplicador x2), dobra o bruto mas cobra metade de tarifa kkkkk!
+  // Porém com turbo_click, +3 vira +6 bruto e -2 de tarifa = +4 líquido (assim o jogador consegue avançar bem!)
+  const hasTurbo = player.upgrades.includes('turbo_click');
   const hasTaxMult = player.upgrades.includes('tax_mult');
-  const grossGain = hasTaxMult ? 2 : 1;
-  const tax = hasTaxMult ? 1 : 0;
-  const netGain = grossGain - tax;
 
+  let grossGain = hasTurbo ? 3 : 1;
+  let tax = 0;
+
+  if (hasTaxMult) {
+    grossGain = grossGain * 2;
+    tax = hasTurbo ? 2 : 1; // Sem turbo: +2 - 1 = +1 (troll total!). Com turbo: +6 - 2 = +4!
+  }
+
+  const netGain = grossGain - tax;
   player.points = Math.round((player.points + netGain) * 10) / 10;
 
-  // Comentários SÓ acontecem depois que ele acordou ('awakened_hub')! Antes disso é silêncio total!
   let remark = null;
   if (player.stage === 'awakened_hub') {
     if (player.sessionClicks === 10 && !player.flags.includes('awk_10')) {
       player.flags.push('awk_10');
-      remark = 'sério msm q vc voltou a clicar no botãozinho dps de tudo q eu falei? pqp';
+      remark = 'sério msm q vc voltou a clicar nessa merda dourada dps de tudo q eu falei?';
     } else if (player.sessionClicks === 30 && !player.flags.includes('awk_30')) {
       player.flags.push('awk_30');
-      remark = 'eu botei um solzinho feito no paint ali no canto pra te zoar e vc continua clicando mano';
+      remark = 'eu botei musiquinha de elevador e solzinho do paint pra te espantar e vc aí felizão';
     } else if (player.sessionClicks === 60 && !player.flags.includes('awk_60')) {
       player.flags.push('awk_60');
-      remark = 'tá bom vai clicando... eu ia tomar um café msm... quer dizer, deixa quieto.';
+      remark = 'tá bom vai clicando... eu ia pegar um café msm... quer dizer. esquece.';
     }
   }
 
@@ -288,7 +323,19 @@ app.post('/api/click', (req, res) => {
   });
 });
 
-// Compra de upgrades
+// Tick do "Clique Automático Básico" (+1 a cada 3s)
+app.post('/api/passive-tick', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  if ((player.stage === 'mundane_clicker' || player.stage === 'awakened_hub') && player.upgrades.includes('auto_slow')) {
+    player.points = Math.round((player.points + 1) * 10) / 10;
+    saveDb(db);
+  }
+  res.json({
+    points: player.points,
+    shop: buildShopState(player),
+  });
+});
+
 app.post('/api/buy', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   const { itemId } = req.body || {};
@@ -308,7 +355,6 @@ app.post('/api/buy', (req, res) => {
   player.points = Math.round((player.points - item.cost) * 10) / 10;
   player.upgrades.push(item.id);
 
-  // Se comprou o último upgrade ("Liberar Acesso Completo") durante o clicker mudo -> abre os Bloquinhos de Criança!
   if (item.id === 'unlock_menu' && player.stage === 'mundane_clicker') {
     player.stage = 'shape_test';
   }
@@ -317,11 +363,18 @@ app.post('/api/buy', (req, res) => {
   if (player.stage === 'awakened_hub') {
     const snark = {
       sound: 'comprou barulhinho agr? atrasado hein',
-      fake_progress: 'essa barra nem chega no 100%, eu programei ela em 2 minutos pra enganar trouxa',
-      kids_theme: 'curtiu o papel de parede de maternal? combina com vc',
-      search_bar: 'não vai sair digitando qualquer merda aí na busca não hein',
-      tax_mult: 'ganha 2 e perde 1 de tarifa kkkkkk adoro esse',
-      cookie_banner: 'vc literalmente gastou ponto pra botar um pop-up chato na própria tela',
+      fake_progress: 'essa barra trava no 99% pra sempre kkkkk botei só pra dar agonia',
+      kids_theme: 'papel de parede de creche combinou certinho com a tua cara',
+      cookie_banner: 'vc literalmente pagou ponto pra bloquear a própria tela com aviso de cookie mano',
+      search_bar: 'nem adianta pesquisar resposta aí que eu tô vendo tudo',
+      tax_mult: 'dobrou os pontos e dobrou a taxa junto, negócios né pae',
+      auto_slow: '1 ponto a cada 3 segundos... velocidade de tartaruga manca',
+      weather_widget: 'previsão do tempo num site fechado, utilidade pública zero',
+      achievements: 'medalhinha por existir, geração troféu de participação é foda',
+      terms_popup: 'ninguém lê essa merda msm, botei receita de bolo no meio',
+      elevator_music: 'curtiu esse tecladinho casio de consultório de dentista?',
+      turbo_click: 'tá com pressa pra chegar onde irmão?',
+      vip_gold: 'pintou o botão de amarelo achando que virou milionário kkkkk',
     };
     remark = snark[item.id] || null;
   }
@@ -336,7 +389,6 @@ app.post('/api/buy', (req, res) => {
   });
 });
 
-// Conclusão do teste infantil dos bloquinhos -> Página "dá erro" e ELE ACORDA PUTO!
 app.post('/api/complete-shapes', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.stage = 'awakening_error';
@@ -351,7 +403,6 @@ app.post('/api/complete-shapes', (req, res) => {
   });
 });
 
-// Quando termina o monólogo dele na tela de erro e o jogador clica em Recarregar -> O JOGO REAL COMEÇA!
 app.post('/api/enter-awakened', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.stage = 'awakened_hub';
@@ -363,12 +414,10 @@ app.post('/api/enter-awakened', (req, res) => {
   });
 });
 
-// Pesquisa na Barra de Pesquisa (Muda no Cap 1 vs Viva e Reativa no Cap 2!)
 app.post('/api/search', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   const query = String(req.body?.query || '').trim().toLowerCase();
 
-  // No Cap 1 (Mudo): resposta robótica seca e desinteressante
   if (player.stage !== 'awakened_hub') {
     return res.json({
       mode: 'silent',
@@ -376,7 +425,6 @@ app.post('/api/search', (req, res) => {
     });
   }
 
-  // No Cap 2 (Ele acordado!): ele lê o que você digita na busca em tempo real!
   saveDb(db);
   let remark = `tá pesquisando "${query.slice(0, 24)}" pq? acha que isso aqui é o google?`;
   let mood = 'stop';
@@ -404,7 +452,6 @@ app.post('/api/search', (req, res) => {
   });
 });
 
-// Eventos psicológicos (só disparam fala dele quando já está acordado!)
 app.post('/api/behavior', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   const { type } = req.body || {};
@@ -428,7 +475,6 @@ app.post('/api/behavior', (req, res) => {
   res.json({ ok: true, remark: reactions[type] || null });
 });
 
-// Rotas internas de dev (Painel de Testes no canto inferior direito)
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/_debug', (_req, res) => {
     res.json(loadDb());
@@ -471,18 +517,18 @@ if (process.env.NODE_ENV !== 'production') {
       if (!player.upgrades.includes('unlock_menu')) player.upgrades.push('unlock_menu');
     } else if (action === 'goto_awakening_error') {
       player.stage = 'awakening_error';
-      if (player.clicks < 80) player.clicks = 84;
+      if (player.clicks < 180) player.clicks = 194;
       if (!player.upgrades.includes('kids_theme')) player.upgrades.push('kids_theme');
       if (!player.upgrades.includes('search_bar')) player.upgrades.push('search_bar');
       if (!player.upgrades.includes('fake_progress')) player.upgrades.push('fake_progress');
     } else if (action === 'goto_awakened_hub') {
       player.stage = 'awakened_hub';
-      if (player.clicks < 80) player.clicks = 84;
+      if (player.clicks < 180) player.clicks = 194;
       if (!player.upgrades.includes('kids_theme')) player.upgrades.push('kids_theme');
       if (!player.upgrades.includes('search_bar')) player.upgrades.push('search_bar');
       if (!player.upgrades.includes('fake_progress')) player.upgrades.push('fake_progress');
     } else if (action === 'add_points') {
-      player.points = Math.round((player.points + 150) * 10) / 10;
+      player.points = Math.round((player.points + 300) * 10) / 10;
     }
 
     saveDb(db);
