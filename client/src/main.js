@@ -17,6 +17,7 @@ let emberTimer = null;
 let meltdownInactivityTimers = [];
 let idleNudgeTimer = null;
 let subsoloRaf = null;
+let caveKeyHandler = null;
 let isOverheatedLocal = false;
 let isMusicMuted = false;
 let isCookieOpen = false;
@@ -153,6 +154,85 @@ function playCheapBeep() {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.055);
+  } catch {}
+}
+
+// SOM DE DIGITAÇÃO DELE NA TELA (Seco no normal, COM ECO CAVERNOSO quando cai na Caverna!)
+let echoDelayNode = null;
+let echoFeedbackNode = null;
+let echoFilterNode = null;
+
+function ensureCaveEchoChain(ctx) {
+  if (echoDelayNode) return echoDelayNode;
+  echoDelayNode = ctx.createDelay(1.0);
+  echoDelayNode.delayTime.value = 0.19; // 190ms de eco batendo nas paredes de pedra!
+
+  echoFeedbackNode = ctx.createGain();
+  echoFeedbackNode.gain.value = 0.44; // várias repetições decaindo no escuro
+
+  echoFilterNode = ctx.createBiquadFilter();
+  echoFilterNode.type = 'lowpass';
+  echoFilterNode.frequency.value = 1350; // eco abafado de rocha úmida
+
+  echoDelayNode.connect(echoFilterNode);
+  echoFilterNode.connect(echoFeedbackNode);
+  echoFeedbackNode.connect(echoDelayNode);
+  echoFilterNode.connect(ctx.destination);
+  return echoDelayNode;
+}
+
+function playOperatorTypeKey(ch = 'a') {
+  if (ch === ' ' || ch === '\n') return;
+  try {
+    const ctx = ensureAudio();
+    const inCave = currentStage === 'cave_2d' || currentStage === 'cave_escaped';
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = inCave ? 'sine' : 'triangle';
+
+    // Leve variação de frequência por tecla pra soar como teclado mecânico real!
+    const pitch = (inCave ? 620 : 760) + ((ch.charCodeAt(0) * 19) % 220);
+    osc.frequency.setValueAtTime(pitch, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(190, ctx.currentTime + 0.028);
+
+    gain.gain.setValueAtTime(inCave ? 0.075 : 0.05, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (inCave) {
+      const echoIn = ensureCaveEchoChain(ctx);
+      gain.connect(echoIn);
+    }
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.034);
+  } catch {}
+}
+
+// Estrondo grave de desmoronamento quando o chão do Subsolo cede e despenca pra Caverna!
+function playCollapseRumble() {
+  try {
+    const ctx = ensureAudio();
+    const dur = 2.1;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.9));
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 180;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.55;
+    src.connect(lp);
+    lp.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
   } catch {}
 }
 
@@ -387,6 +467,10 @@ function clearTimers() {
   meltdownInactivityTimers.forEach((t) => clearTimeout(t));
   meltdownInactivityTimers = [];
   if (subsoloRaf) { cancelAnimationFrame(subsoloRaf); subsoloRaf = null; }
+  if (caveKeyHandler) {
+    window.removeEventListener('keydown', caveKeyHandler);
+    caveKeyHandler = null;
+  }
   remarkQueue.length = 0;
   isProcessingQueue = false;
   isCookieOpen = false;
@@ -1264,12 +1348,14 @@ async function humanTypeSequence(container, steps) {
     } else if (step.backspace) {
       for (let i = 0; i < step.backspace; i++) {
         span.textContent = span.textContent.slice(0, -1);
+        playOperatorTypeKey('x');
         await sleep(34 + Math.random() * 24);
       }
     } else if (step.text) {
       const base = step.speed || 36;
       for (const ch of step.text) {
         span.textContent += ch;
+        playOperatorTypeKey(ch);
         const jitter = base + (Math.random() * 32 - 12);
         const extra = ch === '.' || ch === '?' ? 250 : ch === ',' ? 130 : 0;
         await sleep(Math.max(18, jitter + extra));
@@ -1410,6 +1496,7 @@ async function processRemarkQueue() {
     for (const ch of current.text) {
       if (myId !== remarkTypingId) return;
       span.textContent += ch;
+      playOperatorTypeKey(ch);
       // Se chegou outra ação do jogador na fila, acelera levemente o fim desta frase pra ficar ágil!
       const speedMul = remarkQueue.length > 0 ? 0.55 : 1;
       await sleep((18 + Math.random() * 20) * speedMul);
@@ -1636,6 +1723,7 @@ function renderShittyLoadingScreen({ forcedByOperator = false } = {}) {
     line.textContent = `[log]: `;
     for (const ch of text) {
       line.textContent += ch;
+      playOperatorTypeKey(ch);
       chatEl.scrollTop = chatEl.scrollHeight;
       await sleep(22 + Math.random() * 18);
     }
@@ -1926,13 +2014,20 @@ function renderSubsolo2DScreen(initialState = null) {
           if (!res) return;
 
           if (res.ok) {
-            scr.classList.remove('err');
-            scr.textContent = res.screenMsg;
+            scr.classList.add('err');
+            scr.textContent = res.screenMsg || 'ERRO ESTRUTURAL!!';
             if (res.remark) setOperatorRemark(res.remark, { priority: 'urgent' });
+
+            // O PAINEL DÁ DEFEITO, O PRÓPRIO SUBSOLO QUEBRA E DESABA EM QUEDA LIVRE PRA CAVERNA!
             setTimeout(() => {
               backdrop.remove();
-              renderDeepSectorScreen();
-            }, 2200);
+              playCollapseRumble();
+              const wrap = document.querySelector('.subsolo-canvas-wrap');
+              wrap?.classList.add('subsolo-collapsing');
+              setTimeout(() => {
+                renderCaveChapterScreen(res.caveState, { justFell: true });
+              }, 2300);
+            }, 1300);
           } else {
             scr.classList.add('err');
             scr.textContent = res.screenMsg || 'NEGADO';
@@ -2377,12 +2472,621 @@ function renderSubsolo2DScreen(initialState = null) {
   subsoloRaf = requestAnimationFrame(loop);
 }
 
-// Tela de chegada após abrir a comporta do Subsolo (Gancho pro próximo Capítulo!)
-function renderDeepSectorScreen() {
+// ============================================================================
+// CAPÍTULO 5: A CAVERNA PROFUNDA (WASD + Eco + Tocha + Mochila + Cadeado + Dinamite!)
+// Convertido fielmente do mapa 4x12 original, agora com controle WASD e o Operador perdido com você!
+// ============================================================================
+const CAVE_INVENTORY_META = {
+  '0': { img: '/cave/apple.gif', name: 'Maçã', details: 'Um lanche estranhamente intacto' },
+  '2': { img: '/cave/pickInventory.gif', name: 'Picareta', details: 'Firme o bastante pra quebrar rocha' },
+  '6': { img: '/cave/plankInventory.gif', name: 'Tábua', details: 'Tábua grossa de madeira' },
+  '8': { img: '/cave/note1.gif', name: 'Nota 1', details: '1º dígito: 1 barra (=5) + 2 pontos (=2) → [ 7 ]' },
+  '9': { img: '/cave/note2.gif', name: 'Nota 2', details: '2º dígito: 1 barra (=5) + 1 ponto (=1) → [ 6 ]' },
+  '10': { img: '/cave/note3.gif', name: 'Nota 3', details: '3º dígito: 3 pontos → [ 3 ]' },
+  '12': { img: '/cave/handleInventory.gif', name: 'Manivela', details: 'Encaixa em alguma engrenagem' },
+  '15': { img: '/cave/dynamiteInventory.gif', name: 'Dinamite', details: 'Inútil sem os estopins' },
+  '16': { img: '/cave/fusesInventory.gif', name: 'Estopins', details: 'Pavio para acender dinamite' },
+};
+
+// Elevadores verticais entre (row, col) e (row + 1, col) do SCSS original (@include moveVerticleOnTile)
+const CAVE_LIFTS = [
+  [1, 5],
+  [1, 11],
+  [2, 2],
+  [2, 8],
+  [3, 9],
+];
+
+// Paredes fixas do SCSS original (@include makeWallAt(row, tile) -> impede entrar e sair daquele segmento!)
+const CAVE_WALL_TILES = new Set([
+  '1-1',
+  '1-8',
+  '1-9',
+  '1-13',
+  '2-1',
+  '2-4',
+  '2-13',
+  '3-1',
+  '3-3',
+  '3-4',
+  '3-6',
+  '3-10',
+  '4-7',
+  '4-11',
+  '4-13',
+]);
+
+// Goteiras (@include makeRainAt)
+const CAVE_RAIN_SEGMENTS = new Set([3, 7, 15, 18, 22, 29, 31, 47]);
+
+// Olhos assustadores e lanternas penduradas (@include assignTileAt)
+const CAVE_DECOR_TILES = {
+  '2-10': '/cave/spookyEyes.gif',
+  '5-17': '/cave/spookyEyes.gif',
+  '7-8': '/cave/spookyEyes.gif',
+  '19-10': '/cave/spookyEyes.gif',
+  '23-11': '/cave/spookyEyes.gif',
+  '3-7': '/cave/swingingLantern.gif',
+  '6-8': '/cave/swingingLantern.gif',
+  '8-8': '/cave/swingingLantern.gif',
+  '10-8': '/cave/swingingLantern.gif',
+  '12-7': '/cave/swingingLantern.gif',
+  '15-7': '/cave/swingingLantern.gif',
+  '18-7': '/cave/swingingLantern.gif',
+  '21-8': '/cave/swingingLantern.gif',
+  '24-8': '/cave/swingingLantern.gif',
+  '27-8': '/cave/swingingLantern.gif',
+  '30-8': '/cave/swingingLantern.gif',
+  '44-8': '/cave/swingingLantern.gif',
+};
+
+// Objetos interativos nas salas (row, col, tile) do HAML original!
+const CAVE_OBJECTS = [
+  { id: '1', row: 1, col: 3, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Nada útil nessa caixa.' },
+  { id: '8', row: 1, col: 6, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma nota estranha! (Guardada na mochila)', ev: 'got_note' },
+  { id: '3', row: 1, col: 7, tile: 15, img: '/cave/creepyCorridor-_062.png', kind: 'boulder', need: '2', blockMsg: 'Preciso de uma ferramenta pra quebrar essa rocha.', okMsg: 'Boa! Pedra destruída!', ev: 'broke_boulder' },
+  { id: '4', row: 1, col: 8, tile: 15, img: '/cave/creepyCorridor-_166.png', kind: 'plunger', msg: 'Apertei o detonador... algo explodiu lá embaixo!', ev: 'armed_plunger' },
+  { id: '9', row: 1, col: 10, tile: 13, img: '/cave/creepyCorridor-24.png', kind: 'pickup', msg: 'Outra nota estranha! (Na mochila)', ev: 'got_note' },
+  { id: '21', row: 1, col: 12, tile: 13, img: '/cave/creepyCorridor-25.png', kind: 'junk', msg: 'Só tranqueira velha.' },
+  { id: '2', row: 1, col: 12, tile: 14, img: '/cave/creepyCorridor-_035.png', kind: 'pickup', hideOnPick: true, msg: 'Uma picareta! Vai quebrar um galho.', ev: 'got_pickaxe' },
+
+  { id: '15', row: 2, col: 3, tile: 15, img: '/cave/creepyCorridor-_161.png', kind: 'pickup', hideOnPick: true, msg: 'Bananas de dinamite!', ev: 'got_dynamite' },
+  { id: '6', row: 2, col: 6, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma tábua firme de madeira.', ev: 'got_plank' },
+  { id: '18', row: 2, col: 7, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Vazia.' },
+  { id: '19', row: 2, col: 10, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'junk', msg: 'Cheia de entulho inútil.' },
+  { id: '17', row: 2, col: 12, tile: 15, img: '/cave/creepyCorridor-_168.png', kind: 'end_door', blockMsg: 'Preciso de dinamite E estopins pra explodir essa saída!' },
+
+  { id: '12', row: 3, col: 2, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma manivela de engrenagem!', ev: 'got_handle' },
+  { id: '11', row: 3, col: 4, tile: 13, img: '/cave/doorLocked.png', unlockedImg: '/cave/doorUnlocked.png', specialClass: 'special-door', kind: 'padlock_door', msg: 'Porta trancada com cadeado de 3 dígitos.' },
+  { id: '7', row: 3, col: 5, tile: 13, img: '/cave/creepyCorridor-_169.png', clearedImg: '/cave/creepyCorridor-_170.png', kind: 'gap', need: '6', blockMsg: 'Fenda funda demais pra pular sem uma tábua.', okMsg: 'Tábua encaixada!', ev: 'placed_plank' },
+  { id: '10', row: 3, col: 5, tile: 14, img: '/cave/creepyCorridor-24.png', kind: 'pickup', msg: 'Terceira nota misteriosa! (Na mochila)', ev: 'got_note' },
+  { id: '5', row: 3, col: 7, tile: 13, img: '/cave/beam.gif', specialClass: 'special-beam', kind: 'beam', blockMsg: 'Algum explosivo à distância deve derrubar essa barreira.' },
+  { id: '20', row: 3, col: 9, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Caixa vazia.' },
+
+  { id: '22', row: 4, col: 8, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'junk', msg: 'Nada aqui dentro.' },
+  { id: '13', row: 4, col: 10, tile: 13, img: '/cave/creepyCorridor-_148.png', kind: 'cog', need: '12', blockMsg: 'Falta uma manivela pra girar esse registro.', okMsg: 'Fechou a queda d\'água!', ev: 'stopped_water' },
+  { id: '14', row: 4, col: 11, tile: 13, img: '/cave/waterOn.gif', clearedImg: '/cave/waterOff.gif', specialClass: 'special-water', kind: 'waterfall', blockMsg: 'Cachoeira forte demais pra atravessar!' },
+  { id: '16', row: 4, col: 12, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Caixa de estopins!', ev: 'got_fuses' },
+];
+
+function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
   clearTimers();
-  currentStage = 'deep_sector';
+  currentStage = 'cave_2d';
+  document.body.className = 'cave-mode awakened-cursors';
+  resetFaviconAndTitle('naoclique.net // ???');
+
+  const state = {
+    row: savedCave?.row || 1,
+    col: savedCave?.col || 2,
+    inventory: Array.isArray(savedCave?.inventory) ? [...savedCave.inventory] : ['0'],
+    cleared: Array.isArray(savedCave?.cleared) ? [...savedCave.cleared] : [],
+    plungerArmed: Boolean(savedCave?.plungerArmed),
+    introDone: Boolean(savedCave?.introDone),
+  };
+
+  if (state.plungerArmed && !state.cleared.includes('beam')) {
+    state.cleared.push('beam');
+  }
+
+  const app = document.getElementById('app');
+  app.style.visibility = 'visible';
+
+  // Monta os 48 segmentos (4 linhas x 12 colunas)
+  let segmentsHtml = '';
+  for (let r = 1; r <= 4; r++) {
+    for (let c = 1; c <= 12; c++) {
+      const segIdx = (r - 1) * 12 + c;
+      const hasRain = CAVE_RAIN_SEGMENTS.has(segIdx);
+      const hasLiftTop = CAVE_LIFTS.some(([lr, lc]) => lr === r && lc === c);
+
+      let dripsHtml = '';
+      if (hasRain) {
+        dripsHtml = `<div class="cave-drip-container">
+          <div class="cave-drip" style="left:22px; animation-delay:0.1s;"></div>
+          <div class="cave-drip" style="left:68px; animation-delay:0.7s;"></div>
+          <div class="cave-drip" style="left:114px; animation-delay:0.35s;"></div>
+        </div>`;
+      }
+
+      let liftHtml = '';
+      if (hasLiftTop) {
+        liftHtml = `
+          <div class="cave-lift-ropes" data-lift="${r}-${c}"></div>
+          <img class="cave-lift-plat" data-lift-plat="${r}-${c}" src="/cave/corridorLift.png" alt="" />
+        `;
+      }
+
+      let tilesHtml = '';
+      for (let t = 1; t <= 21; t++) {
+        const decorSrc = CAVE_DECOR_TILES[`${segIdx}-${t}`];
+        const obj = CAVE_OBJECTS.find((o) => o.row === r && o.col === c && o.tile === t);
+
+        if (obj) {
+          tilesHtml += `
+            <div class="cave-tile ${obj.specialClass || ''}" data-obj-slot="${obj.id}">
+              <div class="cave-obj-btn" data-obj-id="${obj.id}">
+                <img src="${obj.img}" alt="" data-obj-img="${obj.id}" />
+              </div>
+            </div>
+          `;
+        } else if (decorSrc) {
+          tilesHtml += `<div class="cave-tile"><img class="decor-anim" src="${decorSrc}" alt="" /></div>`;
+        } else {
+          tilesHtml += `<div class="cave-tile"></div>`;
+        }
+      }
+
+      segmentsHtml += `
+        <div class="cave-segment" data-seg="${r}-${c}">
+          ${dripsHtml}
+          ${liftHtml}
+          <div class="cave-tiles">${tilesHtml}</div>
+        </div>
+      `;
+    }
+  }
+
+  app.innerHTML = `
+    <div class="cave-top-hud">
+      <div class="operator-feed">
+        <span class="operator-tag">log (eco)</span>
+        <span id="operator-msg"></span>
+      </div>
+    </div>
+
+    <div class="cave-inventory">
+      <img class="cave-backpack-icon" src="/cave/creepyBackpack.png" title="Mochila" alt="Mochila" />
+      <div class="cave-inv-grid" id="cave-inv-grid"></div>
+    </div>
+
+    <div class="cave-stage-root">
+      <div class="cave-character" id="cave-char"></div>
+      <div class="cave-viewport" id="cave-viewport">
+        <img class="cave-level-bg" src="/cave/tilemaps.png" alt="Mapa da Caverna" />
+        ${segmentsHtml}
+      </div>
+    </div>
+
+    <div class="cave-wasd-hint">
+      <span>Mover: <span class="wasd-keycap">W</span><span class="wasd-keycap">A</span><span class="wasd-keycap">S</span><span class="wasd-keycap">D</span></span>
+      <span>Interagir na sala: <span class="wasd-keycap">E</span> ou <span class="wasd-keycap">Clique</span></span>
+    </div>
+  `;
+
+  let walkingTimer = null;
+  let torchLit = state.introDone;
+
+  function showSegmentBubble(r, c, text) {
+    document.querySelectorAll('.cave-bubble').forEach((b) => b.remove());
+    const seg = document.querySelector(`.cave-segment[data-seg="${r}-${c}"]`);
+    if (!seg) return;
+    const b = document.createElement('div');
+    b.className = 'cave-bubble';
+    b.textContent = text;
+    seg.appendChild(b);
+    setTimeout(() => b.remove(), 2900);
+  }
+
+  function refreshInventoryUI() {
+    const grid = document.getElementById('cave-inv-grid');
+    if (!grid) return;
+    grid.innerHTML = state.inventory
+      .filter((id) => CAVE_INVENTORY_META[id])
+      .map((id) => {
+        const m = CAVE_INVENTORY_META[id];
+        return `
+          <div class="cave-inv-item">
+            <img src="${m.img}" alt="${m.name}" />
+            <div style="margin-top:4px;">${m.name}</div>
+            <div class="inv-tooltip"><strong>${m.name}</strong><br/>${m.details}</div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  function refreshObjectsVisuals() {
+    CAVE_OBJECTS.forEach((obj) => {
+      const imgEl = document.querySelector(`[data-obj-img="${obj.id}"]`);
+      const slotEl = document.querySelector(`[data-obj-slot="${obj.id}"]`);
+      if (!imgEl || !slotEl) return;
+
+      if (obj.kind === 'pickup' && obj.hideOnPick && state.inventory.includes(obj.id)) {
+        slotEl.style.display = 'none';
+      } else if (obj.kind === 'boulder' && state.cleared.includes('boulder')) {
+        slotEl.style.display = 'none';
+      } else if (obj.kind === 'beam' && state.cleared.includes('beam')) {
+        slotEl.style.display = 'none';
+      } else if (obj.kind === 'gap' && state.cleared.includes('gap') && obj.clearedImg) {
+        imgEl.src = obj.clearedImg;
+      } else if (obj.kind === 'waterfall' && state.cleared.includes('water') && obj.clearedImg) {
+        imgEl.src = obj.clearedImg;
+      } else if (obj.kind === 'padlock_door' && state.cleared.includes('padlock_door') && obj.unlockedImg) {
+        imgEl.src = obj.unlockedImg;
+      }
+    });
+  }
+
+  function updateViewportPosition(facingLeft = false) {
+    const vp = document.getElementById('cave-viewport');
+    const ch = document.getElementById('cave-char');
+    if (!vp || !ch) return;
+
+    const leftPx = -144 * (state.col - 1);
+    const topPx = -336 * (state.row - 1);
+    const clipX = 71 + (state.col - 1) * 144;
+    const clipY = 212 + (state.row - 1) * 336;
+    const radius = torchLit ? 148 : 28; // Escuro fechado antes de acender a tocha!
+
+    vp.style.left = `${leftPx}px`;
+    vp.style.top = `${topPx}px`;
+    vp.style.clipPath = `circle(${radius}px at ${clipX}px ${clipY}px)`;
+
+    ch.classList.toggle('facing-left', facingLeft);
+    ch.classList.add('walking');
+    if (walkingTimer) clearTimeout(walkingTimer);
+    walkingTimer = setTimeout(() => ch.classList.remove('walking'), 480);
+
+    // Atualiza posição visual dos elevadores quando o jogador está no andar de baixo deles
+    CAVE_LIFTS.forEach(([lr, lc]) => {
+      const lowered = state.row === lr + 1 && state.col === lc;
+      document.querySelector(`[data-lift="${lr}-${lc}"]`)?.classList.toggle('lowered', lowered);
+      document.querySelector(`[data-lift-plat="${lr}-${lc}"]`)?.classList.toggle('lowered', lowered);
+    });
+  }
+
+  function isBlockedAt(r, c) {
+    if (r === 1 && c === 7 && !state.cleared.includes('boulder')) return true;
+    if (r === 3 && c === 7 && !state.cleared.includes('beam')) return true;
+    if (r === 3 && c === 5 && !state.cleared.includes('gap')) return true;
+    if (r === 3 && c === 4 && !state.cleared.includes('padlock_door')) return true;
+    if (r === 4 && c === 11 && !state.cleared.includes('water')) return true;
+    return false;
+  }
+
+  function canMoveHorizontal(fromR, fromC, toC) {
+    if (toC < 1 || toC > 12) return false;
+    // Paredes estáticas do SCSS original:
+    // Moving right (toC = fromC + 1): makeWallAt(r, toC + 1) esconde a seta de avanço pra toC?
+    // No SCSS original: makeWallAt(row, tile) esconde forward em (tile-1) e backward em (tile+1), ou seja, a célula 'tile' é uma PAREDE SÓLIDA INTRANSPONÍVEL!
+    if (CAVE_WALL_TILES.has(`${fromR}-${toC}`)) {
+      // Exceção: (1,8) tinha makeWallAt(1,8) até quebrar a pedra em (1,7)! Quando quebra a pedra, compare(2,7) libera passar até (1,8) onde fica o detonador!
+      if (fromR === 1 && toC === 8 && state.cleared.includes('boulder')) {
+        // liberado!
+      } else if (fromR === 3 && toC === 4 && state.cleared.includes('padlock_door')) {
+        // liberado quando destranca cadeado!
+      } else if (fromR === 4 && toC === 11 && state.cleared.includes('water')) {
+        // liberado quando desliga cachoeira!
+      } else {
+        return false;
+      }
+    }
+
+    // Não permite atravessar uma sala que tem obstáculo bloqueante ativo (mas permite entrar nela pra interagir, sem passar além dela!)
+    if (isBlockedAt(fromR, fromC)) {
+      // Se estou em cima da sala do obstáculo, só posso voltar pro lado de onde vim!
+      // Pedra (1,7): veio da esquerda (6) | Feixe (3,7): veio da direita (8) | Gap (3,5): veio da direita (6) ou cima | Porta (3,4): veio da direita (5) | Água (4,11): veio da esquerda (10)
+      if (fromR === 1 && fromC === 7 && toC > 7) return false;
+      if (fromR === 3 && fromC === 7 && toC < 7) return false;
+      if (fromR === 3 && fromC === 5 && toC < 5) return false;
+      if (fromR === 3 && fromC === 4 && toC < 4) return false;
+      if (fromR === 4 && fromC === 11 && toC > 11) return false;
+    }
+
+    return true;
+  }
+
+  function canMoveVertical(fromR, fromC, toR) {
+    if (toR < 1 || toR > 4) return false;
+    if (toR === fromR + 1) {
+      return CAVE_LIFTS.some(([lr, lc]) => lr === fromR && lc === fromC);
+    }
+    if (toR === fromR - 1) {
+      return CAVE_LIFTS.some(([lr, lc]) => lr === toR && lc === fromC);
+    }
+    return false;
+  }
+
+  async function syncCave(eventCode = null) {
+    const res = await apiPost('/api/cave/sync', { caveState: state, eventCode });
+    if (res?.remark) {
+      setOperatorRemark(res.remark, { priority: 'action' });
+    }
+  }
+
+  function openCavePadlockModal() {
+    if (document.getElementById('cave-padlock-modal')) return;
+    const digits = [1, 1, 1];
+
+    const modal = document.createElement('div');
+    modal.id = 'cave-padlock-modal';
+    modal.className = 'cave-padlock-modal';
+    modal.innerHTML = `
+      <div class="cave-padlock-circle">
+        <img src="/cave/padlockBig.png" alt="Cadeado" style="position:absolute; top:26px; image-rendering:pixelated;" />
+        <div class="cave-padlock-dials">
+          ${[0, 1, 2]
+            .map(
+              (idx) => `
+            <div class="padlock-dial-col">
+              <button type="button" class="padlock-arrow-btn" data-dial="${idx}" data-dir="1"><img src="/cave/padlockUp.png" alt="+" /></button>
+              <div class="padlock-digit-box" id="pad-d-${idx}">1</div>
+              <button type="button" class="padlock-arrow-btn" data-dial="${idx}" data-dir="-1"><img src="/cave/padlockDown.png" alt="-" /></button>
+            </div>
+          `
+            )
+            .join('')}
+        </div>
+        <div class="cave-padlock-actions">
+          <button type="button" class="cave-padlock-btn" id="pad-check-btn">Testar</button>
+          <button type="button" class="cave-padlock-btn" id="pad-close-btn">Fechar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('.padlock-arrow-btn').forEach((b) => {
+      b.addEventListener('click', () => {
+        const i = Number(b.getAttribute('data-dial'));
+        const dir = Number(b.getAttribute('data-dir'));
+        digits[i] = ((digits[i] - 1 + dir + 9) % 9) + 1;
+        const box = document.getElementById(`pad-d-${i}`);
+        if (box) box.textContent = String(digits[i]);
+        playCheapBeep();
+      });
+    });
+
+    document.getElementById('pad-close-btn')?.addEventListener('click', () => modal.remove());
+    document.getElementById('pad-check-btn')?.addEventListener('click', async () => {
+      const attempt = digits.join('');
+      const res = await apiPost('/api/cave/sync', {
+        caveState: state,
+        padlockAttempt: attempt,
+        eventCode: 'padlock_open',
+      });
+      if (res?.padlockUnlocked) {
+        if (!state.cleared.includes('padlock_door')) state.cleared.push('padlock_door');
+        modal.remove();
+        refreshObjectsVisuals();
+        showSegmentBubble(state.row, state.col, 'Cadeado destrancado!');
+        if (res.remark) setOperatorRemark(res.remark, { priority: 'action' });
+      } else {
+        playErrorBuzzer();
+        if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+      }
+    });
+  }
+
+  async function interactWithObject(obj) {
+    if (!obj) return;
+    // Só interage com objetos da sala atual (ou sala adjacente imediata)
+    if (obj.row !== state.row || Math.abs(obj.col - state.col) > 1) {
+      showSegmentBubble(state.row, state.col, 'Chegue mais perto usando WASD.');
+      return;
+    }
+
+    playCheapBeep();
+
+    if (obj.kind === 'junk') {
+      showSegmentBubble(obj.row, obj.col, obj.msg);
+      return;
+    }
+
+    if (obj.kind === 'pickup') {
+      if (!state.inventory.includes(obj.id)) {
+        state.inventory.push(obj.id);
+        refreshInventoryUI();
+        refreshObjectsVisuals();
+        showSegmentBubble(obj.row, obj.col, obj.msg);
+        await syncCave(obj.ev);
+      } else {
+        showSegmentBubble(obj.row, obj.col, 'Já peguei isso daqui.');
+      }
+      return;
+    }
+
+    if (obj.kind === 'boulder') {
+      if (state.inventory.includes('2')) {
+        if (!state.cleared.includes('boulder')) {
+          state.cleared.push('boulder');
+          refreshObjectsVisuals();
+          showSegmentBubble(obj.row, obj.col, obj.okMsg);
+          await syncCave(obj.ev);
+        }
+      } else {
+        showSegmentBubble(obj.row, obj.col, obj.blockMsg);
+      }
+      return;
+    }
+
+    if (obj.kind === 'plunger') {
+      state.plungerArmed = true;
+      if (!state.cleared.includes('beam')) state.cleared.push('beam');
+      const vp = document.getElementById('cave-viewport');
+      vp?.classList.remove('shake-blast');
+      void vp?.offsetWidth;
+      vp?.classList.add('shake-blast');
+      playCollapseRumble();
+      refreshObjectsVisuals();
+      showSegmentBubble(obj.row, obj.col, obj.msg);
+      await syncCave(obj.ev);
+      return;
+    }
+
+    if (obj.kind === 'gap') {
+      if (state.inventory.includes('6')) {
+        if (!state.cleared.includes('gap')) {
+          state.cleared.push('gap');
+          refreshObjectsVisuals();
+          showSegmentBubble(obj.row, obj.col, obj.okMsg);
+          await syncCave(obj.ev);
+        }
+      } else {
+        showSegmentBubble(obj.row, obj.col, obj.blockMsg);
+      }
+      return;
+    }
+
+    if (obj.kind === 'beam' || obj.kind === 'waterfall') {
+      showSegmentBubble(obj.row, obj.col, obj.blockMsg);
+      return;
+    }
+
+    if (obj.kind === 'padlock_door') {
+      if (!state.cleared.includes('padlock_door')) {
+        openCavePadlockModal();
+      } else {
+        showSegmentBubble(obj.row, obj.col, 'A porta já está destrancada.');
+      }
+      return;
+    }
+
+    if (obj.kind === 'cog') {
+      if (state.inventory.includes('12')) {
+        if (!state.cleared.includes('water')) {
+          state.cleared.push('water');
+          refreshObjectsVisuals();
+          showSegmentBubble(obj.row, obj.col, obj.okMsg);
+          await syncCave(obj.ev);
+        }
+      } else {
+        showSegmentBubble(obj.row, obj.col, obj.blockMsg);
+      }
+      return;
+    }
+
+    if (obj.kind === 'end_door') {
+      if (state.inventory.includes('15') && state.inventory.includes('16')) {
+        playCollapseRumble();
+        await syncCave('cave_win');
+        setTimeout(() => {
+          renderCaveEscapedScreen();
+        }, 1600);
+      } else {
+        showSegmentBubble(obj.row, obj.col, obj.blockMsg);
+      }
+    }
+  }
+
+  // Clique direto nos objetos visíveis
+  app.querySelectorAll('.cave-obj-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-obj-id');
+      const obj = CAVE_OBJECTS.find((o) => o.id === id);
+      interactWithObject(obj);
+    });
+  });
+
+  // CONTROLE NO TECLADO: WASD (e Setas) para andar + E para interagir com objeto da sala atual!
+  let moveCooldown = false;
+  caveKeyHandler = async (ev) => {
+    if (currentStage !== 'cave_2d') return;
+    if (document.getElementById('cave-padlock-modal')) return;
+
+    const k = ev.key.toLowerCase();
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'e'].includes(k)) {
+      ev.preventDefault();
+    }
+
+    if (k === 'e') {
+      const hereObjs = CAVE_OBJECTS.filter((o) => o.row === state.row && o.col === state.col);
+      if (hereObjs.length > 0) {
+        // Prioriza objeto ainda não resolvido na sala
+        const pending =
+          hereObjs.find((o) => o.kind === 'pickup' && !state.inventory.includes(o.id)) || hereObjs[0];
+        interactWithObject(pending);
+      }
+      return;
+    }
+
+    if (moveCooldown || !torchLit) return;
+
+    let nextR = state.row;
+    let nextC = state.col;
+    let leftDir = false;
+
+    if (k === 'd' || k === 'arrowright') {
+      if (!canMoveHorizontal(state.row, state.col, state.col + 1)) return;
+      nextC = state.col + 1;
+      leftDir = false;
+    } else if (k === 'a' || k === 'arrowleft') {
+      if (!canMoveHorizontal(state.row, state.col, state.col - 1)) return;
+      nextC = state.col - 1;
+      leftDir = true;
+    } else if (k === 's' || k === 'arrowdown') {
+      if (!canMoveVertical(state.row, state.col, state.row + 1)) return;
+      nextR = state.row + 1;
+    } else if (k === 'w' || k === 'arrowup') {
+      if (!canMoveVertical(state.row, state.col, state.row - 1)) return;
+      nextR = state.row - 1;
+    } else {
+      return;
+    }
+
+    moveCooldown = true;
+    state.row = nextR;
+    state.col = nextC;
+    updateViewportPosition(leftDir);
+    syncCave();
+
+    setTimeout(() => {
+      moveCooldown = false;
+    }, 360);
+  };
+
+  window.addEventListener('keydown', caveKeyHandler);
+
+  refreshInventoryUI();
+  refreshObjectsVisuals();
+  updateViewportPosition(false);
+
+  // Sequência de Queda / Acender a Tocha ao chegar na Caverna!
+  if (!state.introDone || justFell) {
+    torchLit = false;
+    updateViewportPosition(false);
+    (async () => {
+      showSegmentBubble(state.row, state.col, 'Ahhhhhhh!! O chão do porão desabou!!');
+      await sleep(2200);
+      showSegmentBubble(state.row, state.col, 'Escuro demais aqui embaixo... deixa eu acender uma tocha.');
+      await sleep(2000);
+      torchLit = true;
+      state.introDone = true;
+      updateViewportPosition(false);
+      await syncCave('intro_done');
+    })();
+  } else {
+    setOperatorRemark(
+      'ainda nessa caverna esquisita... usa WASD aí pra andar e vê se acha um jeito de explodir uma saída daqui.',
+      { delayBefore: 400 }
+    );
+  }
+}
+
+function renderCaveEscapedScreen() {
+  clearTimers();
+  currentStage = 'cave_escaped';
   document.body.className = 'subsolo-mode awakened-cursors';
-  resetFaviconAndTitle('naoclique.net // nível -2');
+  resetFaviconAndTitle('naoclique.net // pós-caverna');
 
   const app = document.getElementById('app');
   app.style.visibility = 'visible';
@@ -2390,18 +3094,18 @@ function renderDeepSectorScreen() {
   app.innerHTML = `
     <div class="subsolo-shell" style="text-align:center; padding:40px 20px;">
       <div class="operator-feed" style="text-align:left;">
-        <span class="operator-tag">log</span>
+        <span class="operator-tag">log (eco)</span>
         <span id="operator-msg"></span>
       </div>
-      <div style="margin-top:48px; border:2px dashed #334155; padding:40px; background:#0f131a;">
-        <h2 style="color:#34d399; margin:0 0 12px;">🔓 COMPORTA DO SUBSOLO ABERTA (SENHA 244)</h2>
-        <p style="color:#94a3b8; font-size:14px;">Fim do bloco atual — pronto para construirmos o próximo nível!</p>
+      <div style="margin-top:48px; border:2px dashed #ffb128; padding:40px; background:#141415; font-family:'CavePixles', monospace;">
+        <h2 style="color:#78f148; margin:0 0 14px;">🧨 SAÍDA DA CAVERNA DETONADA!</h2>
+        <p style="color:#d4d4d8; font-size:14px;">Vocês atravessaram a fumaça da explosão — pronto para desenharmos o próximo capítulo!</p>
       </div>
     </div>
   `;
 
   setOperatorRemark(
-    '...mano. vc leu código morse numa lâmpada velha, usou vapor pra ler o vidro e ainda estourou minha luz no soco. quem caralhos é vc??',
+    'caralho conseguimos sair daquele buraco... mas sério mano, quem construiu aquela mina embaixo do meu servidor?!',
     { delayBefore: 400, priority: 'urgent' }
   );
 }
@@ -2430,6 +3134,7 @@ function mountDevTestPanel() {
       <button class="dev-btn" data-dev="goto_maxed_16">🌡️ Cap 3: 16/16 (Testar Clima 99°C)</button>
       <button class="dev-btn" data-dev="goto_shitty_loading">⏳ Cap 3.5: Loading Porco + Chat</button>
       <button class="dev-btn" data-dev="goto_subsolo">🕳️ Cap 4: Ambiente 2D (Subsolo)</button>
+      <button class="dev-btn" data-dev="goto_cave">⛏️ Cap 5: Caverna (WASD + Eco)</button>
       <button class="dev-btn" data-dev="spawn_event">🪰 Forçar Evento na Tela Agora</button>
       <button class="dev-btn" data-dev="add_points_big">💎 +500.000 pts</button>
     </div>
@@ -2496,8 +3201,10 @@ async function init() {
     renderShittyLoadingScreen({ forcedByOperator: Boolean(data.forcedSubsolo) });
   } else if (data.stage === 'subsolo_2d') {
     renderSubsolo2DScreen(data);
-  } else if (data.stage === 'deep_sector') {
-    renderDeepSectorScreen();
+  } else if (data.stage === 'cave_2d') {
+    renderCaveChapterScreen(data.caveState);
+  } else if (data.stage === 'cave_escaped') {
+    renderCaveEscapedScreen();
   } else if (data.stage === 'awakening_error') {
     renderFakeBrowserCrash({
       awakening: true,

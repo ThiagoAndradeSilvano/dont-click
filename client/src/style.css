@@ -1366,6 +1366,454 @@ body.subsolo-mode {
   cursor: inherit;
 }
 
+/* ===== ANIMAÇÃO DE DESMORONAMENTO DO PORÃO -> QUEDA LIVRE PRA CAVERNA ===== */
+.subsolo-collapsing {
+  animation: violentCollapse 2.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+}
+
+@keyframes violentCollapse {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  12% { transform: translate(-12px, 6px) rotate(-1.5deg); }
+  24% { transform: translate(14px, -8px) rotate(1.8deg); }
+  36% { transform: translate(-16px, 12px) rotate(-2.5deg); }
+  50% { transform: translate(12px, 28px) rotate(3deg); opacity: 1; }
+  75% { transform: translate(0px, 420px) rotate(-8deg); opacity: 0.4; }
+  100% { transform: translate(0px, 110vh) rotate(-14deg); opacity: 0; }
+}
+
+/* ===== CAPÍTULO DA CAVERNA PIXEL ART (Adaptado com WASD + Eco + Mochila + Cadeado!) ===== */
+@font-face {
+  font-family: 'CavePixles';
+  src: url('/cave/04B_03__.TTF');
+}
+
+body.cave-mode {
+  background: #141415;
+  overflow: hidden;
+  font-family: 'CavePixles', monospace;
+  font-size: 15px;
+  user-select: none;
+  height: 100vh;
+  margin: 0;
+  display: block;
+  cursor: var(--cur-user-blue);
+}
+
+.cave-top-hud {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(860px, calc(100vw - 140px));
+  z-index: 50;
+}
+
+.cave-top-hud .operator-feed {
+  background: rgba(12, 12, 14, 0.92);
+  border-color: #3f3f46;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.8);
+}
+
+.cave-wasd-hint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 22, 0.9);
+  border: 2px solid #3f3f46;
+  color: #e4e4e7;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: 'CavePixles', monospace;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  z-index: 45;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.wasd-keycap {
+  display: inline-block;
+  background: #27272a;
+  border: 1px solid #71717a;
+  border-bottom-width: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fbbf24;
+  margin: 0 2px;
+}
+
+.cave-stage-root {
+  position: absolute;
+  left: calc(50% - 72px);
+  top: calc(50% - 190px);
+  width: 1728px; /* 12 cols * 144px */
+}
+
+/* Bonequinho principal no centro da tocha */
+.cave-character {
+  width: 48px;
+  height: 48px;
+  background: url('/cave/corridorMainCharacter.gif') no-repeat 0 0;
+  image-rendering: pixelated;
+  position: absolute;
+  top: 216px;
+  left: -16px;
+  transform: translateY(-50%) translateX(64px);
+  z-index: 12;
+  pointer-events: none;
+}
+
+.cave-character.walking {
+  animation: caveWalkAnim 0.55s steps(6) infinite;
+}
+
+.cave-character.facing-left {
+  transform: translateY(-50%) translateX(64px) scaleX(-1);
+}
+
+@keyframes caveWalkAnim {
+  from { background-position: 0 0; }
+  to { background-position: -288px 0; }
+}
+
+/* Viewport que desliza suavemente conforme WASD muda (row, col) e recorta o círculo da tocha! */
+.cave-viewport {
+  position: relative;
+  width: 1728px;
+  height: 1344px; /* 4 rows * 336px */
+  transition: left 0.48s linear, top 0.48s linear, clip-path 0.48s linear;
+  z-index: 5;
+}
+
+.cave-viewport.shake-blast {
+  animation: caveShake 0.8s ease;
+}
+
+@keyframes caveShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+.cave-level-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: scale(3);
+  transform-origin: 0 0;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cave-segment {
+  width: 144px; /* 3 * 48px */
+  height: 336px; /* 7 * 48px */
+  float: left;
+  position: relative;
+  z-index: 3;
+  color: #fff;
+}
+
+/* Goteiras azuis da caverna */
+.cave-drip-container {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  width: 144px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.cave-drip {
+  width: 3px;
+  background: #81eeef;
+  position: absolute;
+  top: 14px;
+  animation: caveDripAnim 1.4s linear infinite;
+}
+
+@keyframes caveDripAnim {
+  0% { height: 0; top: 14px; opacity: 1; }
+  5% { height: 7px; top: 14px; }
+  24% { top: 158px; height: 4px; opacity: 1; }
+  26%, 100% { opacity: 0; height: 0; }
+}
+
+.cave-tiles {
+  width: 144px;
+  height: 336px;
+  position: relative;
+}
+
+.cave-tile {
+  width: 48px;
+  height: 48px;
+  float: left;
+  position: relative;
+  image-rendering: pixelated;
+}
+
+.cave-tile img.decor-anim {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.cave-tile.special-door {
+  position: absolute;
+  top: 92px;
+  left: -12px;
+  width: 60px;
+  height: 144px;
+  z-index: 6;
+}
+
+.cave-tile.special-beam {
+  position: absolute;
+  top: 95px;
+  left: 0;
+  width: 48px;
+  height: 108px;
+  z-index: 6;
+}
+
+.cave-tile.special-water {
+  position: absolute;
+  top: 107px;
+  left: 48px;
+  width: 48px;
+  height: 108px;
+  z-index: 6;
+}
+
+/* Cabos e Plataforma do Elevador de Mina */
+.cave-lift-ropes {
+  position: absolute;
+  width: 12px;
+  height: 16px;
+  border-left: 4px solid #e69c69;
+  border-right: 4px solid #e69c69;
+  left: 66px;
+  top: 140px;
+  z-index: 2;
+  transition: height 0.48s linear;
+  pointer-events: none;
+}
+
+.cave-lift-ropes.lowered {
+  height: 352px;
+}
+
+.cave-lift-plat {
+  position: absolute;
+  left: 48px;
+  top: 186px;
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  transform: scale(3);
+  transform-origin: 0 0;
+  z-index: 2;
+  transition: top 0.48s linear;
+  pointer-events: none;
+}
+
+.cave-lift-plat.lowered {
+  top: 522px;
+}
+
+.cave-obj-btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.cave-obj-btn img {
+  width: 100%;
+  image-rendering: pixelated;
+}
+
+.cave-obj-btn:hover img {
+  filter: drop-shadow(2px 0 #fff) drop-shadow(-2px 0 #fff) drop-shadow(0 -2px #fff);
+}
+
+/* Balãozinho flutuante da caverna */
+.cave-bubble {
+  position: absolute;
+  width: 165px;
+  left: -10px;
+  top: 110px;
+  background: #ffffff;
+  color: #141415;
+  padding: 9px 10px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  text-align: center;
+  z-index: 25;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  animation: popCaveBubble 0.2s ease-out;
+}
+
+@keyframes popCaveBubble {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mochila lateral de Inventário da Caverna */
+.cave-inventory {
+  position: fixed;
+  z-index: 48;
+  left: 26px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 155px;
+  color: #fff;
+  font-size: 11px;
+}
+
+.cave-backpack-icon {
+  width: 48px;
+  image-rendering: pixelated;
+  cursor: pointer;
+}
+
+.cave-inv-grid {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: rgba(18, 18, 22, 0.92);
+  border: 2px solid #3f3f46;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.cave-inv-item {
+  position: relative;
+  width: 54px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.cave-inv-item img {
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+}
+
+.cave-inv-item .inv-tooltip {
+  display: none;
+  position: absolute;
+  left: 60px;
+  top: -8px;
+  width: 165px;
+  background: #fff;
+  color: #141415;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  z-index: 60;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+}
+
+.cave-inv-item:hover .inv-tooltip {
+  display: block;
+}
+
+/* Modal do Cadeado Grande Dourado da Caverna */
+.cave-padlock-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 80;
+}
+
+.cave-padlock-circle {
+  position: relative;
+  width: 290px;
+  height: 310px;
+  background: rgba(48, 31, 65, 0.94);
+  border: 4px solid #ffb128;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 28px;
+}
+
+.cave-padlock-dials {
+  display: flex;
+  gap: 18px;
+  margin-top: 120px;
+  z-index: 5;
+}
+
+.padlock-dial-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.padlock-arrow-btn {
+  width: 26px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.padlock-arrow-btn img {
+  width: 22px;
+  height: 23px;
+  image-rendering: pixelated;
+}
+
+.padlock-digit-box {
+  width: 30px;
+  height: 38px;
+  background: url('/cave/padlockBG.png') center/cover no-repeat;
+  color: #222;
+  font-size: 18px;
+  line-height: 38px;
+  text-align: center;
+  image-rendering: pixelated;
+}
+
+.cave-padlock-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.cave-padlock-btn {
+  background: wheat;
+  color: #615133;
+  border: 3px solid #ffb128;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cave-padlock-btn:hover {
+  background: #ffb128;
+  color: #fff;
+}
+
 /* ===== PAINEL DE TESTES (DEV ONLY - Canto Superior Direito) ===== */
 .dev-panel {
   position: fixed;

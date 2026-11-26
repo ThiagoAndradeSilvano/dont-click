@@ -232,7 +232,8 @@ function normalizePlayer(player) {
     'awakened_clicker',
     'shitty_loading',
     'subsolo_2d',
-    'deep_sector',
+    'cave_2d',
+    'cave_escaped',
   ];
   if (!validStages.includes(player.stage)) player.stage = 'button';
   if (typeof player.sessionClicks !== 'number') player.sessionClicks = 0;
@@ -245,6 +246,16 @@ function normalizePlayer(player) {
   if (typeof player.forcedSubsolo !== 'boolean') player.forcedSubsolo = false;
   if (typeof player.lampBroken !== 'boolean') player.lampBroken = false;
   if (typeof player.subsoloSolved !== 'boolean') player.subsoloSolved = false;
+  if (!player.caveState || typeof player.caveState !== 'object') {
+    player.caveState = {
+      row: 1,
+      col: 2,
+      inventory: ['0'], // começa com a maçã na mochila igual no original!
+      cleared: [], // ex: 'boulder', 'beam', 'gap', 'water', 'padlock_door'
+      plungerArmed: false,
+      introDone: false,
+    };
+  }
   if (!Array.isArray(player.upgrades)) player.upgrades = [];
   if (!player.generators || typeof player.generators !== 'object') player.generators = {};
   if (!Array.isArray(player.flags)) player.flags = [];
@@ -430,6 +441,7 @@ function buildClientPayload(player) {
     forcedSubsolo: player.forcedSubsolo,
     lampBroken: player.lampBroken,
     subsoloSolved: player.subsoloSolved,
+    caveState: player.caveState,
     minutesPlayed: getMinutesInClicker(player),
     shop: buildShopState(player),
     buttonLabel: 'Botão',
@@ -879,16 +891,76 @@ app.post('/api/subsolo/unlock', (req, res) => {
     });
   }
 
-  // ACERTOU 244 COM A LÂMPADA QUEBRADA NO ESCURO! DESTRAVA A COMPORTA DO SUBSOLO!
+  // ACERTOU 244 COM A LÂMPADA QUEBRADA! O PAINEL DÁ DEFEITO, RACHA O CHÃO DO SUBSOLO E A GENTE DESPENCA NA CAVERNA!
   player.subsoloSolved = true;
-  player.stage = 'deep_sector';
+  player.stage = 'cave_2d';
   saveDb(db);
 
   return res.json({
     ok: true,
-    stage: 'deep_sector',
-    screenMsg: 'ACESSO LIBERADO',
-    remark: '...espera. como caralhos vc decifrou isso no escuro?! EI, NÃO ABRE ESSA PORTA DE FERRO NÃO!!',
+    stage: 'cave_2d',
+    collapse: true,
+    screenMsg: 'ERRO ESTRUTURAL!!',
+    remark: 'pera... era pra esse painel só destravar a porta, pq o chão inteiro tá tremendo?! EI SEGURA AÍ QUE VAI CEDER TUDO—',
+    caveState: player.caveState,
+  });
+});
+
+// Sincroniza estado da Caverna (movimento, itens coletados, cadeado 7-9-4 e saída final!)
+app.post('/api/cave/sync', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const { caveState, eventCode, padlockAttempt } = req.body || {};
+
+  if (caveState && typeof caveState === 'object') {
+    player.caveState = {
+      row: Math.max(1, Math.min(4, Number(caveState.row) || 1)),
+      col: Math.max(1, Math.min(12, Number(caveState.col) || 2)),
+      inventory: Array.isArray(caveState.inventory) ? caveState.inventory.slice(0, 20) : ['0'],
+      cleared: Array.isArray(caveState.cleared) ? caveState.cleared.slice(0, 20) : [],
+      plungerArmed: Boolean(caveState.plungerArmed),
+      introDone: Boolean(caveState.introDone),
+    };
+  }
+
+  // Validação do Cadeado da Caverna (Nota 1 = maia 7, Nota 2 = maia 6, Nota 3 = maia 3 -> 763, ou 794 do SCSS original!)
+  let padlockUnlocked = false;
+  if (typeof padlockAttempt === 'string') {
+    if (padlockAttempt === '763' || padlockAttempt === '794') {
+      padlockUnlocked = true;
+      if (!player.caveState.cleared.includes('padlock_door')) {
+        player.caveState.cleared.push('padlock_door');
+      }
+    }
+  }
+
+  if (eventCode === 'cave_win') {
+    player.stage = 'cave_escaped';
+  }
+
+  // Falas do Operador completamente confuso/assustado porque NEM ELE sabe de onde veio essa caverna!
+  const caveRemarks = {
+    intro_done: 'mano... que porra de lugar é esse?? até o som do meu teclado tá dando eco aqui embaixo... eu NÃO programei caverna nenhuma!',
+    got_pickaxe: 'uma picareta velha? quem deixou asset de joguinho de mina enterrado debaixo do meu código??',
+    broke_boulder: 'boa, arrebentou a pedra. mas namoral, olha esses olhinhos piscando no escuro... eu tô começando a ficar cabreiro.',
+    armed_plunger: 'caralho tremeu a caverna inteira!! vc apertou um detonador sem nem saber onde tá a bomba?!',
+    got_plank: 'tábua podre na mochila... beleza, vamo sair logo desse buraco que esse eco tá me dando agonia.',
+    placed_plank: 'ponte improvisada no grito. pelo menos o chão não cedeu de novo.',
+    got_note: 'tem bilhete escrito aqui embaixo?? lê isso aí na mochila, não fui eu que escrevi essa letra não!',
+    padlock_wrong: 'nada... o cadeado nem mexeu. olha direito aquelas 3 notas que vc achou nas caixas.',
+    padlock_open: 'abriu!! esses traços e bolinhas nas notas eram números antigos... mano, de quem são essas anotações aqui embaixo??',
+    got_handle: 'achou uma manivela de engrenagem. deve encaixar em algum mecanismo lá mais pro fundo.',
+    stopped_water: 'fechou a cachoeira! vamo ver o que tem atrás dessa água.',
+    got_dynamite: 'bananas de dinamite... só falta achar estopim agora pra gente explodir uma saída daqui.',
+    got_fuses: 'pegou os estopins! agora junta com a dinamite naquela porta bloqueada lá de cima pra gente dar o fora!',
+    cave_win: 'EXPLODIU!! caralho finalmente luz... espera. onde é que essa saída vai dar agora?!',
+  };
+
+  saveDb(db);
+  res.json({
+    ok: true,
+    padlockUnlocked,
+    caveState: player.caveState,
+    remark: padlockAttempt && !padlockUnlocked ? caveRemarks.padlock_wrong : caveRemarks[eventCode] || null,
   });
 });
 
@@ -1020,6 +1092,17 @@ if (process.env.NODE_ENV !== 'production') {
       player.lampBroken = false;
       player.subsoloSolved = false;
       player.temperature = 99;
+    } else if (action === 'goto_cave') {
+      player.stage = 'cave_2d';
+      player.subsoloSolved = true;
+      player.caveState = {
+        row: 1,
+        col: 2,
+        inventory: ['0'],
+        cleared: [],
+        plungerArmed: false,
+        introDone: false,
+      };
     } else if (action === 'add_points_small') {
       player.points = Math.round((player.points + 2500) * 10) / 10;
     } else if (action === 'add_points_big') {
