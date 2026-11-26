@@ -988,7 +988,15 @@ body.shapes-mode {
   line-height: 1.6;
 }
 
-/* ===== ENIGMA 1: TEMPERATURA SEM NENHUM INDICADOR VISUAL (Parece texto comum!) ===== */
+/* ===== ENIGMA 1: HITBOX GENEROSO INVISÍVEL NA REGIÃO DO CLIMA (Sem parecer editável!) ===== */
+.temp-hitbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  margin: -6px -6px;
+}
+
 .temp-editable-num {
   font-weight: inherit;
   padding: 0;

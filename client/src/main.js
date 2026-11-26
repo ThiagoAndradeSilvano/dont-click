@@ -490,7 +490,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
         <div class="widgets-strip">
           ${
             hasWeather
-              ? `<div class="idiotic-widget">🌦️ <span><strong>Ambiente Interno:</strong> <span id="temp-slot"><span class="temp-editable-num" id="temp-display">${curTemp}</span></span>°C | 🕒 <span id="live-clock">--:--:--</span></span></div>`
+              ? `<div class="idiotic-widget"><span class="temp-hitbox" id="temp-hitbox">🌦️ <strong>Ambiente Interno:</strong> <span id="temp-slot"><span class="temp-editable-num" id="temp-display">${curTemp}</span></span>°C</span> | 🕒 <span id="live-clock">--:--:--</span></div>`
               : ''
           }
           ${
@@ -629,11 +629,16 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     clockWidgetTimer = setInterval(updateClock, 450);
 
     const bindTempClick = () => {
-      const tempDisplay = document.getElementById('temp-display');
+      const tempHitbox = document.getElementById('temp-hitbox');
       const tempSlot = document.getElementById('temp-slot');
-      if (!tempDisplay || !tempSlot) return;
+      if (!tempHitbox || !tempSlot) return;
 
-      tempDisplay.addEventListener('click', () => {
+      // Garante um único listener na área inteira ("🌦️ Ambiente Interno: 23°C")!
+      if (tempHitbox.dataset.bound === '1') return;
+      tempHitbox.dataset.bound = '1';
+
+      tempHitbox.addEventListener('click', (ev) => {
+        if (ev.target && ev.target.id === 'temp-input') return;
         if (!isAwakened || !latestState?.allOwned || isOverheatedLocal) return;
         if (checkCookieBlock()) return;
 
@@ -644,7 +649,6 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
         inp?.focus();
         inp?.select();
 
-        // Impede digitar sinal negativo ou letras (apenas dígitos 0 a 99!)
         inp?.addEventListener('input', () => {
           inp.value = inp.value.replace(/[^0-9]/g, '').slice(0, 2);
         });
@@ -664,14 +668,13 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
           } else {
             document.body.classList.toggle('warm-warning', finalTemp >= 45);
             tempSlot.innerHTML = `<span class="temp-editable-num" id="temp-display">${finalTemp}</span>`;
-            bindTempClick();
             if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 150, force: true });
           }
         };
 
-        inp?.addEventListener('keydown', (ev) => {
-          if (ev.key === 'Enter') {
-            ev.preventDefault();
+        inp?.addEventListener('keydown', (ke) => {
+          if (ke.key === 'Enter') {
+            ke.preventDefault();
             commitTemp();
           }
         });
