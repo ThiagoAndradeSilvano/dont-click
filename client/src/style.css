@@ -1233,7 +1233,9 @@ body.subsolo-mode {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  box-sizing: border-box;
   background-color: #0b0d10;
   color: #d1d5db;
   font-family: 'Courier New', monospace;
@@ -1248,7 +1250,9 @@ body.subsolo-mode #app {
 
 .subsolo-shell {
   width: 100%;
-  max-width: 846px;
+  /* Cabe na altura da tela sem rolagem: 32 de padding + 76 do log + 12 de gap + 6 de borda */
+  max-width: min(846px, calc((100dvh - 126px) * 840 / 460));
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
