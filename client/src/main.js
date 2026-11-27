@@ -1980,6 +1980,9 @@ function renderSubsolo2DScreen(initialState = null) {
 
   let valveAngle = 0;
   let valveOpen = false;
+  let streamHeadX = 235;
+  let streamTailX = 235;
+  let streamWavePhase = 0;
   let lampSwing = 0;
   let lampSwingVel = 0;
   const morseStartOffset = performance.now();
@@ -1992,7 +1995,7 @@ function renderSubsolo2DScreen(initialState = null) {
     backdrop.className = 'keypad-backdrop';
     backdrop.innerHTML = `
       <div class="keypad-box">
-        <div class="keypad-screen" id="kp-screen">_ _ _</div>
+        <div class="keypad-screen" id="kp-screen">_ _ _ _</div>
         <div class="keypad-grid">
           ${[1, 2, 3, 4, 5, 6, 7, 8, 9]
             .map((n) => `<button type="button" class="keypad-key" data-k="${n}">${n}</button>`)
@@ -2011,7 +2014,7 @@ function renderSubsolo2DScreen(initialState = null) {
     const updateScr = () => {
       if (!scr) return;
       scr.classList.remove('err');
-      scr.textContent = typed.padEnd(3, '_').split('').join(' ');
+      scr.textContent = typed.padEnd(4, '_').split('').join(' ');
     };
 
     backdrop.querySelectorAll('.keypad-key').forEach((btn) => {
@@ -2086,11 +2089,11 @@ function renderSubsolo2DScreen(initialState = null) {
       return;
     }
 
-    // 3. Clicou na Placa de Manutenção na parede (x=454..610, y=154..276)
-    if (mx >= 454 && mx <= 610 && my >= 154 && my <= 276) {
+    // 3. Clicou na Placa Críptica na parede (x=444..624, y=148..280)
+    if (mx >= 444 && mx <= 624 && my >= 148 && my <= 280) {
       playCheapBeep();
       setOperatorRemark(
-        '[Placa de Manutenção: CÓDIGO DO TERMINAL = SINAL DA LÂMPADA - 42]',
+        '[Placa enferrujada: "O quarto onde o pai da corrente alternada morreu com os pombos. — [ QUARTO ] - [ ??? ]"]',
         { priority: 'action' }
       );
       return;
@@ -2162,11 +2165,6 @@ function renderSubsolo2DScreen(initialState = null) {
           ctx.fillRect(px - 14, fy, 28, 8);
         }
       });
-
-      // Plaquinha discreta "I", "II", "III" em cada um dos 3 canos
-      ctx.fillStyle = '#64748b';
-      ctx.font = 'bold 10px monospace';
-      ctx.fillText(['I', 'II', 'III'][idx], px - 4, 135);
     });
 
     // Cotovelo horizontal da torneira saindo do Cano II (x=130 -> bico em x=235, y=282)
@@ -2213,52 +2211,47 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.fill();
     ctx.restore();
 
-    // 3. PLACA METÁLICA DE MANUTENÇÃO COM CONTA SIMPLES (x=454..610, y=154..276)
-    const plGrad = ctx.createLinearGradient(454, 154, 610, 276);
-    plGrad.addColorStop(0, '#2b3648');
-    plGrad.addColorStop(0.5, '#1e2837');
-    plGrad.addColorStop(1, '#111827');
+    // 3. PLACA ENFERRUJADA / ENIGMA CRÍPTICO NA PAREDE (x=444..624, y=148..280)
+    const plGrad = ctx.createLinearGradient(444, 148, 624, 280);
+    plGrad.addColorStop(0, '#272420');
+    plGrad.addColorStop(0.5, '#1c1b18');
+    plGrad.addColorStop(1, '#121210');
     ctx.fillStyle = plGrad;
-    ctx.fillRect(454, 154, 156, 122);
-    ctx.strokeStyle = '#475569';
+    ctx.fillRect(444, 148, 180, 132);
+    ctx.strokeStyle = '#57534e';
     ctx.lineWidth = 2;
-    ctx.strokeRect(454, 154, 156, 122);
+    ctx.strokeRect(444, 148, 180, 132);
 
-    // Parafusos nos 4 cantos
-    ctx.fillStyle = '#94a3b8';
-    [[461, 161], [603, 161], [461, 269], [603, 269]].forEach(([sx, sy]) => {
+    // Parafusos oxidados nos 4 cantos
+    ctx.fillStyle = '#78716c';
+    [[451, 155], [617, 155], [451, 273], [617, 273]].forEach(([sx, sy]) => {
       ctx.beginPath();
       ctx.arc(sx, sy, 3, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // Faixa amarela de aviso
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(460, 166, 144, 16);
-    ctx.fillStyle = '#0f172a';
+    // Cabeçalho discreto gravado no metal
+    ctx.fillStyle = '#a8a29e';
     ctx.font = 'bold 9px monospace';
-    ctx.fillText('⚡ TERMINAL - SETOR 0', 472, 178);
+    ctx.fillText('MEMORIAL // SALA -01', 476, 166);
 
-    // Linha divisória
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.beginPath();
-    ctx.moveTo(462, 189);
-    ctx.lineTo(602, 189);
+    ctx.moveTo(454, 174);
+    ctx.lineTo(614, 174);
     ctx.stroke();
 
-    // Texto da conta simples
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '10px monospace';
-    ctx.fillText('CÓDIGO DE ACESSO:', 474, 206);
+    // Frase críptica (sem dar resposta nem citar lâmpada/Morse!)
+    ctx.fillStyle = '#d6d3d1';
+    ctx.font = 'italic 10px Georgia, serif';
+    ctx.fillText('"O quarto onde o pai', 466, 194);
+    ctx.fillText('da corrente alternada', 464, 209);
+    ctx.fillText('morreu com os pombos."', 460, 224);
 
-    ctx.fillStyle = '#4ade80';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText('SINAL - 42', 484, 230);
-
-    ctx.fillStyle = '#64748b';
-    ctx.font = '9px monospace';
-    ctx.fillText('(Consulte a lâmpada)', 470, 252);
-    ctx.fillText('Código Morse', 492, 266);
+    // Equação enigmática no rodapé da placa
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('[ QUARTO ] - [ ??? ]', 462, 258);
 
     // 4. PAINEL / TERMINAL DE SEGURANÇA NA DIREITA (x=670..775, y=190..330)
     ctx.fillStyle = '#1f2633';
@@ -2284,26 +2277,69 @@ function renderSubsolo2DScreen(initialState = null) {
       }
     }
 
-    // 5. CHÃO DE CONCRETO + RALO DE ESCOAMENTO DIRETO EMBAIXO DA TORNEIRA (x=205..265, y=404)
+    // 5. CHÃO DE CONCRETO + CANAL DE ESCOAMENTO + RALO ABAIXO DO PAINEL (x=695..755, y=404)
     ctx.fillStyle = '#151922';
     ctx.fillRect(0, 404, 840, 56);
     ctx.fillStyle = '#262f3f';
     ctx.fillRect(0, 404, 840, 4);
 
-    // Grade do Ralo no piso exatamente onde a água cai (x=205..265, y=404)
+    // Canaleta discreta no piso guiando da torneira (x=235) até o ralo (x=725)
+    ctx.fillStyle = '#0d1118';
+    ctx.fillRect(230, 404, 495, 3);
+
+    // Grade do Ralo no piso abaixo do Painel #02 (x=695..755, y=404)
     ctx.fillStyle = '#090b10';
-    ctx.fillRect(205, 404, 60, 10);
+    ctx.fillRect(695, 404, 60, 11);
     ctx.fillStyle = '#475569';
-    for (let gx = 211; gx <= 259; gx += 8) {
-      ctx.fillRect(gx, 404, 4, 10);
+    for (let gx = 701; gx <= 749; gx += 8) {
+      ctx.fillRect(gx, 404, 4, 11);
     }
 
-    // 6. GOTAS SAINDO DA TORNEIRA (x=235) E CAINDO DIRETO NO RALO (x=205..265)
+    // 6. GOTAS DA TORNEIRA (x=235) + FLUXO DIRECIONAL ESCOANDO PRO RALO (x=725)
+    if (valveOpen) {
+      streamHeadX = Math.min(725, streamHeadX + 3.4);
+      streamTailX = 235;
+    } else {
+      streamTailX = Math.min(streamHeadX, streamTailX + 2.4);
+      if (streamTailX >= streamHeadX - 1) {
+        streamHeadX = 235;
+        streamTailX = 235;
+      }
+    }
+
+    if (streamHeadX - streamTailX > 2) {
+      streamWavePhase += 0.18;
+      const sGrad = ctx.createLinearGradient(streamTailX, 0, streamHeadX, 0);
+      sGrad.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+      sGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.78)');
+      sGrad.addColorStop(1, 'rgba(14, 116, 144, 0.85)');
+      ctx.fillStyle = sGrad;
+      ctx.fillRect(streamTailX, 402, streamHeadX - streamTailX, 4);
+
+      // Ondulações sutis correndo da esquerda pra direita na direção do ralo
+      ctx.fillStyle = 'rgba(186, 230, 253, 0.65)';
+      for (let wx = streamTailX + (streamWavePhase * 12) % 28; wx < streamHeadX - 6; wx += 28) {
+        ctx.fillRect(wx, 402, 8, 1.5);
+      }
+
+      // Água caindo pelos vãos da grade do ralo quando o fluxo alcança x >= 700
+      if (streamHeadX >= 700 && Math.random() < 0.55) {
+        splashes.push({
+          x: 702 + Math.random() * 46,
+          y: 406,
+          vx: 0,
+          vy: 1.4 + Math.random() * 1.2,
+          alpha: 0.75,
+          draining: true,
+        });
+      }
+    }
+
     if (Math.random() < (valveOpen ? 0.75 : 0.04)) {
       drops.push({
         x: 235 + (Math.random() * 4 - 2),
         y: 296,
-        vx: (Math.random() * 0.3 - 0.15),
+        vx: (Math.random() * 0.25 - 0.12),
         vy: valveOpen ? 3.0 : 1.2,
       });
     }
@@ -2317,33 +2353,34 @@ function renderSubsolo2DScreen(initialState = null) {
       ctx.arc(d.x, d.y, 3.2, 0, Math.PI * 2);
       ctx.fill();
       if (d.y >= 404) {
-        if (valveOpen && Math.random() < 0.6) {
+        if (valveOpen && Math.random() < 0.5) {
           splashes.push({
             x: d.x,
             y: 403,
-            vx: (Math.random() - 0.5) * 2.2,
-            vy: -1.0 - Math.random() * 1.4,
-            alpha: 0.8,
+            vx: 0.4 + Math.random() * 1.8, // respinga na direção do escoamento (direita)
+            vy: -0.9 - Math.random() * 1.2,
+            alpha: 0.75,
+            draining: false,
           });
         }
         drops.splice(i, 1);
       }
     }
 
-    // Respingos d'água no ralo
+    // Respingos no piso e filetes descendo pelo ralo
     for (let i = splashes.length - 1; i >= 0; i--) {
       const sp = splashes[i];
       sp.x += sp.vx;
       sp.y += sp.vy;
-      sp.vy += 0.22;
-      sp.alpha -= 0.05;
-      if (sp.alpha <= 0 || sp.y > 406) {
+      sp.vy += sp.draining ? 0.15 : 0.22;
+      sp.alpha -= sp.draining ? 0.06 : 0.05;
+      if (sp.alpha <= 0 || (!sp.draining && sp.y > 406) || (sp.draining && sp.y > 420)) {
         splashes.splice(i, 1);
         continue;
       }
       ctx.fillStyle = `rgba(56, 189, 248, ${sp.alpha})`;
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, 1.8, 0, Math.PI * 2);
+      ctx.arc(sp.x, sp.y, sp.draining ? 1.5 : 1.8, 0, Math.PI * 2);
       ctx.fill();
     }
 

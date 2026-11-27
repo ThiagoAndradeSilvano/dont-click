@@ -843,11 +843,13 @@ app.post('/api/subsolo/break-lamp', (req, res) => {
 
 /*
  * VALIDAÇÃO DO ENIGMA DO SUBSOLO 2D (100% no servidor):
- * - A lâmpada pisca em Código Morse: 7 (--...)  4 (....-)  2 (..---)  -> Sinal: 742
- * - A placa metálica na parede informa a conta simples:
- *   "SENHA = SINAL - 42"
- *   -> 742 - 42 = 700!
- * - Ao digitar 700, o painel estremece toda a estrutura do porão e desaba na Caverna!
+ * - A lâmpada pisca em Código Morse (sem dica explícita na tela!): 7 (--...)  4 (....-)  2 (..---) -> 742
+ * - A placa críptica na parede (estilo Don't Believe His Lies, exige pesquisa externa):
+ *   "O quarto onde o pai da corrente alternada morreu com os pombos."
+ *   -> Nikola Tesla morreu no Quarto 3327 do Hotel New Yorker -> 3327
+ * - Fórmula da placa: [ QUARTO ] - [ ??? ]
+ *   -> 3327 - 742 = 2585!
+ * - Ao digitar 2585, o painel estremece toda a estrutura do porão e desaba na Caverna!
  */
 app.post('/api/subsolo/unlock', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
@@ -857,12 +859,21 @@ app.post('/api/subsolo/unlock', (req, res) => {
     return res.json({
       ok: false,
       errorType: 'raw_morse',
-      screenMsg: 'FAÇA A CONTA!',
+      screenMsg: 'INCOMPLETO',
       remark: null,
     });
   }
 
-  if (code !== '700' && code !== '244') {
+  if (code === '3327') {
+    return res.json({
+      ok: false,
+      errorType: 'almost',
+      screenMsg: 'FALTA O RESTO',
+      remark: null,
+    });
+  }
+
+  if (code !== '2585') {
     return res.json({
       ok: false,
       errorType: 'wrong',
@@ -871,7 +882,7 @@ app.post('/api/subsolo/unlock', (req, res) => {
     });
   }
 
-  // ACERTOU 700! O PAINEL DÁ DEFEITO, O PISO DO SUBSOLO RACHA E DESPENCA NA CAVERNA!
+  // ACERTOU 2585! O PAINEL DÁ DEFEITO, O PISO DO SUBSOLO RACHA E DESPENCA NA CAVERNA!
   player.subsoloSolved = true;
   player.stage = 'cave_2d';
   saveDb(db);

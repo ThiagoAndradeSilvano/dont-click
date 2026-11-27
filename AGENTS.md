@@ -103,19 +103,20 @@ Toda a lógica sensível e senhas ficam no `server/src/index.js` para impedir tr
 - Janela `carregando_subsolo_2d_final_agoravai(copia).exe` com roda torta girando a 4 FPS, barra que volta 4% pra trás e para em `69%`, dicas idiotas e **2 rodadas de diálogo com escolhas** (com cobrança se ficar inativo e pausa de 4.2s no fim para leitura confortável).
 
 ### Página 7 — O Subsolo / Porão 2D (`stage: 'subsolo_2d'`)
-- Renderizado em `<canvas>` 2D detalhado (tijolos sombreados, manchas de umidade, 3 canos verticais, manômetro, válvula vermelha, torneira alinhada diretamente sobre o ralo gradeado, placa metálica de manutenção e lâmpada industrial balançando no teto).
+- Renderizado em `<canvas>` 2D detalhado (tijolos sombreados, manchas de umidade, 3 canos verticais sem numeração, manômetro, válvula vermelha, torneira que derrama água no piso e escoa em fluxo direcional até o **ralo posicionado abaixo do painel**, placa críptica e lâmpada industrial balançando no teto).
 - **Comportamento do Operador (Ele está LÁ EM CIMA):**
   - O Operador está no andar de cima desesperado com extintor, fumaça preta e peças queimadas do servidor.
   - Ele **NÃO enxerga o que o jogador faz no porão**! As mensagens dele no feed de log são transmissões periódicas dele tossindo com o extintor, resmungando que a fonte e a placa-mãe derreteram, tentando achar conectores e rezando pro jogador ficar quieto lá embaixo.
-- **Enigma do Porão (validado em `/api/subsolo/unlock`):**
-  1. **Lâmpada em Código Morse (Inquebrável):** Pisca ciclicamente `--...` (`7`), `....-` (`4`), `..---` (`2`) → **`742`**. A lâmpada **NÃO pode ser quebrada** para que o jogador sempre consiga ler o Morse sem cair em armadilhas irreversíveis.
-  2. **Placa de Manutenção na Parede:** Em vez de espelho/vapor confuso, há uma placa metálica parafusada na parede com instruções claras:
-     `CÓDIGO DE ACESSO:`
-     `SENHA = SINAL - 42`
-     `(Consulte a lâmpada em código Morse)`
-  3. **Cálculo Direto:** O sinal é `742`. A conta simples é: `742 - 42` = **`700`**.
-  4. **Torneira e Ralo Alinhados:** Ao abrir a válvula vermelha, as gotas caem **direto dentro do ralo** no piso com respingos d'água.
-- **Transição:** Ao digitar `700` no teclado do painel, a estrutura sofre pane (`ERRO ESTRUTURAL!!`), o Operador grita lá de cima surpreso com o estrondo (`"QUE PORRA DE ESTRONDO FOI ESSE AÍ EMBAIXO?! O QUE VC TÁ APRONTANDO?! ESPERA, O PISO TÁ AFUNDANDO—"`), toca o estrondo grave (`playCollapseRumble`) e o chão do porão **despenca em queda livre pra Caverna**!
+- **Enigma Estilo *Don't Believe His Lies* (validado em `/api/subsolo/unlock`):**
+  1. **Lâmpada em Código Morse (Inquebrável, SEM dica explícita):** Pisca ciclicamente `--...` (`7`), `....-` (`4`), `..---` (`2`) → **`742`**. Não há texto nenhum dizendo que é Morse ou para olhar a lâmpada.
+  2. **Placa Críptica na Parede (Exige Pesquisa Externa):**
+     `MEMORIAL // SALA -01`
+     `"O quarto onde o pai da corrente alternada morreu com os pombos."`
+     `[ QUARTO ] - [ ??? ]`
+     - Pesquisando: Nikola Tesla (pai da corrente alternada, famoso por alimentar pombos) morreu sozinho no **Quarto 3327** do Hotel New Yorker.
+  3. **Cálculo Final:** `3327 - 742` = **`2585`**.
+  4. **Física da Água & Ralo:** O ralo fica abaixo do painel (`x=695..755`), e ao abrir a válvula, a água cai da torneira (`x=235`), forma um fluxo contínuo pelo piso e escoa diretamente para dentro do ralo sem se espalhar aleatoriamente.
+- **Transição:** Ao digitar `2585` no teclado do painel, a estrutura sofre pane (`ERRO ESTRUTURAL!!`), o Operador grita surpreso lá de cima (`"QUE PORRA DE ESTRONDO FOI ESSE AÍ EMBAIXO?! O QUE VC TÁ APRONTANDO?! ESPERA, O PISO TÁ AFUNDANDO—"`), toca o estrondo grave (`playCollapseRumble`) e o chão do porão **despenca em queda livre pra Caverna**!
 
 ### Página 8 — A Caverna Profunda (`stage: 'cave_2d'` -> `'cave_escaped'`)
 - Adaptação completa em JS + `WASD` de mina subterrânea 4x12 segmentos (`client/public/cave/*` com 38 assets locais).
