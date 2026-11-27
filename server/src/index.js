@@ -980,12 +980,12 @@ app.post('/api/cave/complete-story', (req, res) => {
 
   const count = player.caveState.booksOwned.length;
   const remarksByCount = {
-    1: 'pronto, voltou pro buraco com um livro na mão. abre essa porcaria na mochila e vê o que tem na última página.',
-    2: 'MAIS UM LIVRO COM ENIGMA NESSA PORRA?! quem enterrou uma biblioteca inteira de psicopata embaixo do meu servidor?!',
-    3: 'outro livro. sério. tô começando a achar que o inferno é uma livraria com prova surpresa no final.',
-    4: 'cansei. resolve essas charadas sozinho aí, vou ficar aqui olhando até vc terminar de colecionar papel.',
-    5: 'falta só um pra acabar esse suplício literário. não me decepciona agora.',
-    6: 'todos os seis livros. finalmente. agora vai lá na estante do final do corredor e bota essas merdas em ordem.',
+    1: 'voltamos pro buraco... e vc trouxe um livro daquele lugar? que porra tá acontecendo aqui?',
+    2: 'OUTRO LIVRO?! sério, quantas dessas porcarias existem enterradas nessa caverna?!',
+    3: 'mais um livro. maravilhoso. tô preso numa biblioteca alucinógena com código fonte.',
+    4: 'cansei de tentar entender a lógica desse lugar. faz o que vc quiser com esse livro aí.',
+    5: 'outro. já nem me surpreendo mais.',
+    6: 'seis livros. tá bom, chega de história idiota. e agora?',
   };
 
   saveDb(db);
@@ -1033,12 +1033,12 @@ app.post('/api/cave/solve-book', (req, res) => {
 
   const solvedCount = player.caveState.booksSolved.length;
   const solveRemarks = {
-    1: 'acertou. a passagem pro segundo conto abriu ali no andar de baixo.',
-    2: 'mais um resolvido. desce mais fundo que o próximo altar já destravou.',
-    3: 'tá pegando o jeito. o quarto livro já tá liberado.',
-    4: 'menos dois. continua.',
-    5: 'só falta o último. termina logo essa porra.',
-    6: 'seis de seis. agora vai na estante final e organiza eles na ordem certa.',
+    1: 'acertou? pera... deu um estalo lá embaixo na caverna.',
+    2: 'destravou alguma coisa longe daqui. continua.',
+    3: 'outro clique mecânico ecoando na pedra. seja lá quem construiu isso, era obcecado.',
+    4: 'menos um. ainda falta coisa.',
+    5: 'mais um selo soltou.',
+    6: 'seis de seis. ouvi uma trava pesada abrir lá no corredor.',
   };
 
   res.json({

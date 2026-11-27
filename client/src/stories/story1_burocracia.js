@@ -497,7 +497,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
   document.getElementById('s1-back')?.addEventListener('click', () => returnToCave(caveState));
 
   setOperatorRemark(
-    'bem-vindo à repartição pública do inferno. lê o manual na esquerda, passa o raio-x nas malas suspeitas e vê se não toma 3 multas.',
+    'pera... pq a tela inteira ficou sépia? onde caralhos a gente foi parar?! pq tem um guichê de fronteira rodando dentro do meu servidor?!',
     { delayBefore: 200, priority: 'urgent' }
   );
 
@@ -581,7 +581,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     usedXray = true;
     document.getElementById('s1-tool-readout').textContent = `🩻 Raio-X: ${person.xray}`;
     if (person.isLoreSecret) {
-      setOperatorRemark('pera... que porra é aquela escrita dentro da mala no raio-x? anota isso aí antes que suma.', { priority: 'action' });
+      setOperatorRemark('espera... que porra é aquela gravada dentro dessa mala? eu tenho certeza que isso não faz parte de um passaporte normal.', { priority: 'action' });
     }
   });
 
@@ -592,21 +592,21 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
     if (approved === person.valid) {
       credits += 25;
-      setOperatorRemark(approved ? 'aprovado dentro da norma. próximo.' : `negado certinho: ${person.reason}`, { priority: 'action' });
+      setOperatorRemark(approved ? 'passou. próximo.' : `barrado. (${person.reason})`, { priority: 'action' });
     } else {
       errors += 1;
       if (approved && person.bribe) {
         credits += person.bribe;
-        setOperatorRemark('aceitou 40 créditos de propina e ainda tomou multa do inspetor. gênio das finanças.', { priority: 'urgent' });
+        setOperatorRemark('vc acabou de aceitar propina num guichê de mentira e ainda tomou multa. parabéns.', { priority: 'urgent' });
       } else {
-        setOperatorRemark(`MULTA! Motivo: ${person.reason}`, { priority: 'urgent' });
+        setOperatorRemark(`multa no guichê: ${person.reason}`, { priority: 'urgent' });
       }
       if (errors >= 3) {
         dayIdx = 0;
         appIdx = 0;
         errors = 0;
         credits = 0;
-        setOperatorRemark('três multas na ficha. demitido e rebaixado de volta pro Dia 1.', { priority: 'urgent' });
+        setOperatorRemark('três multas e resetou tudo pro Dia 1. que sistema sádico.', { priority: 'urgent' });
         renderApplicant();
         return;
       }
@@ -617,11 +617,11 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       dayIdx += 1;
       appIdx = 0;
       if (dayIdx >= DAYS.length) {
-        setOperatorRemark('fim dos 5 dias de expediente. pega esse livro e vê se decifra a última página.', { priority: 'urgent' });
+        setOperatorRemark('acabou? finalmente. espera... que livro é esse que apareceu agora?', { priority: 'urgent' });
         await finishStory();
         return;
       }
-      setOperatorRemark(`fim do Dia ${dayIdx}. mais regras idiotas adicionadas para amanhã.`, { priority: 'action' });
+      setOperatorRemark(`virou pro Dia ${dayIdx + 1}. pelo visto essa porcaria vai piorar ainda mais.`, { priority: 'action' });
     }
     renderApplicant();
   }
