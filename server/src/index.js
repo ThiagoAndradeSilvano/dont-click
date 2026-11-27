@@ -68,6 +68,8 @@ const GENERATORS = [
 ];
 
 const GEN_MAP = Object.fromEntries(GENERATORS.map((g) => [g.id, g]));
+// Limite de unidades por item de automação (o servidor recusa acima disso)
+const GEN_MAX = 15;
 
 function getGeneratorCost(gen, ownedCount) {
   return Math.floor(gen.baseCost * Math.pow(1.16, ownedCount));
@@ -418,6 +420,7 @@ function buildGeneratorsState(player) {
       cost: getGeneratorCost(gen, count),
       cps: Math.round(gen.cps * mult * 10) / 10,
       count,
+      max: GEN_MAX,
       desc: gen.desc,
     };
   });
@@ -655,6 +658,12 @@ app.post('/api/buy-generator', (req, res) => {
   }
 
   const ownedCount = player.generators[gen.id] || 0;
+  if (ownedCount >= GEN_MAX) {
+    const full = player.stage === 'awakened_clicker'
+      ? 'lotou mano. não cabe mais nenhum aí, nem o sindicato dos pombos aguenta'
+      : null;
+    return res.json({ ok: false, full: true, remark: full, ...buildClientPayload(player) });
+  }
   const cost = getGeneratorCost(gen, ownedCount);
 
   if (player.points < cost) {

@@ -2273,3 +2273,8 @@ body.secret-route-mode {
   font-size: 13px;
   color: #555;
 }
+
+/* Item de automação no limite: fica apagado, botão "Lotado" */
+.shop-item.gen-full {
+  opacity: 0.6;
+}

@@ -1301,12 +1301,14 @@ function renderActiveShopTab() {
     const gens = latestState.generators || [];
     listEl.innerHTML = gens
       .map((gen) => {
-        const canAfford = pts >= gen.cost;
+        const max = gen.max || 15;
+        const isFull = gen.count >= max;
+        const canAfford = pts >= gen.cost && !isFull;
         return `
-          <div class="shop-item">
+          <div class="shop-item ${isFull ? 'gen-full' : ''}">
             <div class="shop-item-top">
-              <span class="shop-item-name">${gen.name} <span class="gen-count-badge">x${gen.count}</span></span>
-              <span class="shop-item-cost">${formatPts(gen.cost)} pts</span>
+              <span class="shop-item-name">${gen.name} <span class="gen-count-badge">x${gen.count}/${max}</span></span>
+              <span class="shop-item-cost">${isFull ? '—' : `${formatPts(gen.cost)} pts`}</span>
             </div>
             <div class="shop-item-desc">${gen.desc} <strong>(+${formatPts(gen.cps)}/s cada)</strong></div>
             <button
@@ -1316,7 +1318,7 @@ function renderActiveShopTab() {
               data-cost="${gen.cost}"
               data-owned="false"
               ${!canAfford ? 'disabled' : ''}
-            >Contratar (+1)</button>
+            >${isFull ? 'Lotado' : 'Contratar (+1)'}</button>
           </div>
         `;
       })
@@ -1328,6 +1330,12 @@ function renderActiveShopTab() {
         const genId = btn.getAttribute('data-gen-id');
         btn.disabled = true;
         const res = await apiPost('/api/buy-generator', { genId });
+        if (res && res.full) {
+          latestState = res;
+          renderActiveShopTab();
+          if (res.remark) setOperatorRemark(res.remark, { delayBefore: 250 });
+          return;
+        }
         if (!res || !res.ok) return;
 
         latestState = res;
