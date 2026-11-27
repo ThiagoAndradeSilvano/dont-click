@@ -1699,7 +1699,9 @@ body.cave-mode {
 
 .cave-obj-btn {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   width: 100%;
   height: 100%;
   cursor: pointer;
@@ -1707,8 +1709,19 @@ body.cave-mode {
 
 .cave-obj-btn img {
   width: 100%;
+  height: 100%;
+  object-fit: contain;
   image-rendering: pixelated;
   transition: filter 0.15s;
+}
+
+.cave-obj-btn.cave-obj-small {
+  padding-bottom: 8px;
+}
+
+.cave-obj-btn.cave-obj-small img {
+  width: 24px;
+  height: 24px;
 }
 
 .cave-obj-btn:hover img,

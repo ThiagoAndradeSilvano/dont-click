@@ -2661,9 +2661,10 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         const obj = CAVE_OBJECTS.find((o) => o.row === r && o.col === c && o.tile === t);
 
         if (obj) {
+          const isSmallItem = obj.id === 'lantern' || obj.kind === 'story_portal';
           tilesHtml += `
             <div class="cave-tile ${obj.specialClass || ''}" data-obj-slot="${obj.id}">
-              <div class="cave-obj-btn" data-obj-id="${obj.id}">
+              <div class="cave-obj-btn ${isSmallItem ? 'cave-obj-small' : ''}" data-obj-id="${obj.id}">
                 <img src="${obj.img}" alt="" data-obj-img="${obj.id}" />
               </div>
             </div>
