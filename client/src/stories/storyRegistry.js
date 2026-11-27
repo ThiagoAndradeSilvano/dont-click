@@ -11,11 +11,25 @@ export const BOOKS_META = {
     id: 'book_1',
     storyId: '1',
     title: 'Fronteira da Burocracia',
-    subtitle: 'Livro I // Guichê Sépia',
+    subtitle: 'Livro I // Crônicas de Vostok-Cinza',
     themeClass: 'book-theme-sepia',
-    prologue: 'Há décadas, toda alma perdida e todo pacote esquecido deste servidor precisavam passar por um único guichê antes de serem deletados. Você assumiu o turno da madrugada na Fronteira da Burocracia.',
-    summary: 'Você sobreviveu a 5 dias de auditoria, balanças, selos falsos, raios-X e subornos na portaria do submundo.',
-    riddle: '"O bilhete do Dia 4 e o Raio-X do Dia 5 apontam para a mesma cidade. Um porta-voz gaguejou \'imediatamente\' numa coletiva em novembro. Pegue o ANO em que a fronteira dessa cidade caiu, subtraia o ANO em que foi erguida, e multiplique pela IDADE exata (em anos completos naquela noite) de quem pronunciou o erro."',
+    prologuePages: [
+      {
+        heading: 'Capítulo I — A Grande Divisão dos Seis Distritos',
+        text: 'No inverno de 1953, após a Guerra do Carvão, os seis reinos mercantes assinaram o Tratado de Ferro e ergueram uma muralha de concreto armado cortando o continente de ponta a ponta. Famílias inteiras dormiram num país e acordaram em outro.',
+      },
+      {
+        heading: 'Capítulo II — O Posto 04 de Estrada-Morta',
+        text: 'Apenas uma passagem permaneceu aberta na fronteira leste: o Posto 04. O antigo inspetor desapareceu na calada da noite deixando um carimbo sujo de tinta seca, uma lanterna quebrada e três gavetas trancadas.',
+      },
+      {
+        heading: 'Capítulo III — Sua Convocação Oficial',
+        text: 'Seu nome foi sorteado pelo Ministério da Ordem Territorial para assumir a cabine sob nevasca pelos próximos cinco dias. Lá fora, contrabandistas, desertores, diplomatas clandestinos e fugitivos já formam fila sob os holofotes. Ninguém cruza a grade sem o seu carimbo.',
+      },
+    ],
+    prologue: 'No inverno cinzento da fronteira dividida, você foi convocado às pressas para assumir o Posto 04. Cinco dias de nevasca, falsificadores e segredos de Estado aguardam do outro lado do vidro.',
+    summary: 'Você sobreviveu a 5 dias na cabine do Posto 04 enfrentando falsificadores de brasão, contrabandistas, fugitivos procurados e mensageiros clandestinos sob a Guerra Fria dos Seis Distritos.',
+    riddle: '"A placa de chumbo do Diplomata (Dia 4) e a marca fluorescente do Mensageiro Fantasma (Dia 5) revelam duas palavras sobre a queda mais famosa da história moderna. Um porta-voz gaguejou \'imediatamente\' numa coletiva em novembro. Pegue o ANO em que aquela fronteira real caiu, subtraia o ANO em que foi erguida, e multiplique pela IDADE exata (em anos completos naquela noite) de quem pronunciou o erro."',
   },
   book_2: {
     id: 'book_2',
@@ -33,7 +47,7 @@ export const BOOKS_META = {
     title: 'Corredor 0999 (P.T.)',
     subtitle: 'Livro III // Fita VHS',
     themeClass: 'book-theme-noir',
-    prologue: 'Uma fita de terror psicológico ficou presa em loop infinito dentro da memória morta. Cada vez que alguém cruza a porta no fim do corredor, o tempo reinicia — a menos que você descubra o que mudou.',
+    prologue: 'Uma fita VHS esquecida numa casa abandonada nos anos 90 prendeu seu último morador num corredor infinito. Cada vez que alguém cruza a porta no fim do corredor, a meia-noite recomeça.',
     summary: 'Você atravessou loops idênticos de um corredor em preto e branco procurando anomalias enquanto um rádio chiava clichês de terror.',
     riddle: '"O número do quarto proibido no hotel de Kubrick — não no livro de King, mas no filme."',
   },
@@ -43,7 +57,7 @@ export const BOOKS_META = {
     title: 'Naufrágio da Porta Gigante',
     subtitle: 'Livro IV // Gelo & Sonar',
     themeClass: 'book-theme-ice',
-    prologue: 'No meio do oceano congelado de dados corrompidos, um transatlântico inteiro afundou por pura arrogância — e só sobrou uma porta de madeira gigante boiando no gelo.',
+    prologue: 'Em abril de 1912, no meio do Atlântico Norte congelante, o maior transatlântico do mundo afundou por pura arrogância — e só sobrou uma porta de carvalho gigante boiando entre os icebergs.',
     summary: 'Você equilibrou uma porta onde claramente cabiam quatro pessoas no meio do Atlântico Norte congelante.',
     riddle: '"O navio \'inafundável\' que inspirou essa porta idiota partiu de Southampton e afundou em abril de qual ano?"',
   },
@@ -63,7 +77,7 @@ export const BOOKS_META = {
     title: 'Terminal 1984',
     subtitle: 'Livro VI // CRT Fósforo',
     themeClass: 'book-theme-crt',
-    prologue: 'Antes do colapso, o último setor do sistema era vigiado por um ministério obcecado em apagar a verdade em tempo real. Só quem hackear a mesa de censura consegue escapar.',
+    prologue: 'Numa Londres cinzenta governada por teletelas e microfones escondidos, o Ministério da Verdade reescreve os jornais todos os dias para apagar o passado. Você ocupa a cabine 101 da mesa de censura.',
     summary: 'Você censurou manchetes em tempo real, interceptou pacotes secretos e burlou a vigilância do Grande Irmão.',
     riddle: '"Na obra de George Orwell, qual é o número do quarto onde cada prisioneiro enfrenta seu pior terror?"',
   },
@@ -271,23 +285,56 @@ export function launchStory(storyId, ctx) {
   const overlay = document.createElement('div');
   overlay.id = 'story-portal-overlay';
   overlay.className = 'story-portal-overlay';
-  overlay.innerHTML = `
-    <div class="story-portal-sub">${meta?.subtitle || 'Abrindo Livro'}</div>
-    <img class="story-portal-book" id="portal-book-img" src="/cave/book_${storyId}_closed.png" alt="" />
-    <div class="story-portal-title">${meta?.title || ''}</div>
-    <p class="story-portal-prologue">${meta?.prologue || ''}</p>
-    <button type="button" class="story-portal-enter-btn" id="portal-open-btn">📖 Abrir o Livro</button>
-  `;
-  document.body.appendChild(overlay);
 
-  requestAnimationFrame(() => overlay.classList.add('active'));
-
+  const pages = Array.isArray(meta?.prologuePages) && meta.prologuePages.length > 0
+    ? meta.prologuePages
+    : [{ heading: 'Prólogo', text: meta?.prologue || '' }];
+  let pageIdx = 0;
   let started = false;
+
+  const renderPortalStep = () => {
+    const curPage = pages[pageIdx];
+    const isLast = pageIdx >= pages.length - 1;
+    overlay.innerHTML = `
+      <div class="story-portal-sub">${meta?.subtitle || 'Abrindo Livro'}</div>
+      <img class="story-portal-book ${pageIdx > 0 ? 'opened' : ''}" id="portal-book-img" src="/cave/book_${storyId}_${pageIdx > 0 ? 'open' : 'closed'}.png" alt="" />
+      <div class="story-portal-title">${meta?.title || ''}</div>
+      <div class="story-portal-page-card">
+        <div class="story-portal-page-hdr">
+          <span>${curPage.heading || `Página ${pageIdx + 1}`}</span>
+          <span>Pág. ${pageIdx + 1} / ${pages.length}</span>
+        </div>
+        <p class="story-portal-prologue">${curPage.text}</p>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:6px;">
+        ${pageIdx > 0 ? `<button type="button" class="story-portal-enter-btn" id="portal-prev-btn" style="background:#18181b; border-color:#52525b; color:#d4d4d8;">← Página Anterior</button>` : ''}
+        ${
+          !isLast
+            ? `<button type="button" class="story-portal-enter-btn" id="portal-next-btn">Virar Página (${pageIdx + 1}/${pages.length}) →</button>`
+            : `<button type="button" class="story-portal-enter-btn" id="portal-open-btn">📖 Entrar na História</button>`
+        }
+      </div>
+    `;
+
+    overlay.querySelector('#portal-prev-btn')?.addEventListener('click', () => {
+      if (ctx.playBeep) ctx.playBeep();
+      pageIdx = Math.max(0, pageIdx - 1);
+      renderPortalStep();
+    });
+
+    overlay.querySelector('#portal-next-btn')?.addEventListener('click', () => {
+      if (ctx.playBeep) ctx.playBeep();
+      pageIdx = Math.min(pages.length - 1, pageIdx + 1);
+      renderPortalStep();
+    });
+
+    overlay.querySelector('#portal-open-btn')?.addEventListener('click', openAndEnter);
+  };
+
   const openAndEnter = () => {
     if (started) return;
     started = true;
-    const btn = document.getElementById('portal-open-btn');
-    if (btn) btn.style.visibility = 'hidden';
+    overlay.querySelectorAll('button').forEach((b) => { b.style.visibility = 'hidden'; });
 
     const img = document.getElementById('portal-book-img');
     if (img) {
@@ -310,8 +357,10 @@ export function launchStory(storyId, ctx) {
       });
       overlay.classList.add('suck-in');
       setTimeout(() => overlay.remove(), 680);
-    }, 1050);
+    }, 850);
   };
 
-  document.getElementById('portal-open-btn')?.addEventListener('click', openAndEnter);
+  renderPortalStep();
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('active'));
 }

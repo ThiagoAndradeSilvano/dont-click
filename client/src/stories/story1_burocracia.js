@@ -279,13 +279,13 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
   const DAYS = [
     {
       day: 1,
-      codeTitle: 'DIA 1 — REABERTURA DA ALFÂNDEGA DE DESCARTE',
+      codeTitle: 'DIA 1 — REABERTURA DO POSTO 04 (ESTRADA-MORTA)',
       bulletin:
-        'BOLETIM OFICIAL Nº 01:\nTodo pacote de memória e entidade descartada deve apresentar PASSAPORTE válido (>= 2026) e BRASÃO AUTÊNTICO do Reino (confira a aba Brasões no Manual!).\nSalário: +10 cr por acerto. Custo diário da cabine: 20 cr.',
+        'MINISTÉRIO DA ORDEM TERRITORIAL — BOLETIM Nº 01:\nApós a nevasca de ontem, a fronteira leste foi reaberta sob vigilância militar.\nTodo cidadão deve apresentar PASSAPORTE dentro da validade (>= 2026) e BRASÃO OFICIAL do seu Distrito (compare o desenho na aba Brasões do Manual!).\nSalário: +10 cr por acerto. Aluguel & carvão da calefação à noite: 20 cr.',
       supervisorIntro:
-        'KSHHH— Posto 04 ativo. Chame o primeiro da fila no botão vermelho PRÓXIMO!, confira a data de validade e o desenho do brasão no Manual, bata o carimbo na gaveta à direita e devolva o passaporte pela fresta.',
+        'KSHHH— Posto 04 em operação. Chame o primeiro da fila no botão vermelho PRÓXIMO!, confira validade e brasão no Manual, bata o carimbo na gaveta à direita e devolva pela fresta.',
       logIntro:
-        'mano... que porra de lugar é esse?! a gente entrou num livro e virou fiscal de alfândega num guichê caindo aos pedaços?! quem tá falando nesse interfone velho?!',
+        'mano... o livro sugou a gente pra dentro de uma guarita gelada no meio do nada!! tem até um coronel falando chiado no rádio velho kkkkk faz o trampo aí pra gente ver onde essa história vai dar.',
       rules: [
         '• Todo viajante deve ter PASSAPORTE.',
         '• Validade deve ser 2026 ou posterior (Data hoje: 24.11.2026).',
@@ -358,7 +358,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       supervisorIntro:
         'KSHHH— Dia 2. Cidadãos de fora agora também exigem TICKET DE ENTRADA com data de 2026. Se achar divergência de peso, foto ou cidade, clique em [🔍 DISCREPÂNCIA] e aponte os dois itens conflitantes.',
       logIntro:
-        'botaram até balança e raio-x na tua cabine agora mano... parece que esse setor inteiro foi feito pra filtrar o que presta e o que vai pro lixo do disco.',
+        'botaram até balança no chão e raio-x na guarita agora mano... os caras levam essa fronteira a sério msm, fica esperto pra não deixar bomba passar.',
       rules: [
         '• Regras do Dia 1 continuam valendo.',
         '• Obrigatório apresentar TICKET DE ENTRADA válido (2026).',
@@ -437,11 +437,11 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       day: 3,
       codeTitle: 'DIA 3 — PROCURADOS NA PAREDE & IDENTIDADE ROUBADA',
       bulletin:
-        'BOLETIM OFICIAL Nº 03:\nTrês fugitivos de memória corrompida escaparam hoje cedo — confira os ROSTOS no cartaz colado na janela!\nAlém disso, trabalhadores devem portar PERMISSÃO DE TRABALHO com NOME IDÊNTICO ao Passaporte.',
+        'BOLETIM OFICIAL Nº 03:\nDois criminosos foragidos da Prisão Estadual escaparam hoje cedo — confira os ROSTOS no cartaz colado na janela!\nAlém disso, trabalhadores devem portar PERMISSÃO DE TRABALHO com NOME IDÊNTICO ao Passaporte.',
       supervisorIntro:
         'KSHHH— Dia 3. Fixamos o Cartaz de Procurados no vidro da sua cabine. Compare sempre o rosto real do sujeito com a foto do passaporte e com o cartaz de procurados. Se for fugitivo, DETENHA.',
       logIntro:
-        'pera aí... "fugitivos de memória corrompida"?! mano, lê nas entrelinhas o que esse supervisor tá falando... isso aqui não é só um conto bobo não.',
+        'colaram cartaz de procurado na janela igual filme policial antigo... olha bem pra cara do maluco antes de bater o verde hein.',
       rules: [
         '• Regras anteriores continuam valendo.',
         '• Compare o ROSTO na janela com o Cartaz de PROCURADOS e com a FOTO do passaporte!',
@@ -560,7 +560,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           violationReason: 'Certificado de Vacinação vencido (2022) vindo do Pântano Fiscal.',
         },
         {
-          name: 'Agente K. (Arquivista)',
+          name: 'Diplomata K.',
           sex: 'M',
           birth: '1978',
           kingdom: 'Torre Cinza',
@@ -571,12 +571,12 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           forgedSeal: false,
           entryTicket: { code: 'TK-004', validYear: '2026', purpose: 'DIPLOMÁTICO' },
           look: { skin: '#cbb59d', coat: '#18181b', hair: 'hood', eyes: 'narrow' },
-          speech: 'psiu. meus papéis tão limpos, não faz alarde... mas liga o Raio-X na minha pasta antes de me aprovar. vc vai precisar disso pro Livro.',
-          xrayDesc: '📄 CHAPA METÁLICA GRAVADA (PARTE 1/2):\n01001101  01010101  01010010  01001111',
+          speech: 'psiu. meus documentos diplomáticos tão em ordem... mas passa o Raio-X na minha pasta antes de carimbar. guardei uma chapa de chumbo pra vc.',
+          xrayDesc: '📄 PLACA DE CHUMBO NA PASTA (PARTE 1/2):\n01001101  01010101  01010010  01001111',
           xrayBad: false,
           isLoreSecret1: true,
           valid: true,
-          violationReason: 'Agente K. possuía documentação diplomática 100% válida.',
+          violationReason: 'Diplomata K. possuía documentação diplomática 100% válida.',
         },
         {
           name: 'Sérgio Contábil',
@@ -601,16 +601,16 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     },
     {
       day: 5,
-      codeTitle: 'DIA 5 — AUDITORIA FINAL, LUZ NEGRA UV & SUJEITO 000-NK',
+      codeTitle: 'DIA 5 — AUDITORIA FINAL, LUZ NEGRA UV & O EMISSÁRIO FANTASMA',
       bulletin:
-        'BOLETIM OFICIAL Nº 05 (ÚLTIMO TURNO):\nFalsificadores de elite estão imprimindo passaportes perfeitos a olho nu!\nNOVO EQUIPAMENTO NA MESA: [🟣 LANTERNA UV]. Ligue a luz negra sobre a mesa: todo passaporte legítimo revela o selo fluorescente "AUTÊNTICO // SETOR 0". Se aparecer "FALSO / NULO", NEGUE ou DETENHA!',
+        'BOLETIM OFICIAL Nº 05 (ÚLTIMO TURNO):\nFalsificadores de elite estão imprimindo passaportes perfeitos a olho nu!\nNOVO EQUIPAMENTO NA MESA: [🟣 LANTERNA UV]. Ligue a luz negra sobre a mesa: todo passaporte legítimo revela o selo fluorescente "AUTÊNTICO // CHANCELARIA". Se aparecer "FALSO / ADULTERADO", NEGUE ou DETENHA!',
       supervisorIntro:
-        'KSHHH— Último turno da auditoria, Inspetor. Acenda a [🟣 LANTERNA UV] em TODOS os passaportes hoje. Se passar deste turno sem ser demitido, emitiremos o seu Registro Final.',
+        'KSHHH— Último turno da auditoria, Inspetor. Acenda a [🟣 LANTERNA UV] em TODOS os passaportes hoje. Se passar deste turno sem ser demitido, encerramos sua convocação.',
       logIntro:
-        'último dia dessa loucura mano!! usa essa luz roxa aí nos papéis pra ninguém te passar a perna na reta final, vamo pegar logo esse livro e cair fora!',
+        'último dia nessa guarita congelada mano!! usa essa luz roxa aí nos papéis pra ninguém te passar a perna na reta final, vamo pegar logo esse livro e cair fora!',
       rules: [
         '• Todas as regras anteriores continuam valendo!',
-        '• OBRIGATÓRIO ligar a [🟣 Lanterna UV]: passaportes reais brilham "AUTÊNTICO // SETOR 0". Se brilhar "CLONE FALSO", é fraude!',
+        '• OBRIGATÓRIO ligar a [🟣 Lanterna UV]: passaportes reais brilham "AUTÊNTICO // CHANCELARIA". Se brilhar "CLONE FALSO", é fraude!',
       ],
       wanted: [
         { name: 'Dona Zulmira', look: { skin: '#d9b89c', coat: '#365314', hair: 'long', glasses: true, hairColor: '#52525b' } },
@@ -663,7 +663,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           violationReason: 'Fugitiva procurada (Dona Zulmira) + selo e UV falsos.',
         },
         {
-          name: 'Sujeito 000-NK',
+          name: 'Emissário Fantasma',
           sex: '?',
           birth: '1929',
           kingdom: 'Torre Cinza',
@@ -673,14 +673,14 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           weightReal: 72,
           forgedSeal: false,
           uvText: 'AUTÊNTICO // CÉSAR +3 → EHUOLP', // PARTE 2 DO ENIGMA NA LUZ UV!!
-          entryTicket: { code: 'TK-000', validYear: '2026', purpose: 'ARQUIVO RAIZ' },
-          look: { skin: '#d4d4d8', coat: '#09090b', hair: 'glitch', eyes: 'hollow' },
-          speech: '...acende a luz roxa no meu passaporte. junta com os números do Agente K. de ontem... e me deixa passar.',
-          xrayDesc: '🔐 RAIO-X E LUZ UV CONFIRMAM: CÉSAR +3 → EHUOLP (Documentos autênticos do núcleo!)',
+          entryTicket: { code: 'TK-000', validYear: '2026', purpose: 'CHANCELARIA' },
+          look: { skin: '#d4d4d8', coat: '#09090b', hair: 'hood', eyes: 'hollow' },
+          speech: '...acende a luz roxa no meu passaporte. junta com a placa de chumbo do Diplomata de ontem... e abre o portão.',
+          xrayDesc: '🔐 RAIO-X E LUZ UV CONFIRMAM: CÉSAR +3 → EHUOLP (Chancelaria Diplomática autêntica!)',
           xrayBad: false,
           isLoreSecret2: true,
           valid: true,
-          violationReason: 'Sujeito 000-NK tinha autorização autêntica de Arquivo Raiz.',
+          violationReason: 'O Emissário possuía salvo-conduto autêntico da Chancelaria.',
         },
       ],
     },
@@ -956,21 +956,24 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
   // ---- ATUALIZA HUD, FILA E FERRAMENTAS ----
   function updateHudAndQueue() {
     const dayObj = DAYS[dayIdx];
-    const remaining = Math.max(0, dayObj.applicants.length - (appIdx + 1));
+    const totalInDay = dayObj.applicants.length;
+    // Se appIdx === -1, ninguém entrou ainda (faltam todos). Se appIdx >= 0, o viajante atual já foi chamado da fila!
+    const waitingOutside = travelerState === 'waiting_call'
+      ? Math.max(0, totalInDay - (appIdx + 1))
+      : Math.max(0, totalInDay - (appIdx + 1));
 
     document.getElementById('pp-hud-day').textContent = `DIA ${dayObj.day} / 5`;
     document.getElementById('pp-hud-queue').textContent =
       travelerState === 'waiting_call'
-        ? `FILA LÁ FORA: ${dayObj.applicants.length - appIdx}`
-        : `RESTANTES HOJE: ${remaining}`;
+        ? `FILA LÁ FORA: ${waitingOutside}`
+        : `ATENDENDO ${appIdx + 1}/${totalInDay} (FILA: ${waitingOutside})`;
     document.getElementById('pp-hud-credits').textContent = `💰 ${credits} CR`;
     document.getElementById('pp-hud-citations').textContent = `⚠️ MULTAS HOJE: ${citationsToday} / 3`;
 
     // Silhuetas na fila
     const qEl = document.getElementById('pp-queue-silhouettes');
-    const qCount = travelerState === 'waiting_call' ? dayObj.applicants.length - appIdx : remaining;
     if (qEl) {
-      qEl.innerHTML = Array.from({ length: Math.max(0, qCount) })
+      qEl.innerHTML = Array.from({ length: waitingOutside })
         .map((_, i) => `<div class="pp-q-person ${i === 0 && travelerState === 'present' ? 'walking-in' : ''}"></div>`)
         .join('');
     }
@@ -1061,7 +1064,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     const mount = document.getElementById('pp-overlay-mount');
     mount.innerHTML = `
       <div class="pp-day-overlay">
-        <div style="font-size:12px; letter-spacing:3px; color:#a89984;">MINISTÉRIO DA MEMÓRIA MORTA</div>
+        <div style="font-size:12px; letter-spacing:3px; color:#a89984;">MINISTÉRIO DA ORDEM TERRITORIAL // FRONTEIRA LESTE</div>
         <h2 style="margin:0; font-size:24px; color:#fde68a; letter-spacing:1px;">${dayObj.codeTitle}</h2>
         <div class="pp-night-ledger" style="white-space:pre-line;">${dayObj.bulletin}</div>
         <button type="button" class="pp-megaphone-btn" id="pp-start-shift-btn" style="padding:12px 28px; font-size:14px;">🔓 DESTRAVAR GUICHÊ E INICIAR TURNO</button>
@@ -1075,13 +1078,21 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     });
   }
 
-  // ---- CHAMAR PRÓXIMO VIAJANTE NO MEGAFONE! ----
+  // ---- CHAMAR PRÓXIMO VIAJANTE NO MEGAFONE! (Com trava anti-duplo-clique!) ----
+  let isCallingNext = false;
   document.getElementById('pp-next-btn')?.addEventListener('click', () => {
-    if (travelerState !== 'waiting_call') return;
+    if (travelerState !== 'waiting_call' || isCallingNext) return;
+    isCallingNext = true;
+    const nextBtnEl = document.getElementById('pp-next-btn');
+    if (nextBtnEl) nextBtnEl.disabled = true;
+
     const dayObj = DAYS[dayIdx];
     appIdx += 1;
     const person = dayObj.applicants[appIdx];
-    if (!person) return;
+    if (!person) {
+      isCallingNext = false;
+      return;
+    }
 
     playMegaphoneCall();
     playShutterClank();
@@ -1117,6 +1128,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
     // Joga os documentos na mesa com leve atraso físico!
     setTimeout(() => {
+      isCallingNext = false;
       playPaperSlide();
       spawnDocumentsOnDesk(person);
       bindDiscrepancyClicks();
@@ -1124,7 +1136,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
       if (person.isLoreSecret2) {
         setOperatorRemark(
-          'pera aí mano... olha a cara desse último sujeito na janela... "000-NK"?! pq esse código tá me dando um frio na espinha?!',
+          'caralho olha o naipe desse emissário encapuzado na janela mano... passa a luz roxa no documento dele logo.',
           { priority: 'urgent' }
         );
       }
@@ -1141,7 +1153,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
     const kInfo = KINGDOMS[person.kingdom] || KINGDOMS['Vale do Boleto'];
     const passPhotoLook = person.photoLook || person.look;
-    const uvLabel = person.uvText || '✦ AUTÊNTICO // SETOR 0';
+    const uvLabel = person.uvText || '✦ AUTÊNTICO // CHANCELARIA';
 
     // 1. PASSAPORTE PRINCIPAL
     const passEl = document.createElement('div');
@@ -1381,8 +1393,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       capturedClue2 = true;
       renderRulebook();
       supervisorThenLog(
-        'KSHHH— Selo UV de Arquivo Raiz verificado. Autorize passagem imediata do Sujeito 000-NK.',
-        'CARALHO OLHA NO PASSAPORTE DELE COM A LUZ ROXA: "CÉSAR +3 → EHUOLP"!! salvou na aba [Notas] tbm! aprova logo esse bicho sinistro pra gente vazar daqui!!',
+        'KSHHH— Salvo-conduto UV da Chancelaria verificado. Autorize passagem imediata do Emissário.',
+        'CARALHO OLHA NO PASSAPORTE DELE COM A LUZ ROXA: "CÉSAR +3 → EHUOLP"!! salvou na aba [Notas] tbm! aprova logo esse cara pra gente vazar daqui!!',
         'urgent'
       );
     }
@@ -1533,9 +1545,9 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           <div style="font-size:12px; letter-spacing:3px; color:#4ade80;">AUDITORIA DE 5 DIAS CONCLUÍDA</div>
           <h2 style="margin:0; font-size:24px; color:#fde68a;">LIVRO I LIBERADO — ALFÂNDEGA ENCERRADA</h2>
           <div class="pp-night-ledger">
-            <div style="margin-bottom:8px; color:#fcd34d; font-weight:bold;">RESUMO DAS PISTAS INTERCEPTADAS NO CONTO:</div>
-            <div>• Dia 4 (Agente K. / Raio-X): <code>01001101 01010101 01010010 01001111</code></div>
-            <div>• Dia 5 (Sujeito 000-NK / UV): <code>CÉSAR +3 → EHUOLP</code></div>
+            <div style="margin-bottom:8px; color:#fcd34d; font-weight:bold;">RESUMO DAS PISTAS INTERCEPTADAS NO LIVRO:</div>
+            <div>• Dia 4 (Diplomata K. / Raio-X): <code>01001101 01010101 01010010 01001111</code></div>
+            <div>• Dia 5 (Emissário Fantasma / UV): <code>CÉSAR +3 → EHUOLP</code></div>
             <div style="margin-top:10px; font-size:12px; opacity:0.85;">Use essas duas pistas para resolver o enigma na Última Página do Livro I na sua mochila!</div>
           </div>
           <button type="button" class="pp-megaphone-btn" id="pp-claim-book1" style="background:#15803d; border-color:#052e16; padding:14px 28px; font-size:14px;">📕 RECOLHER LIVRO I E VOLTAR À CAVERNA</button>
