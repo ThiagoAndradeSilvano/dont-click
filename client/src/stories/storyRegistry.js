@@ -254,17 +254,45 @@ export function launchStory(storyId, ctx) {
   const runner = STORY_RUNNERS[String(storyId)];
   if (!runner) return;
 
+  const meta = BOOKS_META[`book_${storyId}`];
   ctx.clearTimers();
   const app = document.getElementById('app');
   if (!app) return;
 
-  runner({
-    app,
-    ...ctx,
-    finishStory: async () => {
-      const res = await ctx.apiPost('/api/cave/complete-story', { storyId: String(storyId) });
-      const updatedCave = res?.caveState || ctx.caveState;
-      ctx.returnToCave(updatedCave, { justEarnedBook: `book_${storyId}`, remark: res?.remark });
-    },
-  });
+  if (ctx.playBeep) ctx.playBeep();
+
+  document.getElementById('story-portal-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'story-portal-overlay';
+  overlay.className = 'story-portal-overlay';
+  overlay.innerHTML = `
+    <div class="story-portal-sub">${meta?.subtitle || 'Abrindo Livro'}</div>
+    <img class="story-portal-book" id="portal-book-img" src="/cave/book_${storyId}_closed.png" alt="" />
+    <div class="story-portal-title">${meta?.title || ''}</div>
+  `;
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => overlay.classList.add('active'));
+
+  // Troca a imagem do livro fechado -> aberto no meio da transição!
+  setTimeout(() => {
+    const img = document.getElementById('portal-book-img');
+    if (img) img.src = `/cave/book_${storyId}_open.png`;
+    if (ctx.playBeep) ctx.playBeep();
+  }, 550);
+
+  // Monta o conto por trás do overlay e dissolve suavemente para dentro da história
+  setTimeout(() => {
+    runner({
+      app,
+      ...ctx,
+      finishStory: async () => {
+        const res = await ctx.apiPost('/api/cave/complete-story', { storyId: String(storyId) });
+        const updatedCave = res?.caveState || ctx.caveState;
+        ctx.returnToCave(updatedCave, { justEarnedBook: `book_${storyId}`, remark: res?.remark });
+      },
+    });
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 620);
+  }, 1350);
 }

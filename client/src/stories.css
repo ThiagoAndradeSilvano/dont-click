@@ -284,3 +284,61 @@ body.story-mode-6 {
   transform: translateY(2px);
   border-bottom-width: 2px;
 }
+
+/* ===== TRANSIÇÃO DE ENTRADA NOS CONTOS (ABRINDO O LIVRO) ===== */
+.story-portal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9800;
+  background: #040406;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: all;
+}
+
+.story-portal-overlay.active {
+  opacity: 1;
+}
+
+.story-portal-overlay.fade-out {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.story-portal-book {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 24px rgba(251, 191, 36, 0.55));
+  animation: portalBookZoom 1.45s ease-in-out forwards;
+}
+
+@keyframes portalBookZoom {
+  0% { transform: scale(0.75) rotate(-4deg); opacity: 0.4; }
+  45% { transform: scale(1.12) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1.35); opacity: 0.95; }
+}
+
+.story-portal-title {
+  color: #fde68a;
+  font-family: 'Georgia', serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+  text-align: center;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.9);
+}
+
+.story-portal-sub {
+  color: #a1a1aa;
+  font-family: monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
