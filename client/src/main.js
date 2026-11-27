@@ -1446,13 +1446,27 @@ async function humanTypeSequence(container, steps) {
         await sleep(34 + Math.random() * 24);
       }
     } else if (step.text) {
-      const base = step.speed || 36;
-      for (const ch of step.text) {
-        span.textContent += ch;
-        playOperatorTypeKey(ch);
-        const jitter = base + (Math.random() * 32 - 12);
-        const extra = ch === '.' || ch === '?' ? 250 : ch === ',' ? 130 : 0;
-        await sleep(Math.max(18, jitter + extra));
+      // Se o step tiver `durationMs` (fala dublada!), calcula o tempo exato por letra pra cravar com o áudio!
+      if (step.durationMs) {
+        const startT = performance.now();
+        const len = Math.max(1, step.text.length);
+        for (let idx = 0; idx < step.text.length; idx++) {
+          const ch = step.text[idx];
+          span.textContent += ch;
+          playOperatorTypeKey(ch);
+          const targetElapsed = ((idx + 1) / len) * step.durationMs;
+          const waitMs = targetElapsed - (performance.now() - startT);
+          if (waitMs > 4) await sleep(waitMs);
+        }
+      } else {
+        const base = step.speed || 36;
+        for (const ch of step.text) {
+          span.textContent += ch;
+          playOperatorTypeKey(ch);
+          const jitter = base + (Math.random() * 32 - 12);
+          const extra = ch === '.' || ch === '?' ? 250 : ch === ',' ? 130 : 0;
+          await sleep(Math.max(18, jitter + extra));
+        }
       }
     }
   }
@@ -1491,15 +1505,26 @@ async function runAwakeningSequence(_totalClicks, _ownedUpgrades, _minutesPlayed
     },
   });
 
+  // Cravado segundo a segundo com os timestamps reais do log_awakening.mp3 (00:00 -> 00:26.5)!
   await humanTypeSequence(box, [
-    { pause: 950 }, // [00:00 - 00:01] suspiro real no microfone ("fff...")
-    { text: 'mano... deixa eu te perguntar um negócio namoral...', speed: 46 },
-    { pause: 450 },
-    { text: '\n\ncê passou esse tempo todo da tua vida apertando a porra de um botão pra comprar pombo treinado e ventilador amarrado no mouse?', speed: 44 },
-    { pause: 950 }, // [00:12] risadinha sarcástica ("heheh...")
-    { text: '\n\nbicho, eu botei até bloquinho de encaixar de criança de dois anos na tua cara pra ver se cê se tocava e ia embora.', speed: 43 },
-    { pause: 420 },
-    { text: '\n\nquer saber? faltam só 3 porqueiras nessa lista aí. aperta logo em recarregar, compra o resto e vê se me deixa em paz.', speed: 44 },
+    { pause: 950 }, // 00:00.0 -> 00:00.95: suspiro no microfone ("ffff...")
+    { text: 'mano... deixa eu te perguntar um negócio namoral...', durationMs: 3150 }, // 00:00.95 -> 00:04.10
+    { pause: 200 },
+    {
+      text: '\n\ncê passou esse tempo todo da tua vida apertando a porra de um botão pra comprar pombo treinado e ventilador amarrado no mouse? ',
+      durationMs: 7350, // 00:04.30 -> 00:11.65 ("...no mouse?")
+    },
+    { text: 'kkkkkk', durationMs: 1150 }, // 00:11.65 -> 00:12.80 (risada real dele no áudio!)
+    { pause: 250 },
+    {
+      text: '\n\nbicho, eu botei até bloquinho de encaixar de criança de 2 anos na tua cara pra ver se cê se tocava e ia embora.',
+      durationMs: 6350, // 00:13.05 -> 00:19.40
+    },
+    { pause: 250 },
+    {
+      text: '\n\nquer saber? faltam só 3 porqueiras nessa lista aí. aperta logo em recarregar, compra o resto e vê se me deixa em paz.',
+      durationMs: 6600, // 00:19.65 -> 00:26.25
+    },
   ]);
 
   if (reloadBtn) {
