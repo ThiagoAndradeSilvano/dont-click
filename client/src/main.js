@@ -1,3 +1,6 @@
+import './stories.css';
+import { BOOKS_META, openBookReaderModal, openFinalShelfModal, launchStory } from './stories/storyRegistry.js';
+
 const TOKEN_KEY = '_sys_ref';
 let currentStage = 'button';
 let currentUpgrades = [];
@@ -2509,14 +2512,21 @@ function renderSubsolo2DScreen(initialState = null) {
 // ============================================================================
 const CAVE_INVENTORY_META = {
   '0': { img: '/cave/apple.gif', name: 'Maçã', details: 'Um lanche estranhamente intacto' },
+  'lantern': { img: '/cave/swingingLantern.gif', name: 'Lanterna', details: 'Amplia sua visão na escuridão' },
   '2': { img: '/cave/pickInventory.gif', name: 'Picareta', details: 'Firme o bastante pra quebrar rocha' },
   '6': { img: '/cave/plankInventory.gif', name: 'Tábua', details: 'Tábua grossa de madeira' },
   '8': { img: '/cave/note1.gif', name: 'Nota 1', details: '1º dígito: 1 barra (=5) + 2 pontos (=2) → [ 7 ]' },
   '9': { img: '/cave/note2.gif', name: 'Nota 2', details: '2º dígito: 1 barra (=5) + 1 ponto (=1) → [ 6 ]' },
   '10': { img: '/cave/note3.gif', name: 'Nota 3', details: '3º dígito: 3 pontos → [ 3 ]' },
   '12': { img: '/cave/handleInventory.gif', name: 'Manivela', details: 'Encaixa em alguma engrenagem' },
-  '15': { img: '/cave/dynamiteInventory.gif', name: 'Dinamite', details: 'Inútil sem os estopins' },
+  '15': { img: '/cave/dynamiteInventory.gif', name: 'Dinamite', details: 'Explosivo antigo' },
   '16': { img: '/cave/fusesInventory.gif', name: 'Estopins', details: 'Pavio para acender dinamite' },
+  'book_1': { img: '/cave/note1.gif', name: 'Livro I', details: 'Conto 1: Fronteira da Burocracia (Clique para abrir)' },
+  'book_2': { img: '/cave/note2.gif', name: 'Livro II', details: 'Conto 2: Princesa de Plástico (Clique para abrir)' },
+  'book_3': { img: '/cave/note3.gif', name: 'Livro III', details: 'Conto 3: Corredor 0999 P.T. (Clique para abrir)' },
+  'book_4': { img: '/cave/note1.gif', name: 'Livro IV', details: 'Conto 4: Naufrágio da Porta (Clique para abrir)' },
+  'book_5': { img: '/cave/note2.gif', name: 'Livro V', details: 'Conto 5: Plantão da Floresta (Clique para abrir)' },
+  'book_6': { img: '/cave/note3.gif', name: 'Livro VI', details: 'Conto 6: Terminal 1984 (Clique para abrir)' },
 };
 
 // Elevadores verticais entre (row, col) e (row + 1, col) do SCSS original (@include moveVerticleOnTile)
@@ -2570,9 +2580,11 @@ const CAVE_DECOR_TILES = {
   '44-8': '/cave/swingingLantern.gif',
 };
 
-// Objetos interativos nas salas (row, col, tile) do HAML original!
+// Objetos interativos nas salas (row, col, tile) — Caverna viva com os 6 Contos e Estante Final!
 const CAVE_OBJECTS = [
+  { id: 'lantern', row: 1, col: 2, tile: 14, img: '/cave/swingingLantern.gif', kind: 'pickup', hideOnPick: true, msg: 'Você pegou uma Lanterna! A visão na caverna melhorou muito.', ev: 'got_lantern' },
   { id: '1', row: 1, col: 3, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Nada útil nessa caixa.' },
+  { id: 'story_1', row: 1, col: 6, tile: 14, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '1', reqBook: null, msg: 'Livro I: Fronteira da Burocracia' },
   { id: '8', row: 1, col: 6, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma nota estranha! (Guardada na mochila)', ev: 'got_note' },
   { id: '3', row: 1, col: 7, tile: 15, img: '/cave/creepyCorridor-_062.png', kind: 'boulder', need: '2', blockMsg: 'Preciso de uma ferramenta pra quebrar essa rocha.', okMsg: 'Boa! Pedra destruída!', ev: 'broke_boulder' },
   { id: '4', row: 1, col: 8, tile: 15, img: '/cave/creepyCorridor-_166.png', kind: 'plunger', msg: 'Apertei o detonador... algo explodiu lá embaixo!', ev: 'armed_plunger' },
@@ -2580,26 +2592,26 @@ const CAVE_OBJECTS = [
   { id: '21', row: 1, col: 12, tile: 13, img: '/cave/creepyCorridor-25.png', kind: 'junk', msg: 'Só tranqueira velha.' },
   { id: '2', row: 1, col: 12, tile: 14, img: '/cave/creepyCorridor-_035.png', kind: 'pickup', hideOnPick: true, msg: 'Uma picareta! Vai quebrar um galho.', ev: 'got_pickaxe' },
 
-  { id: '15', row: 2, col: 3, tile: 15, img: '/cave/creepyCorridor-_161.png', kind: 'pickup', hideOnPick: true, msg: 'Bananas de dinamite!', ev: 'got_dynamite' },
+  { id: 'story_2', row: 2, col: 3, tile: 15, img: '/cave/creepyCorridor-_161.png', kind: 'story_portal', storyId: '2', reqBook: 'book_1', msg: 'Livro II: Castelo da Princesa de Plástico' },
   { id: '6', row: 2, col: 6, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma tábua firme de madeira.', ev: 'got_plank' },
   { id: '18', row: 2, col: 7, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Vazia.' },
-  { id: '19', row: 2, col: 10, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'junk', msg: 'Cheia de entulho inútil.' },
-  { id: '17', row: 2, col: 12, tile: 15, img: '/cave/creepyCorridor-_168.png', kind: 'end_door', blockMsg: 'Preciso de dinamite E estopins pra explodir essa saída!' },
+  { id: 'story_3', row: 2, col: 9, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '3', reqBook: 'book_2', msg: 'Livro III: Corredor 0999 (P.T.)' },
+  { id: '17', row: 2, col: 12, tile: 15, img: '/cave/creepyCorridor-_168.png', kind: 'final_shelf', msg: 'Estante Final dos 6 Livros' },
 
   { id: '12', row: 3, col: 2, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma manivela de engrenagem!', ev: 'got_handle' },
   { id: '11', row: 3, col: 4, tile: 13, img: '/cave/doorLocked.png', unlockedImg: '/cave/doorUnlocked.png', specialClass: 'special-door', kind: 'padlock_door', msg: 'Porta trancada com cadeado de 3 dígitos.' },
   { id: '7', row: 3, col: 5, tile: 13, img: '/cave/creepyCorridor-_169.png', clearedImg: '/cave/creepyCorridor-_170.png', kind: 'gap', need: '6', blockMsg: 'Fenda funda demais pra pular sem uma tábua.', okMsg: 'Tábua encaixada!', ev: 'placed_plank' },
   { id: '10', row: 3, col: 5, tile: 14, img: '/cave/creepyCorridor-24.png', kind: 'pickup', msg: 'Terceira nota misteriosa! (Na mochila)', ev: 'got_note' },
   { id: '5', row: 3, col: 7, tile: 13, img: '/cave/beam.gif', specialClass: 'special-beam', kind: 'beam', blockMsg: 'Algum explosivo à distância deve derrubar essa barreira.' },
-  { id: '20', row: 3, col: 9, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Caixa vazia.' },
+  { id: 'story_4', row: 3, col: 8, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'story_portal', storyId: '4', reqBook: 'book_3', msg: 'Livro IV: Naufrágio da Porta Gigante' },
 
-  { id: '22', row: 4, col: 8, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'junk', msg: 'Nada aqui dentro.' },
+  { id: 'story_5', row: 4, col: 8, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '5', reqBook: 'book_4', msg: 'Livro V: Plantão da Floresta' },
   { id: '13', row: 4, col: 10, tile: 13, img: '/cave/creepyCorridor-_148.png', kind: 'cog', need: '12', blockMsg: 'Falta uma manivela pra girar esse registro.', okMsg: 'Fechou a queda d\'água!', ev: 'stopped_water' },
   { id: '14', row: 4, col: 11, tile: 13, img: '/cave/waterOn.gif', clearedImg: '/cave/waterOff.gif', specialClass: 'special-water', kind: 'waterfall', blockMsg: 'Cachoeira forte demais pra atravessar!' },
-  { id: '16', row: 4, col: 12, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Caixa de estopins!', ev: 'got_fuses' },
+  { id: 'story_6', row: 4, col: 12, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '6', reqBook: 'book_5', msg: 'Livro VI: Terminal 1984' },
 ];
 
-function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
+function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarnedBook = null, remark = null } = {}) {
   clearTimers();
   currentStage = 'cave_2d';
   document.body.className = 'cave-mode awakened-cursors';
@@ -2610,6 +2622,8 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
     col: savedCave?.col || 1,
     inventory: Array.isArray(savedCave?.inventory) ? [...savedCave.inventory] : ['0'],
     cleared: Array.isArray(savedCave?.cleared) ? [...savedCave.cleared] : [],
+    booksOwned: Array.isArray(savedCave?.booksOwned) ? [...savedCave.booksOwned] : [],
+    booksSolved: Array.isArray(savedCave?.booksSolved) ? [...savedCave.booksSolved] : [],
     plungerArmed: Boolean(savedCave?.plungerArmed),
     introDone: Boolean(savedCave?.introDone),
   };
@@ -2718,6 +2732,21 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
     setTimeout(() => b.remove(), 2900);
   }
 
+  function openBookFromBag(bookId) {
+    openBookReaderModal(bookId, state, {
+      apiPost,
+      setOperatorRemark,
+      onSolved: (newCaveState) => {
+        if (newCaveState) {
+          state.booksSolved = [...(newCaveState.booksSolved || [])];
+          state.booksOwned = [...(newCaveState.booksOwned || [])];
+        }
+        refreshInventoryUI();
+        refreshObjectsVisuals();
+      },
+    });
+  }
+
   function refreshInventoryUI() {
     const grid = document.getElementById('cave-inv-grid');
     if (!grid) return;
@@ -2725,15 +2754,24 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
       .filter((id) => CAVE_INVENTORY_META[id])
       .map((id) => {
         const m = CAVE_INVENTORY_META[id];
+        const isBook = id.startsWith('book_');
+        const solved = isBook && state.booksSolved.includes(id);
         return `
-          <div class="cave-inv-item">
+          <div class="cave-inv-item ${isBook ? 'cave-inv-book' : ''}" data-inv-id="${id}">
             <img src="${m.img}" alt="${m.name}" />
-            <div style="margin-top:4px;">${m.name}</div>
+            <div style="margin-top:4px;">${isBook ? (solved ? `✅ ${m.name}` : `📖 ${m.name}`) : m.name}</div>
             <div class="inv-tooltip"><strong>${m.name}</strong><br/>${m.details}</div>
           </div>
         `;
       })
       .join('');
+
+    grid.querySelectorAll('.cave-inv-book').forEach((el) => {
+      el.addEventListener('click', () => {
+        playCheapBeep();
+        openBookFromBag(el.getAttribute('data-inv-id'));
+      });
+    });
   }
 
   function refreshObjectsVisuals() {
@@ -2793,7 +2831,8 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
     ch.classList.toggle('walking', isMoving);
 
     // Bola de visão com degradê suave tipo lâmpada/lanterna seguindo o boneco!
-    const radius = torchLit ? 168 : 44;
+    const hasLantern = state.inventory.includes('lantern');
+    const radius = torchLit ? (hasLantern ? 220 : 168) : 44;
     const innerR = Math.round(radius * 0.25);
     const midR = Math.round(radius * 0.65);
     mask.style.background = `radial-gradient(circle ${radius}px at ${charX}px ${charY}px, rgba(255, 200, 110, 0.08) 0%, rgba(10, 10, 14, 0.22) ${innerR}px, rgba(5, 5, 8, 0.80) ${midR}px, rgba(4, 4, 6, 0.985) ${radius}px, rgba(4, 4, 6, 0.995) 100%)`;
@@ -3026,6 +3065,41 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
       return;
     }
 
+    if (obj.kind === 'story_portal') {
+      if (obj.reqBook && !state.booksSolved.includes(obj.reqBook)) {
+        const prevMeta = BOOKS_META[obj.reqBook];
+        showSegmentBubble(obj.row, obj.col, `Bloqueado! Resolva o enigma do ${prevMeta?.title || 'livro anterior'} primeiro.`);
+        return;
+      }
+      if (state.booksOwned.includes(`book_${obj.storyId}`)) {
+        openBookFromBag(`book_${obj.storyId}`);
+        return;
+      }
+      launchStory(obj.storyId, {
+        clearTimers,
+        apiPost,
+        setOperatorRemark,
+        playBeep: playCheapBeep,
+        caveState: state,
+        returnToCave: (updatedCave, extra = {}) => {
+          renderCaveChapterScreen(updatedCave, extra);
+        },
+      });
+      return;
+    }
+
+    if (obj.kind === 'final_shelf') {
+      openFinalShelfModal(state, {
+        apiPost,
+        setOperatorRemark,
+        onEscape: () => {
+          playCollapseRumble();
+          setTimeout(() => renderCaveEscapedScreen(), 1200);
+        },
+      });
+      return;
+    }
+
     if (obj.kind === 'end_door') {
       if (state.inventory.includes('15') && state.inventory.includes('16')) {
         playCollapseRumble();
@@ -3197,10 +3271,17 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
       await syncCave('intro_done');
     })();
   } else {
-    setOperatorRemark(
-      'ainda nessa mina velha? usa WASD e vê se resolve logo antes que eu perca o resto da paciência.',
-      { delayBefore: 350 }
-    );
+    if (remark) {
+      setOperatorRemark(remark, { delayBefore: 250, priority: 'urgent' });
+    } else {
+      setOperatorRemark(
+        'ainda nessa mina velha? usa WASD e vê se resolve logo antes que eu perca o resto da paciência.',
+        { delayBefore: 350 }
+      );
+    }
+    if (justEarnedBook) {
+      setTimeout(() => openBookFromBag(justEarnedBook), 450);
+    }
   }
 }
 

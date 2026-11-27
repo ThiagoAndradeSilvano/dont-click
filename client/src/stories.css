@@ -1,0 +1,222 @@
+/* ===== MODAL DO LEITOR DE LIVROS & ESTANTE FINAL ===== */
+.book-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(4, 4, 7, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.book-open-spread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(820px, 95vw);
+  min-height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 4px solid #27272a;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9);
+  font-family: 'Georgia', serif;
+}
+
+.book-page {
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.book-page-left {
+  border-right: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+.book-theme-sepia { background: #e8dcc4; color: #2b2114; }
+.book-theme-pink { background: #fce7f3; color: #500724; }
+.book-theme-noir { background: #d4d4d8; color: #09090b; }
+.book-theme-ice { background: #e0f2fe; color: #0c4a6e; }
+.book-theme-crimson { background: #fee2e2; color: #450a0a; }
+.book-theme-crt { background: #051b11; color: #4ade80; border-color: #16a34a; }
+
+.book-badge {
+  font-family: monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.book-title { margin: 0; font-size: 22px; }
+.book-summary { font-size: 14px; line-height: 1.55; opacity: 0.9; }
+
+.book-status {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+}
+.book-status.solved { background: rgba(22, 163, 74, 0.2); color: #15803d; }
+.book-theme-crt .book-status.solved { color: #86efac; }
+.book-status.pending { background: rgba(180, 83, 9, 0.18); color: #b45309; }
+
+.book-page-num {
+  font-family: monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.book-riddle {
+  margin: 0;
+  padding: 16px;
+  border-left: 3px solid currentColor;
+  background: rgba(0, 0, 0, 0.08);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.book-answer-row { display: flex; gap: 8px; }
+
+.book-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #111;
+}
+
+.book-submit-btn, .book-close-btn {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: bold;
+  cursor: pointer;
+}
+.book-submit-btn { background: #18181b; color: #fff; }
+.book-close-btn { background: rgba(0, 0, 0, 0.18); color: inherit; margin-top: auto; }
+.book-feedback { font-family: monospace; font-size: 12px; color: #dc2626; min-height: 18px; }
+.book-solved-box { font-size: 13px; padding: 10px; background: rgba(22, 163, 74, 0.14); border-radius: 4px; }
+
+/* ===== ESTANTE FINAL ===== */
+.shelf-modal-box {
+  width: min(760px, 95vw);
+  background: #141418;
+  border: 3px solid #3f3f46;
+  border-radius: 8px;
+  padding: 26px;
+  color: #e4e4e7;
+  font-family: monospace;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shelf-header { font-size: 18px; font-weight: bold; color: #fbbf24; text-align: center; }
+.shelf-inscription { font-size: 13px; text-align: center; color: #a1a1aa; margin: 0; }
+.shelf-slots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.shelf-slot {
+  min-height: 82px;
+  border: 2px dashed #52525b;
+  border-radius: 6px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 11px;
+  background: #09090b;
+}
+.shelf-slot.filled { border-style: solid; border-color: #fbbf24; background: #272214; cursor: pointer; }
+.slot-num { font-weight: bold; color: #fbbf24; margin-bottom: 4px; }
+.shelf-available { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.shelf-book-btn {
+  padding: 10px;
+  background: #27272a;
+  color: #f4f4f5;
+  border: 1px solid #52525b;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.shelf-book-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.shelf-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.shelf-btn-pri { background: #d97706; color: #000; border: none; padding: 10px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+.shelf-btn-sec { background: #27272a; color: #e4e4e7; border: 1px solid #52525b; padding: 10px 14px; border-radius: 4px; cursor: pointer; }
+
+/* ===== TEMAS & CURSORES DOS 6 CONTOS (100% DISTINTOS!) ===== */
+body.story-mode-1 {
+  background: #2b2318;
+  color: #24190c;
+  font-family: 'Courier New', monospace;
+  cursor: url('/cursors/story-1.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%93%A6%3C/text%3E%3C/svg%3E") 6 6, pointer;
+}
+body.story-mode-2 {
+  background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%);
+  color: #500724;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  cursor: url('/cursors/story-2.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%AA%84%3C/text%3E%3C/svg%3E") 6 6, pointer;
+}
+body.story-mode-3 {
+  background: #070708;
+  color: #d4d4d8;
+  font-family: 'Courier New', monospace;
+  cursor: url('/cursors/story-3.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%91%81%EF%B8%8F%3C/text%3E%3C/svg%3E") 6 6, crosshair;
+}
+body.story-mode-4 {
+  background: linear-gradient(180deg, #06182c 0%, #020812 100%);
+  color: #e0f2fe;
+  font-family: 'Georgia', serif;
+  cursor: url('/cursors/story-4.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%E2%9D%84%EF%B8%8F%3C/text%3E%3C/svg%3E") 6 6, pointer;
+}
+body.story-mode-5 {
+  background: #1a0b0c;
+  color: #f5e6d3;
+  font-family: 'Georgia', serif;
+  cursor: url('/cursors/story-5.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%94%8D%3C/text%3E%3C/svg%3E") 6 6, pointer;
+}
+body.story-mode-6 {
+  background: #020a04;
+  color: #4ade80;
+  font-family: 'Courier New', monospace;
+  cursor: url('/cursors/story-6.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%96%A5%EF%B8%8F%3C/text%3E%3C/svg%3E") 6 6, pointer;
+}
+
+.story-shell {
+  width: min(920px, 95vw);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+/* Logs personalizados por conto! */
+.story-log-sepia { background: #453522; color: #f5e6c8; border: 2px solid #1c130a; padding: 12px 16px; border-radius: 4px; }
+.story-log-pink { background: #fdf2f8; color: #831843; border: 3px solid #f472b6; padding: 12px 16px; border-radius: 16px; box-shadow: 0 6px 0 #db2777; }
+.story-log-noir { background: #0f0f12; color: #a1a1aa; border: 1px solid #27272a; padding: 12px 16px; letter-spacing: 0.5px; }
+.story-log-ice { background: rgba(12, 74, 110, 0.75); color: #bae6fd; border: 2px solid #38bdf8; padding: 12px 16px; border-radius: 6px; }
+.story-log-crimson { background: #2d1416; color: #fecaca; border: 2px dashed #7f1d1d; padding: 12px 16px; }
+.story-log-crt { background: #031509; color: #4ade80; border: 1px solid #22c55e; padding: 12px 16px; text-shadow: 0 0 6px rgba(74,222,128,0.5); }
+
+.story-back-btn {
+  align-self: flex-start;
+  background: rgba(0,0,0,0.4);
+  color: inherit;
+  border: 1px solid currentColor;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: inherit;
+  border-radius: 4px;
+}

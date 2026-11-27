@@ -250,12 +250,16 @@ function normalizePlayer(player) {
     player.caveState = {
       row: 1,
       col: 1,
-      inventory: ['0'], // começa com a maçã na mochila
-      cleared: [], // ex: 'boulder', 'beam', 'gap', 'water', 'padlock_door'
+      inventory: ['0'],
+      cleared: [],
+      booksOwned: [],
+      booksSolved: [],
       plungerArmed: false,
       introDone: false,
     };
   }
+  if (!Array.isArray(player.caveState.booksOwned)) player.caveState.booksOwned = [];
+  if (!Array.isArray(player.caveState.booksSolved)) player.caveState.booksSolved = [];
   if (!Array.isArray(player.upgrades)) player.upgrades = [];
   if (!player.generators || typeof player.generators !== 'object') player.generators = {};
   if (!Array.isArray(player.flags)) player.flags = [];
@@ -905,9 +909,11 @@ app.post('/api/cave/sync', (req, res) => {
   if (caveState && typeof caveState === 'object') {
     player.caveState = {
       row: Math.max(1, Math.min(4, Number(caveState.row) || 1)),
-      col: Math.max(1, Math.min(12, Number(caveState.col) || 2)),
-      inventory: Array.isArray(caveState.inventory) ? caveState.inventory.slice(0, 20) : ['0'],
-      cleared: Array.isArray(caveState.cleared) ? caveState.cleared.slice(0, 20) : [],
+      col: Math.max(1, Math.min(12, Number(caveState.col) || 1)),
+      inventory: Array.isArray(caveState.inventory) ? caveState.inventory.slice(0, 30) : ['0'],
+      cleared: Array.isArray(caveState.cleared) ? caveState.cleared.slice(0, 30) : [],
+      booksOwned: Array.isArray(caveState.booksOwned) ? caveState.booksOwned.slice(0, 10) : (player.caveState.booksOwned || []),
+      booksSolved: Array.isArray(caveState.booksSolved) ? caveState.booksSolved.slice(0, 10) : (player.caveState.booksSolved || []),
       plungerArmed: Boolean(caveState.plungerArmed),
       introDone: Boolean(caveState.introDone),
     };
@@ -931,6 +937,7 @@ app.post('/api/cave/sync', (req, res) => {
   // Falas do Operador (frio, ácido, arrogante — estilo Rick Sanchez, sem quebrar imersão)
   const caveRemarks = {
     intro_done: 'ótimo. uma mina em pixel art de 1994 rodando embaixo da minha arquitetura. e antes que pergunte: não, eu não codei essa bosta. deve ser lixo residual de algum setor morto. anda logo e vê se acha uma saída.',
+    got_lantern: 'uma lanterna. pelo menos agora vc enxerga dois palmos na frente do nariz sem tropeçar.',
     got_pickaxe: 'uma picareta. claro. pq toda infraestrutura de rede moderna precisa de mineração manual agora. pega logo.',
     broke_boulder: 'uau, quebrou uma pedra. quer um diploma de engenharia civil também ou vai continuar andando?',
     armed_plunger: 'vc acabou de acionar um detonador aleatório sem nem saber onde tá a bomba. é por isso que a seleção natural tá falhando.',
@@ -952,6 +959,125 @@ app.post('/api/cave/sync', (req, res) => {
     padlockUnlocked,
     caveState: player.caveState,
     remark: padlockAttempt && !padlockUnlocked ? caveRemarks.padlock_wrong : caveRemarks[eventCode] || null,
+  });
+});
+
+// Conclui um dos 6 Contos e entrega o Livro correspondente na mochila!
+app.post('/api/cave/complete-story', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const storyId = String(req.body?.storyId || '').trim();
+  if (!['1', '2', '3', '4', '5', '6'].includes(storyId)) {
+    return res.status(400).json({ ok: false, error: 'Conto inválido' });
+  }
+
+  const bookId = `book_${storyId}`;
+  if (!player.caveState.booksOwned.includes(bookId)) {
+    player.caveState.booksOwned.push(bookId);
+  }
+  if (!player.caveState.inventory.includes(bookId)) {
+    player.caveState.inventory.push(bookId);
+  }
+
+  const count = player.caveState.booksOwned.length;
+  const remarksByCount = {
+    1: 'pronto, voltou pro buraco com um livro na mão. abre essa porcaria na mochila e vê o que tem na última página.',
+    2: 'MAIS UM LIVRO COM ENIGMA NESSA PORRA?! quem enterrou uma biblioteca inteira de psicopata embaixo do meu servidor?!',
+    3: 'outro livro. sério. tô começando a achar que o inferno é uma livraria com prova surpresa no final.',
+    4: 'cansei. resolve essas charadas sozinho aí, vou ficar aqui olhando até vc terminar de colecionar papel.',
+    5: 'falta só um pra acabar esse suplício literário. não me decepciona agora.',
+    6: 'todos os seis livros. finalmente. agora vai lá na estante do final do corredor e bota essas merdas em ordem.',
+  };
+
+  saveDb(db);
+  res.json({
+    ok: true,
+    bookId,
+    caveState: player.caveState,
+    remark: remarksByCount[count] || null,
+  });
+});
+
+// Valida o Enigma da Última Página de cada Livro (100% no servidor!)
+const BOOK_RIDDLE_ANSWERS = {
+  book_1: '28',   // Muro de Berlim: 1989 - 1961 = 28 anos
+  book_2: '100',  // Bela Adormecida dos Irmãos Grimm: 100 anos
+  book_3: '237',  // O Iluminado (filme de Kubrick): Quarto 237
+  book_4: '1912', // Titanic afundou em abril de 1912
+  book_5: '1945', // A Revolução dos Bichos (Animal Farm) publicado em 1945
+  book_6: '101',  // 1984 (George Orwell): Quarto 101
+};
+
+app.post('/api/cave/solve-book', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const bookId = String(req.body?.bookId || '').trim();
+  const answer = String(req.body?.answer || '').trim().toLowerCase();
+
+  if (!BOOK_RIDDLE_ANSWERS[bookId]) {
+    return res.status(400).json({ ok: false, error: 'Livro inválido' });
+  }
+  if (!player.caveState.booksOwned.includes(bookId)) {
+    return res.status(403).json({ ok: false, error: 'Livro ainda não coletado' });
+  }
+
+  if (answer !== BOOK_RIDDLE_ANSWERS[bookId]) {
+    return res.json({
+      ok: false,
+      remark: 'errado. pensa direito ou vai pesquisar antes de chutar número aleatório.',
+    });
+  }
+
+  if (!player.caveState.booksSolved.includes(bookId)) {
+    player.caveState.booksSolved.push(bookId);
+  }
+  saveDb(db);
+
+  const solvedCount = player.caveState.booksSolved.length;
+  const solveRemarks = {
+    1: 'acertou. a passagem pro segundo conto abriu ali no andar de baixo.',
+    2: 'mais um resolvido. desce mais fundo que o próximo altar já destravou.',
+    3: 'tá pegando o jeito. o quarto livro já tá liberado.',
+    4: 'menos dois. continua.',
+    5: 'só falta o último. termina logo essa porra.',
+    6: 'seis de seis. agora vai na estante final e organiza eles na ordem certa.',
+  };
+
+  res.json({
+    ok: true,
+    bookId,
+    caveState: player.caveState,
+    remark: solveRemarks[solvedCount] || 'desbloqueado.',
+  });
+});
+
+// Valida a Ordem Final dos 6 Livros na Estante da Caverna (Ordem crescente das respostas: 28, 100, 101, 237, 1912, 1945)
+app.post('/api/cave/solve-shelf', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const order = Array.isArray(req.body?.order) ? req.body.order.map(String) : [];
+
+  if (player.caveState.booksSolved.length < 6) {
+    return res.json({
+      ok: false,
+      remark: 'vc nem resolveu os 6 livros ainda e já tá mexendo na estante?',
+    });
+  }
+
+  const expected = ['book_1', 'book_2', 'book_6', 'book_3', 'book_4', 'book_5'];
+  const matches = order.length === 6 && expected.every((b, idx) => order[idx] === b);
+
+  if (!matches) {
+    return res.json({
+      ok: false,
+      remark: 'ordem errada. lê a inscrição da estante e confere as respostas na última página de cada livro.',
+    });
+  }
+
+  player.stage = 'cave_escaped';
+  saveDb(db);
+
+  res.json({
+    ok: true,
+    stage: 'cave_escaped',
+    remark: 'a estante abriu. finalmente saímos dessa mina desgraçada... agora sim, vamos ver o que tem do outro lado.',
   });
 });
 
@@ -1099,6 +1225,8 @@ if (process.env.NODE_ENV !== 'production') {
         col: 1,
         inventory: ['0'],
         cleared: [],
+        booksOwned: [],
+        booksSolved: [],
         plungerArmed: false,
         introDone: false,
       };
