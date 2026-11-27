@@ -188,6 +188,13 @@ body.native-error-mode {
   animation: pulseBtn 1.2s infinite;
 }
 
+/* "Agora o jogo começa": a mão azul aparece no hover do Recarregar depois que ele fala, e fica de vez */
+.neterror-btn-reload.ready-pulse:not(:disabled):hover,
+body.blue-hand-on,
+body.blue-hand-on * {
+  cursor: var(--cur-user-blue) !important;
+}
+
 @keyframes pulseBtn {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -236,8 +243,12 @@ body.clicker-mode {
   color: #1f1f1f;
   font-family: Arial, Helvetica, sans-serif;
   padding: clamp(8px, 1.8vh, 20px) clamp(10px, 2vw, 24px);
-  cursor: var(--cur-user-blue);
   position: relative;
+}
+
+/* Clicker MUDO: mouse normal do sistema. A mão azul só nasce depois do Recarregar do despertar. */
+body.clicker-mode.awakened-cursors {
+  cursor: var(--cur-user-blue);
 }
 
 body.clicker-mode #app {
@@ -246,7 +257,7 @@ body.clicker-mode #app {
   flex-direction: column;
 }
 
-body.clicker-mode .box-button {
+body.clicker-mode.awakened-cursors .box-button {
   cursor: var(--cur-user-blue);
 }
 
@@ -448,8 +459,9 @@ body.awakened-cursors.cursor-mood-point * {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 340px;
-  grid-template-rows: minmax(0, 1fr);
+  /* Arena do botão é só uma faixa compacta em cima; a loja fica com todo o resto */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(10px, 1.8vw, 20px);
   align-items: stretch;
 }
@@ -457,13 +469,14 @@ body.awakened-cursors.cursor-mood-point * {
 .clicker-arena {
   background: #ffffff;
   border: 1px solid #bbb;
-  padding: clamp(14px, 3vh, 36px) 20px;
+  padding: clamp(8px, 1.6vh, 16px) 16px;
   min-height: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: clamp(10px, 2.2vh, 24px);
+  gap: clamp(14px, 4vw, 48px);
 }
 
 .score-board {
@@ -477,7 +490,7 @@ body.awakened-cursors.cursor-mood-point * {
 }
 
 .score-value {
-  font-size: clamp(24px, 4vh, 36px);
+  font-size: clamp(22px, 3.4vh, 30px);
   font-weight: bold;
 }
 
@@ -496,7 +509,7 @@ body.awakened-cursors.cursor-mood-point * {
     grid-template-rows: auto minmax(0, 1fr);
   }
   .clicker-arena {
-    padding: 12px 16px;
+    padding: 8px 12px;
     flex-direction: row;
     justify-content: space-around;
     gap: 14px;
@@ -1981,16 +1994,18 @@ body.cave-mode {
 }
 
 /* ===== PAINEL DE TESTES (DEV ONLY - Canto Superior Direito) ===== */
+/* Topo-centro, fininho: não cobre o Buscar/loja à direita nem o botão de cookies no rodapé */
 .dev-panel {
   position: fixed;
-  top: 10px;
-  right: 12px;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 99999;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 12px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .dev-toggle {
@@ -1998,8 +2013,8 @@ body.cave-mode {
   color: #00ff9d;
   border: 1px solid #333;
   border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 11px;
+  padding: 1px 8px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer !important;
 }
@@ -2043,6 +2058,46 @@ body.cave-mode {
 }
 
 .dev-btn:hover { background: #3f3f46; }
+
+.dev-menu {
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  width: min(300px, calc(100vw - 24px));
+}
+
+.dev-toggle {
+  opacity: 0.55;
+}
+.dev-toggle:hover,
+.dev-panel:has(.dev-menu.open) .dev-toggle {
+  opacity: 1;
+}
+
+.dev-cap {
+  border: 1px solid #27272a;
+  border-radius: 5px;
+  background: #18181b;
+}
+
+.dev-cap > summary {
+  padding: 6px 8px;
+  font-weight: 600;
+  font-size: 11.5px;
+  color: #a7f3d0;
+  cursor: pointer !important;
+  list-style: none;
+  user-select: none;
+}
+.dev-cap > summary::-webkit-details-marker { display: none; }
+.dev-cap > summary::before { content: '▸ '; color: #71717a; }
+.dev-cap[open] > summary::before { content: '▾ '; }
+
+.dev-cap-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 6px 6px;
+}
 .dev-btn.danger { border-color: #7f1d1d; color: #fca5a5; }
 .dev-btn.danger:hover { background: #7f1d1d; color: #fff; }
 
@@ -2083,4 +2138,187 @@ body.cave-mode {
   font-family: inherit;
   font-size: 12px;
   cursor: pointer;
+}
+
+/* ===== LOADING ESTILO SUPERLIMINAL (todo Recarregar) ===== */
+.sl-loading {
+  --sl-fg: #f4f4f5;
+  --sl-bg: #050505;
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  background: var(--sl-bg);
+  color: var(--sl-fg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(16px, 4vh, 36px);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  cursor: progress;
+  transition: background 0.35s, color 0.35s, opacity 0.28s;
+  overflow: hidden;
+}
+.sl-loading.sl-invert {
+  --sl-fg: #0a0a0a;
+  --sl-bg: #f2f2ee;
+}
+.sl-loading.sl-blue,
+.sl-loading.sl-blue * {
+  cursor: var(--cur-user-blue) !important;
+}
+.sl-loading.sl-out {
+  opacity: 0;
+}
+
+.sl-stage {
+  width: min(180px, 42vw);
+  height: min(180px, 42vw);
+  perspective: var(--sl-persp, 600px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sl-object {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-style: preserve-3d;
+  animation: slSpin 3.2s linear infinite;
+}
+
+.sl-svg {
+  width: 78%;
+  height: 78%;
+  color: var(--sl-fg);
+}
+
+.sl-cube {
+  position: relative;
+  width: 46%;
+  height: 46%;
+  transform-style: preserve-3d;
+}
+.sl-cube.sl-tall { transform: scaleY(1.9) scaleX(0.6); }
+.sl-cube.sl-flat { transform: scaleY(0.35) scaleX(1.5); }
+
+.sl-face {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--sl-fg);
+  background: transparent;
+}
+.sl-face:nth-child(1) { transform: translateZ(calc(min(180px, 42vw) * 0.23)); }
+.sl-face:nth-child(2) { transform: rotateY(180deg) translateZ(calc(min(180px, 42vw) * 0.23)); }
+.sl-face:nth-child(3) { transform: rotateY(90deg) translateZ(calc(min(180px, 42vw) * 0.23)); }
+.sl-face:nth-child(4) { transform: rotateY(-90deg) translateZ(calc(min(180px, 42vw) * 0.23)); }
+.sl-face:nth-child(5) { transform: rotateX(90deg) translateZ(calc(min(180px, 42vw) * 0.23)); }
+.sl-face:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(min(180px, 42vw) * 0.23)); }
+
+@keyframes slSpin {
+  0% { transform: rotateX(-18deg) rotateY(0deg); }
+  50% { transform: rotateX(22deg) rotateY(180deg) scale(0.86); }
+  100% { transform: rotateX(-18deg) rotateY(360deg); }
+}
+
+.sl-bottom {
+  width: min(460px, calc(100vw - 40px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sl-tip {
+  min-height: 2.6em;
+  text-align: center;
+  font-size: clamp(13px, 1.9vh, 16px);
+  letter-spacing: 0.02em;
+  transition: opacity 0.18s;
+}
+
+.sl-bar {
+  width: 100%;
+  height: 3px;
+  background: color-mix(in srgb, var(--sl-fg) 18%, transparent);
+  overflow: hidden;
+}
+.sl-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--sl-fg);
+  transition: width 0.3s ease;
+}
+
+.sl-pct {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+/* ===== ROTAS SECRETAS NA URL (/tesla, /basile...) ===== */
+body.secret-route-mode {
+  display: block;
+  min-height: 100dvh;
+  margin: 0;
+  background: #fafaf7;
+  color: #1c1c1c;
+}
+
+.secret-route-shell {
+  width: min(640px, 100%);
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.secret-route-paper {
+  background: #fffef6;
+  border: 1px solid #c9c4ad;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.08);
+  padding: 20px 22px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.secret-route-paper.secret-kind-pergaminho {
+  background: #f3e7c9;
+  border-color: #a38b5a;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+}
+.secret-route-paper.secret-kind-aviso {
+  border: 2px solid #b91c1c;
+  color: #7f1d1d;
+  text-align: center;
+}
+
+.secret-route-hdr {
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  border-bottom: 1px dashed currentColor;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.secret-route-line {
+  margin: 0 0 8px;
+  animation: secretLineIn 0.6s ease;
+}
+
+@keyframes secretLineIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+.secret-route-back {
+  align-self: flex-start;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #555;
 }

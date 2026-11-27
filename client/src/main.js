@@ -91,7 +91,8 @@ function ensureAudio() {
 }
 
 function flashCursorMood(mood, durationMs = 2000) {
-  if (currentStage !== 'awakened_clicker' && currentStage !== 'subsolo_2d') return;
+  // Mãos vermelhas dele só existem onde ele já acordou (clicker acordado, subsolo, caverna)
+  if (!document.body.classList.contains('awakened-cursors')) return;
   const classes = [
     'cursor-mood-middle',
     'cursor-mood-thumb',
@@ -1545,7 +1546,11 @@ function renderFakeBrowserCrash({
   const reloadBtn = document.getElementById('fake-reload-btn');
 
   if (!awakening) {
-    reloadBtn?.addEventListener('click', () => window.location.reload());
+    // Todo Recarregar passa pela tela de carregamento escrota estilo Superliminal (mouse ainda normal aqui)
+    reloadBtn?.addEventListener('click', () => {
+      reloadBtn.disabled = true;
+      reloadWithSuperliminal({ awake: false });
+    });
 
     // SE DETECTOU QUE O CARA CLICOU CONTANDO NO COMPASSO ("1... 2... 3... 9"):
     // Ele ainda recebe a resposta (caiu no 9º clique!), mas toma uma enquadrada assustadora na tela de erro!
@@ -1684,7 +1689,12 @@ async function runAwakeningSequence(_totalClicks, _ownedUpgrades, _minutesPlayed
     reloadBtn.addEventListener('click', async () => {
       stopOperatorVoice();
       reloadBtn.disabled = true;
-      const data = await apiPost('/api/enter-awakened');
+      // "Agora o jogo começa": a mão azul que apareceu no hover do Recarregar fica de vez daqui pra frente
+      document.body.classList.add('blue-hand-on');
+      const [data] = await Promise.all([
+        apiPost('/api/enter-awakened'),
+        showSuperliminalLoading({ blueCursor: true, awake: true }),
+      ]);
       if (data && data.stage === 'awakened_clicker') {
         renderClickerScreen(data, { justAwakened: true });
       } else {
@@ -1821,52 +1831,213 @@ async function processRemarkQueue() {
 }
 
 // ============================================================================
-// ARMADILHAS PSICOLÓGICAS (PÓS-DESPERTAR) + RESET DE INATIVIDADE GLOBAL
+// MOTOR DE JOGO VIVO (regra .agents/rules/living-world-standard.md)
+// Cliques no vazio, aba do navegador mutante, troca de aba, F12, Ctrl+A e botão direito
+// em TODOS os capítulos. Antes dele acordar: só reações mudas/sutis (ninguém sabe que tem alguém olhando).
+// Depois: falas do `log` vindas de /api/behavior + voz real quando existir clipe.
 // ============================================================================
-function setupPsychologicalTraps() {
-  let originalTitle = document.title;
-  let lastMoveResetAt = 0;
+function getStageHint() {
+  return document.body?.className || '';
+}
 
-  document.addEventListener('visibilitychange', async () => {
-    if (!document.hidden) {
-      resetIdleChillTimer();
+// Chave do capítulo onde o `log` está presente (null = ele ainda não existe pro jogador)
+function getLivingStageKey() {
+  if (getStageHint().includes('story-mode-')) return 'story';
+  if (currentStage === 'cave_2d') return 'cave';
+  if (currentStage === 'cave_escaped') return 'escaped';
+  if (currentStage === 'subsolo_2d') return 'subsolo';
+  if (currentStage === 'awakened_clicker') return 'clicker';
+  return null;
+}
+
+// Capítulos mudos (antes do despertar): a porta (botão/forminhas/erro) e o clicker burocrático
+function getMuteStageKey() {
+  if (currentStage === 'mundane_clicker') return 'mute_clicker';
+  if (['button', 'crashed', 'shape_test'].includes(currentStage)) return 'mute_door';
+  return null;
+}
+
+// Títulos que a aba "respira" sozinha com o tempo (em minúsculas, voz dele; o clicker mudo é burocrático)
+const LIVING_TAB_LINES = {
+  mute_clicker: ['(1) Painel v1.0', 'Painel v1.0 (Não Respondendo)', 'Painel v1.0 — sincronizando...', 'Painel v1.0 — 1 nova conquista'],
+  clicker: ['vc ainda tá aqui?', 'fecha a aba', 'eu tô vendo vc', '16 upgrades de nada', 'clica não'],
+  subsolo: ['cof cof', 'tá escuro aí?', 'fumaça...', 'não mexe em nada'],
+  cave: ['tem alguém mais aqui', 'eco... eco...', 'quem fez essa mina?', 'não olha pros olhos'],
+  story: ['que lugar é esse', '...', 'quem escreveu isso?', 'lê logo isso'],
+  escaped: ['saímos?', 'ainda não acabou'],
+};
+
+// Título enquanto o jogador está em OUTRA aba
+const HIDDEN_TAB_LINES = {
+  mute_clicker: '(1) Painel v1.0 — sentimos sua falta',
+  clicker: 'foi pedir arrego pro google né',
+  subsolo: 'cadê vc?',
+  cave: 'volta pra caverna',
+  story: 'pesquisando a resposta né?',
+  escaped: 'não some agora',
+};
+
+let tabFlashTimer = null;
+let tabFlashBase = null;
+
+function flashTabTitle(text, ms = 3200) {
+  if (!text) return;
+  if (tabFlashTimer) clearTimeout(tabFlashTimer);
+  else tabFlashBase = document.title;
+  document.title = text;
+  tabFlashTimer = setTimeout(() => {
+    // Só restaura se nenhuma tela nova trocou o título no meio do caminho
+    if (document.title === text && tabFlashBase) document.title = tabFlashBase;
+    tabFlashTimer = null;
+    tabFlashBase = null;
+  }, ms);
+}
+
+function cancelTabFlash() {
+  if (!tabFlashTimer) return;
+  clearTimeout(tabFlashTimer);
+  if (tabFlashBase) document.title = tabFlashBase;
+  tabFlashTimer = null;
+  tabFlashBase = null;
+}
+
+// Voz real como alternativa à fala em texto (cooldown próprio de cada clipe)
+const BEHAVIOR_VOICE = {
+  wild_click: () => triggerTeimosoVoiceReaction(),
+  context_menu: () => triggerTeimosoVoiceReaction(),
+  select_all: () => triggerRisadaVoiceReaction(),
+};
+
+let lastBehaviorRemarkAt = 0;
+async function sendBehaviorRemark(type, { force = false } = {}) {
+  if (!force && Date.now() - lastBehaviorRemarkAt < 6000) return;
+  lastBehaviorRemarkAt = Date.now();
+  const res = await apiPost('/api/behavior', { type, stageHint: getStageHint() });
+  if (!res?.remark || !getLivingStageKey() || isOverheatedLocal) return;
+  // Na 2ª, 4ª... vez prefere a voz gravada (quando o clipe não estiver em cooldown)
+  if (res.count % 2 === 0 && BEHAVIOR_VOICE[type]?.()) return;
+  const inStory = getStageHint().includes('story-mode-');
+  // Dentro dos contos espera o narrador local respirar antes de meter o bedelho
+  setOperatorRemark(res.remark, { priority: 'action', delayBefore: inStory ? 650 : 220 });
+}
+
+// Tudo que é clicável de verdade (não conta como "clique no vazio")
+const INTERACTIVE_SELECTOR = [
+  'button', 'a', 'input', 'textarea', 'select', 'label', 'summary', 'canvas', 'video', 'audio',
+  '[role="button"]', '[tabindex]', '[draggable="true"]', '[contenteditable]',
+  '[data-obj-id]', '[data-inv-id]', '[data-pick-item]', '[data-goto]', '[data-dev]', '[data-book-pick]',
+  '.box-button', '.shop-item', '.temp-hitbox', '.derpy-sun', '.screen-fly', '.mystery-box-floater',
+  '.survey-popup', '.dev-panel', '.cave-obj-btn', '.annoying-cookie-bar', '.terms-modal', '.sl-loading',
+  '.hijack-box', '.operator-feed',
+].join(', ');
+
+// "Vazio" = fundo, parede, moldura: o alvo é o body/#app, um tile vazio da caverna,
+// ou um elemento grande (>= 18% da tela) que não é clicável. Elemento pequeno sem id pode ser hotspot de conto.
+function isBlankClickTarget(t) {
+  if (!t || !t.closest) return false;
+  if (t.closest(INTERACTIVE_SELECTOR)) return false;
+  if (t === document.body || t === document.documentElement || t.id === 'app') return true;
+  if (t.matches('.cave-tile:not([data-obj-slot]), .cave-segment')) return true;
+  const r = t.getBoundingClientRect();
+  return (r.width * r.height) / Math.max(1, window.innerWidth * window.innerHeight) >= 0.18;
+}
+
+let blankClicks = [];
+let lastWildAt = 0;
+let muteWildCount = 0;
+
+function triggerWildClickReaction() {
+  lastWildAt = Date.now();
+  blankClicks = [];
+  const key = getLivingStageKey();
+
+  if (!key) {
+    // Antes dele acordar: só um arrepio mudo (o clicker burocrático ainda dá "conquista" besta)
+    muteWildCount += 1;
+    if (getMuteStageKey() === 'mute_clicker') {
+      showUselessAchievement(`🏅 Conquista: Clicou no Nada (Nível ${muteWildCount})`);
+    } else {
+      flashTabTitle('...', 1100);
     }
-    if (currentStage !== 'awakened_clicker' && currentStage !== 'subsolo_2d') return;
+    return;
+  }
+
+  flashCursorMood('stop', 2200);
+  const tabs = { clicker: 'para de clicar no nada', subsolo: 'que barulho é esse', cave: 'é só pedra', story: 'não tem nada aí', escaped: '?' };
+  flashTabTitle(tabs[key] || 'para', 3500);
+  sendBehaviorRemark('wild_click', { force: true });
+}
+
+function setupPsychologicalTraps() {
+  let lastMoveResetAt = 0;
+  let hiddenBaseTitle = null;
+
+  document.addEventListener('visibilitychange', () => {
+    const key = getLivingStageKey() || (getMuteStageKey() === 'mute_clicker' ? 'mute_clicker' : null);
+    if (!document.hidden) resetIdleChillTimer();
+    if (!key) return;
 
     if (document.hidden) {
-      originalTitle = document.title;
-      document.title = 'foi pedir arrego pro google né';
-    } else {
-      document.title = originalTitle;
-      const res = await apiPost('/api/behavior', { type: 'tab_return' });
-      if (res?.remark) setOperatorRemark(res.remark, { priority: 'ambient' });
+      cancelTabFlash();
+      hiddenBaseTitle = document.title;
+      document.title = HIDDEN_TAB_LINES[key];
+      return;
     }
+
+    if (hiddenBaseTitle && document.title === HIDDEN_TAB_LINES[key]) document.title = hiddenBaseTitle;
+    hiddenBaseTitle = null;
+    if (key === 'mute_clicker') {
+      showUselessAchievement('🏅 Conquista: Voltou para a Aba Certa');
+      return;
+    }
+    sendBehaviorRemark('tab_return', { force: true });
   });
 
-  document.addEventListener('keydown', async (e) => {
+  document.addEventListener('keydown', (e) => {
     resetIdleChillTimer();
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && currentStage === 'awakened_clicker') {
-      flashCursorMood('middle', 2500);
-      if (!triggerTeimosoVoiceReaction()) {
-        const res = await apiPost('/api/behavior', { type: 'select_all' });
-        if (res?.remark) setOperatorRemark(res.remark);
+    const k = (e.key || '').toLowerCase();
+    const mod = e.ctrlKey || e.metaKey;
+    const inField = e.target?.closest?.('input, textarea, [contenteditable]');
+    const devtools = k === 'f12' || (mod && e.shiftKey && ['i', 'j', 'c'].includes(k)) || (mod && k === 'u');
+    const selectAll = mod && k === 'a' && !inField;
+    if (!devtools && !selectAll) return;
+
+    if (!getLivingStageKey()) {
+      if (getMuteStageKey() === 'mute_clicker') {
+        showUselessAchievement(devtools ? '🏅 Conquista: Técnico de Informática' : '🏅 Conquista: Selecionou Tudo');
       }
+      return;
     }
+
+    if (devtools) {
+      flashCursorMood('point', 2400);
+      flashTabTitle('eu vi isso', 3000);
+      sendBehaviorRemark('devtools_key', { force: true });
+      return;
+    }
+    flashCursorMood('middle', 2500);
+    sendBehaviorRemark('select_all');
   });
 
-  document.addEventListener('pointerdown', () => {
+  document.addEventListener('pointerdown', (e) => {
     resetIdleChillTimer();
+    if (e.button !== 0 || !isBlankClickTarget(e.target)) return;
+    const now = Date.now();
+    if (now - lastWildAt < 15000) return;
+    blankClicks = blankClicks.filter((ts) => now - ts < 6000);
+    blankClicks.push(now);
+    // Com ele acordado basta metralhar 6x no vazio; antes, só um maníaco de 8 cliques ganha o arrepio
+    if (blankClicks.length >= (getLivingStageKey() ? 6 : 8)) triggerWildClickReaction();
   });
 
-  document.addEventListener('contextmenu', async () => {
+  document.addEventListener('contextmenu', () => {
     resetIdleChillTimer();
-    if (currentStage === 'awakened_clicker') {
-      flashCursorMood('middle', 2500);
-      if (!triggerTeimosoVoiceReaction()) {
-        const res = await apiPost('/api/behavior', { type: 'context_menu' });
-        if (res?.remark) setOperatorRemark(res.remark);
-      }
+    if (!getLivingStageKey()) {
+      if (getMuteStageKey() === 'mute_clicker') showUselessAchievement('🏅 Conquista: Botão Direito Desbloqueado');
+      return;
     }
+    flashCursorMood('middle', 2500);
+    sendBehaviorRemark('context_menu');
   });
 
   document.addEventListener('mousemove', () => {
@@ -1876,6 +2047,220 @@ function setupPsychologicalTraps() {
       resetIdleChillTimer();
     }
   });
+
+  // A aba "respira" sozinha com o tempo em todo capítulo (mudo ou com ele), quanto mais tempo, mais vezes
+  const bootAt = Date.now();
+  setInterval(() => {
+    const key = getLivingStageKey() || (getMuteStageKey() === 'mute_clicker' ? 'mute_clicker' : null);
+    if (!key || document.hidden || tabFlashTimer || isOverheatedLocal) return;
+    const minutes = (Date.now() - bootAt) / 60000;
+    const chance = Math.min(0.55, 0.18 + minutes * 0.03);
+    if (Math.random() > chance) return;
+    const lines = LIVING_TAB_LINES[key];
+    flashTabTitle(lines[Math.floor(Math.random() * lines.length)], 3500);
+  }, 25000);
+}
+
+// ============================================================================
+// TELA DE CARREGAMENTO ESTILO SUPERLIMINAL (toda vez que clica em Recarregar!)
+// Formas impossíveis girando, dica absurda que muda, barra que volta e percentual torto.
+// ============================================================================
+const SL_TIPS_MUTE = [
+  'perspectiva é tudo. inclusive o tamanho desta barra.',
+  'dica: o botão é do tamanho que você acha que ele é.',
+  'objetos podem estar mais longe do que parecem. botões também.',
+  'carregando paredes que não existem...',
+  'reposicionando o horizonte 3 cm para a esquerda.',
+  'medindo a sua paciência em milímetros...',
+  'dica: recarregar é uma forma de esperança.',
+  'o cubo não está girando. é você.',
+  'esta tela de carregamento nunca é igual. confira.',
+  'dica: contar nos dedos também conta.',
+  'aquecendo pombos...',
+  'desamassando pixels...',
+];
+
+const SL_TIPS_AWAKE = [
+  'dica: nem todo botão quer ser apertado.',
+  'dica: se algo parecer errado, provavelmente foi de propósito.',
+  'ninguém nunca terminou de carregar. só pararam de olhar.',
+  'dica: recarregar não apaga o que você fez.',
+  'o servidor está de humor razoável hoje. não abuse.',
+  'abaixando o volume do teclado de alguém...',
+  'calibrando o tamanho da sua mão...',
+  'dica: a saída costuma estar mais embaixo do que parece.',
+  'o cubo não está girando. é você.',
+  'carregando paredes que não existem...',
+];
+
+const SL_SHAPES = ['cube', 'tall', 'flat', 'penrose', 'necker'];
+const SL_WEIRD_PCT = ['104%', 'π%', '-12%', '99,99%', '???%', '∞%', '3%', '50,5%'];
+
+const SL_PENROSE_SVG = `
+  <svg class="sl-svg" viewBox="0 0 120 110" aria-hidden="true">
+    <g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round">
+      <path d="M60 6 L114 100 L6 100 Z"/>
+      <path d="M60 30 L93 88 L27 88 Z"/>
+      <path d="M60 6 L60 30 M114 100 L93 88 M6 100 L27 88"/>
+      <path d="M48 27 L84 88 M100 88 L40 88 M37 76 L66 24"/>
+    </g>
+  </svg>`;
+
+const SL_NECKER_SVG = `
+  <svg class="sl-svg" viewBox="0 0 120 120" aria-hidden="true">
+    <g fill="none" stroke="currentColor" stroke-width="3">
+      <rect x="14" y="34" width="62" height="62"/>
+      <rect x="44" y="14" width="62" height="62"/>
+      <path d="M14 34 L44 14 M76 34 L106 14 M14 96 L44 76 M76 96 L106 76"/>
+    </g>
+  </svg>`;
+
+function slShapeHtml(shape) {
+  if (shape === 'penrose') return SL_PENROSE_SVG;
+  if (shape === 'necker') return SL_NECKER_SVG;
+  return `<div class="sl-cube sl-${shape}">${'<div class="sl-face"></div>'.repeat(6)}</div>`;
+}
+
+let slActive = false;
+function showSuperliminalLoading({ durationMs = null, blueCursor = false, awake = false, fadeOut = true } = {}) {
+  return new Promise((resolve) => {
+    document.getElementById('sl-loading')?.remove();
+    slActive = true;
+    const total = durationMs || 2400 + Math.random() * 1500;
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    const ov = document.createElement('div');
+    ov.id = 'sl-loading';
+    ov.className = `sl-loading ${blueCursor ? 'sl-blue' : ''} ${Math.random() < 0.5 ? 'sl-invert' : ''}`;
+    ov.innerHTML = `
+      <div class="sl-stage"><div class="sl-object" id="sl-obj">${slShapeHtml(pick(SL_SHAPES))}</div></div>
+      <div class="sl-bottom">
+        <div class="sl-tip" id="sl-tip"></div>
+        <div class="sl-bar"><div class="sl-fill" id="sl-fill"></div></div>
+        <div class="sl-pct" id="sl-pct">0%</div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+
+    const tipEl = ov.querySelector('#sl-tip');
+    const fill = ov.querySelector('#sl-fill');
+    const pctEl = ov.querySelector('#sl-pct');
+    const obj = ov.querySelector('#sl-obj');
+    const tips = [...(awake ? SL_TIPS_AWAKE : SL_TIPS_MUTE)].sort(() => Math.random() - 0.5);
+    let ti = 0;
+    let pct = 0;
+    let step = 0;
+
+    const showTip = () => {
+      tipEl.style.opacity = '0';
+      setTimeout(() => {
+        tipEl.textContent = tips[ti++ % tips.length];
+        tipEl.style.opacity = '1';
+      }, 180);
+    };
+    showTip();
+    ov.style.setProperty('--sl-persp', `${220 + Math.random() * 700}px`);
+
+    const iv = setInterval(() => {
+      step += 1;
+      if (step % 3 === 0) showTip();
+      // A barra às vezes volta (é de propósito)
+      pct = Math.random() < 0.2 ? Math.max(0, pct - 14) : Math.min(97, pct + 7 + Math.random() * 16);
+      fill.style.width = `${pct}%`;
+      pctEl.textContent = Math.random() < 0.22 ? pick(SL_WEIRD_PCT) : `${Math.round(pct)}%`;
+      if (Math.random() < 0.3) obj.innerHTML = slShapeHtml(pick(SL_SHAPES));
+      if (Math.random() < 0.12) ov.classList.toggle('sl-invert');
+      ov.style.setProperty('--sl-persp', `${220 + Math.random() * 700}px`);
+    }, 380);
+
+    setTimeout(() => {
+      clearInterval(iv);
+      fill.style.width = '100%';
+      pctEl.textContent = '100%';
+      setTimeout(() => {
+        if (!fadeOut) {
+          resolve();
+          return;
+        }
+        ov.classList.add('sl-out');
+        setTimeout(() => {
+          ov.remove();
+          slActive = false;
+          resolve();
+        }, 280);
+      }, 220);
+    }, total);
+  });
+}
+
+// Recarregar de verdade passando pela tela escrota (o overlay fica até a página trocar)
+async function reloadWithSuperliminal(opts = {}) {
+  if (slActive) return;
+  await showSuperliminalLoading({ ...opts, fadeOut: false });
+  window.location.reload();
+}
+
+// ============================================================================
+// CAMINHOS SECRETOS NA URL (naoclique.net/tesla, /basile...) — conteúdo vem 100% do servidor!
+// ============================================================================
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+async function renderSecretRoute(path) {
+  clearTimers();
+  currentStage = 'secret_route';
+  document.body.className = 'secret-route-mode';
+  setBrokenPageFavicon();
+  const app = document.getElementById('app');
+  app.style.visibility = 'visible';
+
+  const res = await apiPost('/api/route', { path });
+  document.title = res?.tab || '404';
+  const feed = res?.remark
+    ? `<div class="operator-feed secret-route-feed"><span class="operator-tag">log</span><span id="operator-msg"></span></div>`
+    : '';
+
+  if (!res?.found) {
+    app.innerHTML = `
+      <div class="secret-route-shell">
+        ${feed}
+        <div class="fake-route-screen">
+          <h2>404</h2>
+          <p>Não há nada em <strong>${escHtml(path)}</strong>.</p>
+          <p><a href="/">Voltar</a></p>
+        </div>
+      </div>
+    `;
+    if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 1100, priority: 'urgent' });
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="secret-route-shell">
+      ${feed}
+      <div class="secret-route-paper secret-kind-${escHtml(res.kind || 'ficha')}">
+        <div class="secret-route-hdr">${escHtml(res.title)}</div>
+        <div id="secret-lines"></div>
+      </div>
+      <a href="/" class="secret-route-back">voltar</a>
+    </div>
+  `;
+
+  const linesEl = document.getElementById('secret-lines');
+  const lines = Array.isArray(res.lines) ? res.lines : [];
+  (async () => {
+    for (const line of lines) {
+      await sleep(850);
+      if (!linesEl?.isConnected) return;
+      const p = document.createElement('p');
+      p.className = 'secret-route-line';
+      p.textContent = line;
+      linesEl.appendChild(p);
+    }
+  })();
+
+  if (res.remark) setOperatorRemark(res.remark, { delayBefore: 1600 + lines.length * 850, priority: 'urgent' });
 }
 
 // ============================================================================
@@ -3940,13 +4325,98 @@ function renderCaveEscapedScreen() {
 }
 
 // ============================================================================
-// PAINEL DE TESTES (DEV ONLY - Topo Direito — Limpo, na Ordem Exata das 8 Páginas Reais!)
+// PAINEL DE TESTES (DEV ONLY) — Árvore por Capítulos, abre direto em qualquer sub-estado.
+// Regra living-world-standard #8: TODA página/sub-estado/conto novo entra aqui + ação em /api/_dev/action.
+// Tipos de item: ação do servidor (recarrega em "/"), `fx_*` (efeito no cliente), `story_N`, `book_N`, `route_/x`.
 // ============================================================================
+const DEV_TREE = [
+  {
+    cap: 'Cap. 1 — A Porta (mudo)',
+    items: [
+      ['goto_page_1_button', '1.1 Botão 1ª vez (cai no 9º clique)'],
+      ['dev_crash_1', '1.2 Erro da 1ª queda (Recarregar → loading)'],
+      ['dev_crash_counting', '1.3 Erro "contando no dedinho"'],
+      ['goto_page_1_button_2nd', '1.4 Botão 2ª vez (cai no 5º)'],
+      ['goto_page_2_shapes', '1.5 Formas secas de encaixar'],
+      ['dev_crash_shapes', '1.6 Erro pós-formas (→ clicker)'],
+    ],
+  },
+  {
+    cap: 'Cap. 2 — Clicker Mudo',
+    items: [
+      ['goto_page_3_clicker_start', '2.1 Início 0/16 (mouse normal)'],
+      ['goto_page_3_clicker_pre_awake', '2.2 12/16 (próxima compra = Backup)'],
+    ],
+  },
+  {
+    cap: 'Cap. 3 — O Despertar',
+    items: [
+      ['goto_page_4_awakening_error', '3.1 Erro: ele fala (voz + mão azul)'],
+      ['goto_page_5_awakened_13', '3.2 Clicker acordado 13/16'],
+      ['goto_page_5_clicker_end', '3.3 16/16 (enigma do termômetro)'],
+      ['goto_page_5_meltdown', '3.4 Incêndio 99°C (digitar subsolo)'],
+    ],
+  },
+  {
+    cap: 'Cap. 4 — Subsolo',
+    items: [
+      ['goto_page_6_loading', '4.1 Loading Win98 + chat'],
+      ['goto_page_7_subsolo', '4.2 Porão 2D (Morse + vapor → 2585)'],
+      ['goto_page_7_subsolo_dark', '4.3 Porão com lâmpada estourada'],
+    ],
+  },
+  {
+    cap: 'Cap. 5 — Caverna dos Contos',
+    items: [
+      ['goto_page_8_cave', '5.1 Queda + vídeo de intro'],
+      ['cave_ready_0', '5.2 Caverna livre (portal do Livro I)'],
+      ['goto_cave_shelf_ready', '5.3 Estante final (6 livros resolvidos)'],
+      ['goto_cave_escaped', '5.4 Pós-caverna (fuga)'],
+    ],
+  },
+  {
+    cap: 'Contos & Livros',
+    items: [1, 2, 3, 4, 5, 6].flatMap((n) => [
+      [`story_${n}`, `📖 Conto ${n} — jogar`],
+      [`book_${n}`, `🔐 Livro ${n} — enigma da última página`],
+    ]),
+  },
+  {
+    cap: 'Rotas secretas (URL)',
+    items: [
+      ['route_/tesla', '/tesla (ficha do hotel)'],
+      ['route_/3327', '/3327 (quarto, pós-subsolo)'],
+      ['route_/2585', '/2585 (senha no lugar errado)'],
+      ['route_/subsolo', '/subsolo (acesso negado)'],
+      ['route_/log', '/log (recusa)'],
+      ['route_/basile', '/basile (só pós-caverna)'],
+      ['route_/naoclique', '/naoclique'],
+      ['route_/qualquercoisa', '/qualquercoisa (404 vivo)'],
+    ],
+  },
+  {
+    cap: 'Ferramentas',
+    items: [
+      ['reset', '🔄 Resetar tudo do zero'],
+      ['add_points_big', '💎 +500.000 pts (clicker)'],
+      ['spawn_event', '🪰 Evento aleatório (clicker)'],
+      ['fx_loading', '🌀 Loading Superliminal (mudo)'],
+      ['fx_loading_blue', '🌀 Loading Superliminal (mão azul)'],
+      ['fx_wild', '🖱️ Simular cliques no vazio'],
+      ['fx_tab', '🏷️ Simular troca de aba (volta)'],
+    ],
+  },
+];
+
 function mountDevTestPanel() {
   if (!import.meta.env.DEV) return;
   if (document.getElementById('dev-test-panel')) return;
 
   const isClickerNow = () => currentStage === 'mundane_clicker' || currentStage === 'awakened_clicker';
+  let openCap = '';
+  try {
+    openCap = localStorage.getItem('dev_open_cap') || '';
+  } catch {}
 
   const panel = document.createElement('div');
   panel.id = 'dev-test-panel';
@@ -3954,68 +4424,112 @@ function mountDevTestPanel() {
   panel.innerHTML = `
     <button class="dev-toggle" id="dev-toggle-btn">⚙️ DEV</button>
     <div class="dev-menu" id="dev-menu">
-      <div class="dev-menu-title">🗺️ Ordem das Páginas do Jogo</div>
-      <button class="dev-btn danger" data-dev="reset">🔄 Resetar Tudo do Zero</button>
-      <button class="dev-btn" data-dev="goto_page_1_button">1. Botão Inicial (9x → 5x)</button>
-      <button class="dev-btn" data-dev="goto_page_2_shapes">2. Bloquinhos de Criança</button>
-      <button class="dev-btn" data-dev="goto_page_3_clicker_start">3. Clicker Mudo (Início 0/16)</button>
-      <button class="dev-btn" data-dev="goto_page_4_awakening_error">4. Erro c/ Ele Falando (13/16)</button>
-      <button class="dev-btn" data-dev="goto_page_5_clicker_end">5. Clicker Final (Enigma 99°C)</button>
-      <button class="dev-btn" data-dev="goto_page_6_loading">6. Loading Porco + Chat</button>
-      <button class="dev-btn" data-dev="goto_page_7_subsolo">7. Porão 2D (Morse + Vapor)</button>
-      <button class="dev-btn" data-dev="goto_page_8_cave">8. Caverna (WASD + Eco)</button>
-      <button class="dev-btn" data-dev="test_story_1">📖 Testar Conto 1 (Papers, Please)</button>
-      <div class="dev-menu-title" id="dev-clicker-tools-hdr" style="margin-top:6px;">🧰 Ferramentas (Só Clicker)</div>
-      <button class="dev-btn" id="dev-btn-pts" data-dev="add_points_big">💎 +500.000 pts (Sem Reload)</button>
-      <button class="dev-btn" id="dev-btn-evt" data-dev="spawn_event">🪰 Testar Evento (Mosca/Caixa)</button>
+      <div class="dev-menu-title">🗺️ Capítulos do Jogo</div>
+      ${DEV_TREE.map(
+        (c) => `
+        <details class="dev-cap" data-cap="${c.cap}" ${openCap === c.cap ? 'open' : ''}>
+          <summary>${c.cap}</summary>
+          <div class="dev-cap-items">
+            ${c.items.map(([a, l]) => `<button class="dev-btn ${a === 'reset' ? 'danger' : ''}" data-dev="${a}">${l}</button>`).join('')}
+          </div>
+        </details>`
+      ).join('')}
     </div>
   `;
   document.body.appendChild(panel);
 
-  const toggleBtn = document.getElementById('dev-toggle-btn');
   const menu = document.getElementById('dev-menu');
+  document.getElementById('dev-toggle-btn')?.addEventListener('click', () => menu?.classList.toggle('open'));
 
-  const syncContextualTools = () => {
-    const show = isClickerNow();
-    const hdr = document.getElementById('dev-clicker-tools-hdr');
-    const bPts = document.getElementById('dev-btn-pts');
-    const bEvt = document.getElementById('dev-btn-evt');
-    if (hdr) hdr.style.display = show ? 'block' : 'none';
-    if (bPts) bPts.style.display = show ? 'block' : 'none';
-    if (bEvt) bEvt.style.display = show ? 'block' : 'none';
-  };
-
-  toggleBtn?.addEventListener('click', () => {
-    syncContextualTools();
-    menu?.classList.toggle('open');
+  // Acordeão: abre um capítulo por vez e lembra o último aberto
+  panel.querySelectorAll('.dev-cap').forEach((d) => {
+    d.addEventListener('toggle', () => {
+      if (!d.open) return;
+      panel.querySelectorAll('.dev-cap').forEach((o) => {
+        if (o !== d) o.open = false;
+      });
+      try {
+        localStorage.setItem('dev_open_cap', d.getAttribute('data-cap'));
+      } catch {}
+    });
   });
+
+  const storyCtx = (caveState) => ({
+    clearTimers,
+    apiPost,
+    setOperatorRemark,
+    triggerRisadaVoiceReaction,
+    triggerTeimosoVoiceReaction,
+    resetIdleChillTimer,
+    playBeep: playCheapBeep,
+    caveState,
+    returnToCave: (updatedCave, extra = {}) => renderCaveChapterScreen(updatedCave, extra),
+  });
+
+  // Telas de erro são desenhadas pelo front: grava o estágio no servidor e desenha sem recarregar
+  const crashActions = {
+    dev_crash_1: ['goto_crash_1', { crashClickCount: 9 }],
+    dev_crash_counting: ['goto_crash_1', { crashClickCount: 9, caughtCounting: true }],
+    dev_crash_shapes: ['goto_shapes_crash', { crashClickCount: 5 }],
+  };
 
   panel.querySelectorAll('[data-dev]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const action = btn.getAttribute('data-dev');
-      if (action === 'test_story_1') {
-        menu?.classList.remove('open');
-        const st = await apiPost('/api/_dev/action', { action: 'goto_page_8_cave_ready' });
-        const mockCave = st?.caveState || { row: 1, col: 6, inventory: ['0', 'lantern'], cleared: [], booksOwned: [], booksSolved: [], introDone: true };
-        launchStory('1', {
-          clearTimers,
-          apiPost,
-          setOperatorRemark,
-          playBeep: playCheapBeep,
-          caveState: mockCave,
-          returnToCave: (updatedCave, extra = {}) => {
-            renderCaveChapterScreen(updatedCave, extra);
-          },
-        });
+      menu?.classList.remove('open');
+
+      if (action.startsWith('route_')) {
+        window.location.href = action.slice(6);
+        return;
+      }
+      if (crashActions[action]) {
+        const [srvAction, opts] = crashActions[action];
+        await apiPost('/api/_dev/action', { action: srvAction });
+        if (window.location.pathname !== '/') window.history.replaceState(null, '', '/');
+        renderFakeBrowserCrash({ awakening: false, ...opts });
+        return;
+      }
+      if (action.startsWith('story_')) {
+        const n = Number(action.split('_')[1]);
+        const st = await apiPost('/api/_dev/action', { action: 'goto_page_8_cave_ready', upToBook: n - 1 });
+        if (window.location.pathname !== '/') window.history.replaceState(null, '', '/');
+        currentStage = 'cave_2d';
+        launchStory(String(n), storyCtx(st?.caveState));
+        return;
+      }
+      if (action.startsWith('book_')) {
+        const n = Number(action.split('_')[1]);
+        const st = await apiPost('/api/_dev/action', { action: 'goto_page_8_cave_ready', upToBook: n - 1, giveBook: true });
+        if (window.location.pathname !== '/') window.history.replaceState(null, '', '/');
+        renderCaveChapterScreen(st?.caveState, { justEarnedBook: `book_${n}` });
+        return;
+      }
+      if (action === 'cave_ready_0') {
+        await apiPost('/api/_dev/action', { action: 'goto_page_8_cave_ready', upToBook: 0 });
+        window.location.href = '/';
+        return;
+      }
+      if (action === 'fx_loading' || action === 'fx_loading_blue') {
+        const blue = action === 'fx_loading_blue';
+        showSuperliminalLoading({ blueCursor: blue, awake: blue });
+        return;
+      }
+      if (action === 'fx_wild') {
+        lastWildAt = 0;
+        triggerWildClickReaction();
+        return;
+      }
+      if (action === 'fx_tab') {
+        lastBehaviorRemarkAt = 0;
+        if (getLivingStageKey()) sendBehaviorRemark('tab_return', { force: true });
+        else if (getMuteStageKey() === 'mute_clicker') showUselessAchievement('🏅 Conquista: Voltou para a Aba Certa');
         return;
       }
       if (action === 'spawn_event') {
-        menu?.classList.remove('open');
         if (isClickerNow()) spawnRandomScreenEvent();
         return;
       }
       if (action === 'add_points_big') {
-        menu?.classList.remove('open');
         if (!isClickerNow()) return;
         const res = await apiPost('/api/_dev/action', { action });
         if (res && latestState) {
@@ -4043,17 +4557,10 @@ async function init() {
   setupPsychologicalTraps();
   mountDevTestPanel();
 
+  // Caminhos na URL (naoclique.net/tesla...) viram rotas secretas respondidas pelo servidor
   const path = window.location.pathname;
   if (path !== '/' && path !== '/index.html') {
-    const app = document.getElementById('app');
-    app.style.visibility = 'visible';
-    app.innerHTML = `
-      <div class="fake-route-screen">
-        <h2>404</h2>
-        <p>Não há nada em <strong>${path.replace(/[<>"']/g, '')}</strong>.</p>
-        <p><a href="/">Voltar</a></p>
-      </div>
-    `;
+    renderSecretRoute(decodeURIComponent(path).slice(0, 80));
     return;
   }
 

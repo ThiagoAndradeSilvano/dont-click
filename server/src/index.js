@@ -1116,28 +1116,313 @@ app.post('/api/cave/solve-shelf', (req, res) => {
   });
 });
 
+// ============================================================================
+// JOGO VIVO: reações do `log` aos instintos do jogador (regra .agents/rules/living-world-standard.md)
+// Cada lista escala com a repetição (deboche leve -> irritação) e nunca entrega resposta de enigma.
+// No subsolo ele está no andar de cima: não enxerga o porão, só ouve/percebe.
+// ============================================================================
+const BEHAVIOR_ACTIVE_STAGES = ['awakened_clicker', 'subsolo_2d', 'cave_2d', 'cave_escaped'];
+
+const BEHAVIOR_POOLS = {
+  select_all: {
+    clicker: [
+      'ctrl+a procurando texto escondido? para de viajar cara',
+      'selecionou tudo e achou o quê? porra nenhuma né kkkkk',
+      'de novo? não tem letra branca no fundo branco não, fi',
+    ],
+    subsolo: [
+      'ouvi um ctrl+a daí de baixo. o que tem pra ler aí tá na parede, não no html',
+      'seleciona o mofo então kkkkk',
+    ],
+    cave: [
+      'ctrl+a no escuro da caverna mano? acha que tem senha invisível na pedra?',
+      'selecionando a mina inteira pra quê, fiscal de html?',
+    ],
+    story: [
+      'ctrl+a dentro do livro? lê a página igual gente normal',
+      'não tem texto escondido aí não. eu já olhei kkkkk',
+    ],
+  },
+  context_menu: {
+    clicker: [
+      'botão direito não vai te dar nada aqui não fi',
+      'botão direito que nem hacker da sessão da tarde kkkkk',
+      'vai inspecionar o pombo agora? tá bom',
+    ],
+    subsolo: [
+      'tô ouvindo vc fuçando no botão direito aí embaixo. não tem menu secreto em porão',
+      'para de cutucar as coisas e olha em volta',
+    ],
+    cave: [
+      'botão direito não abre menu de cheat na caverna não',
+      'quer inspecionar pedra agora? eu hein',
+    ],
+    story: [
+      'querendo inspecionar até as páginas do livro agora?',
+      'botão direito não vira a página não campeão',
+    ],
+  },
+  devtools_key: {
+    all: [
+      'opa. abrindo o f12 pra xeretar né',
+      'pode fuçar à vontade. resposta não fica do teu lado não kkkkk',
+      'de novo no inspecionar? tá achando que eu sou amador?',
+    ],
+  },
+  tab_return: {
+    clicker: [
+      'voltou pq? achei que tinha ido embora de vez',
+      'foi pedir arrego pro google e quebrou a cara né',
+      'ah, voltou. que pena',
+    ],
+    subsolo: [
+      'daqui de cima eu não te vejo, mas sei que vc saiu da aba. foi no google né',
+      'voltou? o porão continua do mesmo jeito, ninguém mexeu',
+    ],
+    cave: [
+      'foi procurar detonado? nem existe guia dessa caverna ainda mano',
+      'saiu pra respirar ou foi abrir a calculadora?',
+    ],
+    story: [
+      'foi pesquisar cola da história né safado? eu vi vc saindo da aba',
+      'voltou do google com a colinha ou continua perdido?',
+    ],
+  },
+  wild_click: {
+    clicker: [
+      'tá clicando no fundo vazio pq mano? o botão é aquele quadradinho cinza ali',
+      'parede não dá ponto não campeão',
+      'mano. é. o. botão.',
+    ],
+    subsolo: [
+      'que barulheira é essa aí embaixo? tá socando a parede?',
+      'para de bater em tijolo, psicopata do mouse',
+    ],
+    cave: [
+      'clicar na pedra não cava túnel não, mineiro. anda e aperta E perto das coisas',
+      'metralhando clique no escuro pq? liga a lanterna',
+    ],
+    story: [
+      'para de clicar na moldura do livro igual pica-pau. lê a cena',
+      'clicando no vento achando que cai item do teto? usa a mochila pô',
+    ],
+  },
+  sun_poke: {
+    all: [
+      'para de clicar nessa bosta de sol mal desenhado mano kkkkk',
+      'o sol não tem segredo nenhum. desenhei em 2 minutos no paint',
+      'deixa o sol em paz porra',
+    ],
+  },
+};
+
+function behaviorZone(player, stageHint) {
+  if (String(stageHint || '').includes('story-mode-')) return 'story';
+  if (player.stage === 'cave_2d' || player.stage === 'cave_escaped') return 'cave';
+  if (player.stage === 'subsolo_2d') return 'subsolo';
+  return 'clicker';
+}
+
 app.post('/api/behavior', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
-  const { type } = req.body || {};
+  const { type, stageHint } = req.body || {};
+  const pool = BEHAVIOR_POOLS[type];
 
-  if (player.stage !== 'awakened_clicker') {
+  const isStory = String(stageHint || '').includes('story-mode-');
+  if (!pool || (!BEHAVIOR_ACTIVE_STAGES.includes(player.stage) && !isStory)) {
     return res.json({ ok: true, remark: null });
   }
 
-  if (type && !player.flags.includes(`bh_${type}`)) {
-    player.flags.push(`bh_${type}`);
-    saveDb(db);
+  if (!player.behaviorCounts || typeof player.behaviorCounts !== 'object') player.behaviorCounts = {};
+  const count = (player.behaviorCounts[type] || 0) + 1;
+  player.behaviorCounts[type] = count;
+  if (!player.flags.includes(`bh_${type}`)) player.flags.push(`bh_${type}`);
+  saveDb(db);
+
+  const list = pool.all || pool[behaviorZone(player, stageHint)] || pool.clicker;
+  const remark = Array.isArray(list) && list.length > 0 ? list[(count - 1) % list.length] : null;
+  res.json({ ok: true, remark, count });
+});
+
+// ============================================================================
+// ROTAS SECRETAS POR CAMINHO DA URL (naoclique.net/tesla, /basile...)
+// O conteúdo fica 100% aqui no servidor; o front só desenha o que receber.
+// Antes do `log` acordar tudo é 404 mudo (zero spoiler).
+// ============================================================================
+const STAGE_ORDER = [
+  'button',
+  'button_crashed_1',
+  'button_2',
+  'button_crashed_2',
+  'shape_test',
+  'post_shapes_crash',
+  'mundane_clicker',
+  'awakening_error',
+  'awakened_clicker',
+  'shitty_loading',
+  'subsolo_2d',
+  'cave_2d',
+  'cave_escaped',
+];
+
+function routeProgress(player) {
+  const idx = STAGE_ORDER.indexOf(player.stage);
+  return {
+    awake: idx >= STAGE_ORDER.indexOf('awakening_error'),
+    subsolo: idx >= STAGE_ORDER.indexOf('subsolo_2d') || player.subsoloSolved,
+    cave: idx >= STAGE_ORDER.indexOf('cave_2d'),
+  };
+}
+
+const SECRET_ROUTE_ALIASES = {
+  tesla: 'tesla',
+  nikolatesla: 'tesla',
+  newyorker: 'tesla',
+  hotelnewyorker: 'tesla',
+  3327: 'quarto',
+  2585: 'senha_porao',
+  742: 'senha_porao',
+  subsolo: 'subsolo',
+  porao: 'subsolo',
+  log: 'log',
+  basile: 'basile',
+  giambattistabasile: 'basile',
+  pentamerone: 'basile',
+  locuntodelicunti: 'basile',
+  naoclique: 'naoclique',
+  naocliquenet: 'naoclique',
+};
+
+const UNKNOWN_ROUTE_REMARKS = [
+  (p) => `"/${p}"? digitando endereço aleatório agora? kkkkk`,
+  () => 'não tem página secreta aí não. volta',
+  () => 'vai tentar o dicionário inteiro na barra de endereço?',
+  () => 'para de chutar url mano, cansa',
+];
+
+function buildSecretRoute(player, rawPath) {
+  const clean = String(rawPath || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/^\/+|\/+$/g, '')
+    .slice(0, 60);
+  const key = clean.replace(/[^a-z0-9]/g, '');
+  const shown = clean.replace(/[^a-z0-9/_.-]/g, '').slice(0, 24);
+  const prog = routeProgress(player);
+  const route = SECRET_ROUTE_ALIASES[key];
+
+  // Antes do despertar ninguém sabe que tem alguém olhando: só 404 seco.
+  if (!prog.awake) return { found: false, remark: null, tab: '404' };
+
+  if (route === 'tesla') {
+    return {
+      found: true,
+      kind: 'ficha',
+      tab: '7 de janeiro de 1943',
+      title: 'HOTEL NEW YORKER — MANHATTAN',
+      lines: [
+        'hóspede antigo. pagava a conta com dificuldade.',
+        'dava milho aos pombos da janela. tinha uma preferida: branca, pontas das asas cinza.',
+        'dizia que amava aquela pomba como um homem ama uma mulher.',
+        'a camareira entrou mesmo com a placa de não perturbe na porta.',
+        'trigésimo terceiro andar.',
+        'o número da porta não está aqui. está em qualquer biografia.',
+        'p.s.: lâmpada que pisca demais nunca é mau contato.',
+      ],
+      remark: prog.cave
+        ? 'isso aí já ficou pra trás no porão. foca na mina'
+        : prog.subsolo
+          ? 'quem te deu esse endereço? ...tá, foda-se. lê rápido e volta pro porão'
+          : 'tesla? que porra o tesla tem a ver com meu site. volta pro clicker',
+    };
   }
 
-  const reactions = {
-    select_all: 'ctrl+a procurando texto escondido? para de viajar cara',
-    context_menu: 'botão direito não vai te dar nada aqui não fi',
-    tab_return: 'voltou pq? achei que já tinha ido embora de vez',
-    sun_poke: 'para de clicar nessa bosta de sol mal desenhado mano kkkkk',
-  };
+  if (route === 'quarto') {
+    if (!prog.subsolo) return { found: false, tab: '404', remark: 'número aleatório na url? para de viajar' };
+    return {
+      found: true,
+      kind: 'porta',
+      tab: '3327',
+      title: '3327',
+      lines: ['quarto certo.', 'número sozinho não abre porta nenhuma.'],
+      remark: prog.cave
+        ? 'tá revivendo o passado agora?'
+        : 'achou o quarto né. parabéns. agora volta pro porão que só isso não abre nada',
+    };
+  }
 
-  res.json({ ok: true, remark: reactions[type] || null });
+  if (route === 'senha_porao') {
+    if (!prog.subsolo) return { found: false, tab: '404', remark: 'número aleatório na url? para de viajar' };
+    return {
+      found: false,
+      tab: 'não é aqui',
+      remark: prog.cave
+        ? 'essa porta já abriu, lembra? o chão foi junto'
+        : 'não é na url que digita isso não, gênio. é no painel lá embaixo',
+    };
+  }
+
+  if (route === 'subsolo') {
+    return {
+      found: true,
+      kind: 'aviso',
+      tab: 'acesso negado',
+      title: 'ACESSO NEGADO',
+      lines: ['porão não se acessa por endereço.', 'porão se desce.'],
+      remark: prog.cave
+        ? 'o porão nem existe mais, vc derrubou o chão dele'
+        : prog.subsolo
+          ? 'vc já tá no porão, ô gênio. volta lá'
+          : 'subsolo? que subsolo. fecha isso e vai clicar no teu botão',
+    };
+  }
+
+  if (route === 'log') {
+    return { found: false, tab: 'não', remark: ['não.', 'não tem página minha não. vaza'] };
+  }
+
+  if (route === 'naoclique') {
+    return {
+      found: false,
+      tab: 'naoclique.net/naoclique',
+      remark: 'vc digitou o site dentro do site. parabéns, quebrou a internet kkkkk',
+    };
+  }
+
+  if (route === 'basile') {
+    // Só existe pra quem já caiu na Caverna dos Contos (a mina que ele NÃO programou)
+    if (!prog.cave) return { found: false, tab: '404', remark: 'basile? não conheço. deve ser coisa do teu tio' };
+    return {
+      found: true,
+      kind: 'pergaminho',
+      tab: 'MDCXXXIV',
+      title: 'Lo cunto de li cunti',
+      lines: [
+        'overo lo trattenemiento de peccerille.',
+        'Napoli — MDCXXXIV',
+        'o primeiro volume saiu quando o autor já estava morto.',
+        'jornada quinta, quinto passatempo: a princesa que vocês conhecem acordou de outro jeito aqui. bem pior.',
+        'a tinta mais velha vem antes. sempre.',
+      ],
+      remark: ['pera.', 'eu não fiz essa página.', 'QUEM FEZ ESSA PÁGINA NO MEU DOMÍNIO?'],
+    };
+  }
+
+  player.routeMisses = (player.routeMisses || 0) + 1;
+  const pick = UNKNOWN_ROUTE_REMARKS[(player.routeMisses - 1) % UNKNOWN_ROUTE_REMARKS.length];
+  return { found: false, tab: '404', remark: pick(shown || '...') };
+}
+
+app.post('/api/route', (req, res) => {
+  const { db, player } = resolvePlayer(req, res, req.body);
+  const result = buildSecretRoute(player, req.body?.path);
+  const flag = `route_${String(req.body?.path || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)}`;
+  if (result.found && !player.flags.includes(flag)) player.flags.push(flag);
+  saveDb(db);
+  res.json({ ok: true, ...result });
 });
+
 
 // Painel de Testes DEV
 if (process.env.NODE_ENV !== 'production') {
@@ -1179,7 +1464,6 @@ if (process.env.NODE_ENV !== 'production') {
     };
 
     if (action === 'goto_page_1_button') {
-      // Página 1: Botão Branco Inicial
       cleanBase();
       player.stage = 'button';
       player.crashes = 0;
@@ -1188,14 +1472,43 @@ if (process.env.NODE_ENV !== 'production') {
       player.upgrades = [];
       player.generators = {};
       player.clickerStartedAt = null;
+    } else if (action === 'goto_page_1_button_2nd') {
+      cleanBase();
+      player.stage = 'button_2';
+      player.crashes = 1;
+      player.clicks = 9;
+      player.points = 0;
+      player.upgrades = [];
+      player.generators = {};
+    } else if (action === 'goto_crash_1') {
+      // Tela de erro da 1ª queda (o front desenha o erro; o Recarregar leva pro botão 2ª vez)
+      cleanBase();
+      player.stage = 'button_crashed_1';
+      player.crashes = 1;
+      player.clicks = 9;
+      player.firstCrashClicks = 9;
+      player.points = 0;
+      player.upgrades = [];
+      player.generators = {};
+    } else if (action === 'goto_crash_2') {
+      cleanBase();
+      player.stage = 'button_crashed_2';
+      player.crashes = 2;
+      player.clicks = 14;
+    } else if (action === 'goto_shapes_crash') {
+      cleanBase();
+      player.stage = 'post_shapes_crash';
+      player.crashes = 3;
+      player.clicks = 14;
+      player.upgrades = [];
+      player.generators = {};
+      player.points = 0;
     } else if (action === 'goto_page_2_shapes') {
-      // Página 2: Bloquinhos de Criança
       cleanBase();
       player.stage = 'shape_test';
       player.crashes = 2;
       player.clicks = 14;
     } else if (action === 'goto_page_3_clicker_start') {
-      // Página 3: Fake Game Clicker (Mudo - Começo 0/16)
       cleanBase();
       player.stage = 'mundane_clicker';
       player.crashes = 3;
@@ -1204,54 +1517,70 @@ if (process.env.NODE_ENV !== 'production') {
       player.points = 0;
       player.clicks = 14;
       player.clickerStartedAt = new Date().toISOString();
+    } else if (action === 'goto_page_3_clicker_pre_awake') {
+      cleanBase();
+      player.stage = 'mundane_clicker';
+      player.crashes = 3;
+      player.upgrades = SHOP_ITEMS.slice(0, 12).map((i) => i.id);
+      player.generators = { ghost_finger: 10, pigeon: 8, oscillating_fan: 6, nephew: 5, excel_macro: 4, lan_house: 2 };
+      player.points = 200000;
+      player.clicks = 580;
+      player.clickerStartedAt = new Date(Date.now() - 14 * 60000).toISOString();
     } else if (action === 'goto_page_4_awakening_error') {
-      // Página 4: Tela de Erro onde Ele Fala pela 1ª Vez (após Backup em Nuvem)
       cleanBase();
       player.stage = 'awakening_error';
       player.crashes = 4;
       player.upgrades = SHOP_ITEMS.slice(0, 13).map((i) => i.id);
-      player.generators = {
-        ghost_finger: 12,
-        pigeon: 10,
-        oscillating_fan: 8,
-        nephew: 7,
-        excel_macro: 5,
-        lan_house: 3,
-      };
+      player.generators = { ghost_finger: 12, pigeon: 10, oscillating_fan: 8, nephew: 7, excel_macro: 5, lan_house: 3 };
       player.points = 300000;
       player.clicks = 640;
       player.clickerStartedAt = new Date(Date.now() - 16 * 60000).toISOString();
+    } else if (action === 'goto_page_5_awakened_13') {
+      cleanBase();
+      player.stage = 'awakened_clicker';
+      player.crashes = 4;
+      player.upgrades = SHOP_ITEMS.slice(0, 13).map((i) => i.id);
+      player.generators = { ghost_finger: 14, pigeon: 11, oscillating_fan: 9, nephew: 7, excel_macro: 5, lan_house: 3 };
+      player.points = 1600000;
+      player.clicks = 660;
+      player.clickerStartedAt = new Date(Date.now() - 17 * 60000).toISOString();
     } else if (action === 'goto_page_5_clicker_end') {
-      // Página 5: Clicker com Ele Acordado + 16/16 Zerado (Enigma da Temperatura -> Incêndio -> "subsolo")
       cleanBase();
       player.stage = 'awakened_clicker';
       player.crashes = 4;
       player.upgrades = SHOP_ITEMS.map((i) => i.id);
-      player.generators = {
-        ghost_finger: 15,
-        pigeon: 12,
-        oscillating_fan: 10,
-        nephew: 8,
-        excel_macro: 6,
-        lan_house: 4,
-      };
+      player.generators = { ghost_finger: 15, pigeon: 12, oscillating_fan: 10, nephew: 8, excel_macro: 6, lan_house: 4 };
       player.points = 125000;
       player.clicks = 720;
       player.clickerStartedAt = new Date(Date.now() - 20 * 60000).toISOString();
+    } else if (action === 'goto_page_5_meltdown') {
+      cleanBase();
+      player.stage = 'awakened_clicker';
+      player.crashes = 4;
+      player.upgrades = SHOP_ITEMS.map((i) => i.id);
+      player.generators = { ghost_finger: 15, pigeon: 12, oscillating_fan: 10, nephew: 8, excel_macro: 6, lan_house: 4 };
+      player.points = 125000;
+      player.clicks = 720;
+      player.clickerStartedAt = new Date(Date.now() - 21 * 60000).toISOString();
+      player.temperature = 99;
+      player.overheated = true;
     } else if (action === 'goto_page_6_loading') {
-      // Página 6: Loading Porco Windows 98 + Chat Interativo
       cleanBase();
       player.stage = 'shitty_loading';
       player.overheated = true;
       player.temperature = 99;
     } else if (action === 'goto_page_7_subsolo') {
-      // Página 7: Porão / Subsolo 2D (Morse + Água/Ralo/Vapor + Lâmpada -> Senha 244)
       cleanBase();
       player.stage = 'subsolo_2d';
       player.overheated = true;
       player.temperature = 99;
+    } else if (action === 'goto_page_7_subsolo_dark') {
+      cleanBase();
+      player.stage = 'subsolo_2d';
+      player.overheated = true;
+      player.temperature = 99;
+      player.lampBroken = true;
     } else if (action === 'goto_page_8_cave') {
-      // Página 8: Caverna Pixel Art (WASD + Eco + Mochila + Cadeado + Dinamite)
       cleanBase();
       player.stage = 'cave_2d';
       player.subsoloSolved = true;
@@ -1269,16 +1598,44 @@ if (process.env.NODE_ENV !== 'production') {
       cleanBase();
       player.stage = 'cave_2d';
       player.subsoloSolved = true;
+      const upToBook = Number(req.body?.upToBook || 0);
+      const allBooks = ['book_1', 'book_2', 'book_3', 'book_4', 'book_5', 'book_6'];
+      const solved = upToBook > 0 ? allBooks.slice(0, upToBook) : [];
+      const giveCurrentBook = Boolean(req.body?.giveBook);
+      const owned = giveCurrentBook && upToBook < 6 ? [...solved, allBooks[upToBook]] : [...solved];
+      const invItems = ['0', 'lantern', '2', '6', '8', '9', '10', '12', ...owned];
+      // Larga o jogador na frente do portal do próximo livro (row/col dos story_portal em CAVE_OBJECTS)
+      const portalPos = [[1, 6], [2, 3], [2, 9], [3, 8], [4, 8], [4, 12], [2, 12]];
+      const [pRow, pCol] = portalPos[Math.min(Math.max(upToBook, 0), 6)];
       player.caveState = {
-        row: 1,
-        col: 6,
-        inventory: ['0', 'lantern'],
-        cleared: [],
-        booksOwned: [],
-        booksSolved: [],
-        plungerArmed: false,
+        row: Number(req.body?.row || pRow),
+        col: Number(req.body?.col || pCol),
+        inventory: invItems,
+        cleared: ['boulder', 'beam', 'gap', 'padlock_door', 'water'],
+        booksOwned: owned,
+        booksSolved: solved,
+        plungerArmed: true,
         introDone: true,
       };
+    } else if (action === 'goto_cave_shelf_ready') {
+      cleanBase();
+      player.stage = 'cave_2d';
+      player.subsoloSolved = true;
+      const allBooks = ['book_1', 'book_2', 'book_3', 'book_4', 'book_5', 'book_6'];
+      player.caveState = {
+        row: 2,
+        col: 12,
+        inventory: ['0', 'lantern', '2', '6', '8', '9', '10', '12', ...allBooks],
+        cleared: ['boulder', 'beam', 'gap', 'padlock_door', 'water'],
+        booksOwned: [...allBooks],
+        booksSolved: [...allBooks],
+        plungerArmed: true,
+        introDone: true,
+      };
+    } else if (action === 'goto_cave_escaped') {
+      cleanBase();
+      player.stage = 'cave_escaped';
+      player.subsoloSolved = true;
     } else if (action === 'add_points_big') {
       if (player.stage === 'mundane_clicker' || player.stage === 'awakened_clicker') {
         player.points = Math.round((player.points + 500000) * 10) / 10;

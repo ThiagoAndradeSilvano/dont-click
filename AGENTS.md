@@ -2,7 +2,7 @@
 
 > **⚠️ ORDEM OBRIGATÓRIA PARA O ANTIGRAVITY (EM QUALQUER MÁQUINA):**
 > 1. Este projeto (`dont-click` / domínio oficial **`naoclique.net`**) é desenvolvido pelo Thiago alternando entre **duas máquinas diferentes** via GitHub (`origin/main`).
-> 2. **ANTES DE ESCREVER UMA ÚNICA LINHA DE TEXTO OU CÓDIGO**, você **DEVE** ler este arquivo inteiro (e `@[Bíblia do Personagem log](.agents/rules/operator-log-persona.md)`).
+> 2. **ANTES DE ESCREVER UMA ÚNICA LINHA DE TEXTO OU CÓDIGO**, você **DEVE** ler este arquivo inteiro (e `@[Bíblia do Personagem log](.agents/rules/operator-log-persona.md)` + `@[Padrão de Jogo Vivo](.agents/rules/living-world-standard.md)`, o checklist obrigatório de TODA tela/capítulo novo).
 > 3. **NUNCA, SOB HIPÓTESE ALGUMA**, escreva falas do **`log` (o cara do chat)** com cara de IA, texto formalzinho, metáfora poética ou educação de assistente virtual. Siga **100% à risca** a Bíblia do Personagem na **Seção 2** abaixo!
 > 4. Sempre que terminar uma alteração em qualquer máquina, **atualize este `AGENTS.md`**, rode **`git add . && git commit -m "..." && git push origin main`** (um `commit` local sem `git push` NÃO chega na outra máquina!).
 
@@ -67,7 +67,9 @@ O coração do jogo inteiro é **o cara que fala pela tag `log` (e `[log]:` no c
    - Pulso via `Web Audio API` por tecla; ativa eco cavernoso automático (`ensureCaveEchoChain`) quando em `cave_2d`, `cave_escaped` ou qualquer `story-mode-*` (mantendo o rótulo visual apenas `log`, sem `(eco)` escrito).
    - **Voz Real ElevenLabs (`client/public/voices/`):** `setOperatorRemark(text, { voiceUrl, steps })` e `humanTypeSequence` sincronizam letra por letra no relógio (`performance.now()` + `durationMs`), reduzem o volume do tec-tec pra 22% enquanto ele fala e aplicam o mesmo eco de caverna automaticamente na voz dentro da Mina/Contos! Clipes ativos: `log_awakening.mp3`, `idle_1..3,5.mp3`, `react_teimoso.mp3`, `react_risada.mp3`, `clicker_100pct.mp3`, `meltdown_fire.mp3`, `loading_bronca.mp3`, `cave_queda.mp3`, `story1_entrada.mp3`.
 4. **Cursores Personalizados (`client/public/cursors/`):**
-   - Mãozinha Azul do jogador (`user-blue.png`), Mãos Vermelhas reativas do `log` (`op-point.png`, `op-stop.png`, `op-middle.png`, `op-thumb.png`, `op-chill.png`, `op-hd.png` via `flashCursorMood`) e cursores temáticos dedicados dos 6 Contos (`cursor_1.png` a `cursor_6.png` em 40x40px).
+   - **Mouse normal do sistema até o despertar.** A Mãozinha Azul do jogador (`user-blue.png`) nasce no *hover* do `Recarregar` depois que ele fala (Página 4) e fica de vez (`body.blue-hand-on` → `.awakened-cursors`). Mãos Vermelhas reativas do `log` (`op-point.png`, `op-stop.png`, `op-middle.png`, `op-thumb.png`, `op-chill.png`, `op-hd.png` via `flashCursorMood`) e cursores temáticos dedicados dos 6 Contos (`cursor_1.png` a `cursor_6.png` em 40x40px).
+5. **Motor de Jogo Vivo (`setupPsychologicalTraps`):** cliques no vazio (`isBlankClickTarget`), `Ctrl+A`, botão direito, `F12`/`Ctrl+U`, troca de aba e título da aba que "respira" com o tempo em TODOS os capítulos. Antes do despertar: só reações mudas (aba `...`, conquista besta no clicker). Depois: falas de `/api/behavior` (`BEHAVIOR_POOLS` por zona, escalando por repetição) alternando com `react_teimoso`/`react_risada`.
+6. **Loading estilo *Superliminal* (`showSuperliminalLoading` / `reloadWithSuperliminal`):** todo `Recarregar` mostra 2–4 s de formas impossíveis girando, dicas absurdas que trocam, barra que volta e percentual torto (`SL_TIPS_MUTE` / `SL_TIPS_AWAKE`).
 
 ---
 
@@ -123,7 +125,8 @@ Toda validação sensível de senhas/enigmas fica em `server/src/index.js`.
 ## 4. Arquitetura Técnica, Portas & Sincronização Git
 
 - **Portas Fixas:** `npm run dev` na raiz sobe `client` em **`http://localhost:3690`** e `server` em **`http://localhost:3088`**.
-- **Painel `⚙️ DEV` (`mountDevTestPanel` em `client/src/main.js`):** Visível apenas em `import.meta.env.DEV`, numerado em ordem com `cleanBase()` no servidor.
+- **Painel `⚙️ DEV` (`mountDevTestPanel` + `DEV_TREE` em `client/src/main.js`):** só em `import.meta.env.DEV` (removido do build), botão no topo-centro, capítulos em acordeão (Porta, Clicker Mudo, Despertar, Subsolo, Caverna, Contos & Livros, Rotas secretas, Ferramentas) com cada sub-estado; ações em `/api/_dev/action` com `cleanBase()`.
+- **Rotas Secretas na URL (`/api/route` → `buildSecretRoute`):** `init()` lê `location.pathname`; conteúdo 100% no servidor e condicionado ao progresso (antes do despertar = 404 mudo). Ativas: `/tesla` (ficha do Hotel New Yorker: 33º andar + pomba branca + "lâmpada que pisca nunca é mau contato", pista do enigma 2585 sem o número), `/3327` e `/2585`·`/742` (só pós-subsolo), `/subsolo` ("porão se desce"), `/log` (recusa), `/basile` (só pós-caverna: *Lo cunto de li cunti*, Napoli MDCXXXIV, pista do `[A]` do Livro II, e o `log` surta porque não fez a página), `/naoclique` e 404 vivo pra qualquer outro caminho. **Produção estática precisa servir `index.html` em qualquer caminho** (Cloudflare Pages já faz isso sem `404.html` no build; em Workers use `not_found_handling = "single-page-application"`).
 - **Regra de Ouro entre os 2 PCs:**
   1. Ao abrir sessão: rodar `git pull origin main`.
   2. Ao finalizar qualquer entrega: atualizar este `AGENTS.md` + `git add .` + `git commit -m "..."` + **`git push origin main`**!
