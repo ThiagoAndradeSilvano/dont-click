@@ -246,8 +246,11 @@ body.clicker-mode {
   position: relative;
 }
 
-/* Clicker MUDO: mouse normal do sistema. A mão azul só nasce depois do Recarregar do despertar. */
-body.clicker-mode.awakened-cursors {
+/* Clicker MUDO: mouse 100% normal do sistema. A mão azul só nasce no hover do Recarregar pós-fala e fica de vez! */
+body.clicker-mode.awakened-cursors,
+body.clicker-mode.awakened-cursors button,
+body.clicker-mode.awakened-cursors input,
+body.clicker-mode.awakened-cursors .box-button {
   cursor: var(--cur-user-blue);
 }
 
@@ -255,10 +258,7 @@ body.clicker-mode #app {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-body.clicker-mode.awakened-cursors .box-button {
-  cursor: var(--cur-user-blue);
+  justify-content: center;
 }
 
 /* QUANDO COMPRA O UPGRADE "TEMA COLORIDO": Vira um Papel de Parede Infantil Tosco feito no Paint! */
@@ -342,14 +342,14 @@ body.awakened-cursors.cursor-mood-point * {
 }
 
 .clicker-layout {
-  max-width: 920px;
+  max-width: 860px;
   width: 100%;
-  height: 100%;
+  max-height: 100%;
   min-height: 0;
-  margin: 0 auto;
+  margin: auto;
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 1.2vh, 12px);
+  gap: clamp(6px, 1.1vh, 10px);
   position: relative;
   z-index: 10;
 }
@@ -456,14 +456,13 @@ body.awakened-cursors.cursor-mood-point * {
 }
 
 .clicker-main {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   display: grid;
-  /* Botão no meio da tela, numa janela compacta (não estica até o topo/rodapé); loja à direita */
-  grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-rows: minmax(0, 1fr);
-  gap: clamp(10px, 1.8vw, 20px);
-  align-items: stretch;
+  /* Janela do botão compacta no centro + loja enxuta ao lado (sem esticar 900px na tela!) */
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: clamp(10px, 1.8vw, 18px);
+  align-items: center;
 }
 
 .clicker-arena {
@@ -471,14 +470,14 @@ body.awakened-cursors.cursor-mood-point * {
   border: 1px solid #bbb;
   align-self: center;
   justify-self: center;
-  width: min(100%, 420px);
-  padding: clamp(8px, 1.6vh, 16px) 16px;
+  width: min(100%, 280px);
+  padding: 18px 16px;
   min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: clamp(6px, 1.4vh, 14px);
+  gap: 12px;
 }
 
 .score-board {
@@ -492,7 +491,7 @@ body.awakened-cursors.cursor-mood-point * {
 }
 
 .score-value {
-  font-size: clamp(22px, 3.4vh, 30px);
+  font-size: clamp(22px, 3.2vh, 28px);
   font-weight: bold;
 }
 
@@ -501,6 +500,8 @@ body.awakened-cursors.cursor-mood-point * {
   border: 1px solid #bbb;
   padding: 10px 12px;
   min-height: 0;
+  height: min(430px, calc(100dvh - 190px));
+  max-height: calc(100dvh - 180px);
   display: flex;
   flex-direction: column;
 }
@@ -2147,7 +2148,7 @@ body.cave-mode {
   cursor: pointer;
 }
 
-/* ===== LOADING: SÓ UMA BARRA BEM RUIM (todo Recarregar) ===== */
+/* ===== LOADING ESTILO SUPERLIMINAL (todo Recarregar prega uma peça diferente!) ===== */
 .lb-overlay {
   position: fixed;
   inset: 0;
@@ -2156,15 +2157,42 @@ body.cave-mode {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   cursor: progress;
+}
+.lb-overlay.lb-checker-room {
+  background-color: #f3f4f6;
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-size: 48px 48px;
+  background-position: 0 0, 0 24px, 24px -24px, -24px 0;
 }
 .lb-overlay.sl-blue,
 .lb-overlay.sl-blue * {
   cursor: var(--cur-user-blue) !important;
 }
+.lb-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+.lb-caption {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12.5px;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+  text-align: center;
+  max-width: 420px;
+  padding: 0 16px;
+  user-select: none;
+}
 .lb-bar {
   width: min(320px, 72vw);
-  height: 20px;
+  height: 22px;
   box-sizing: border-box;
   padding: 2px;
   display: flex;
@@ -2173,19 +2201,25 @@ body.cave-mode {
   border: 2px solid;
   border-color: #808080 #ffffff #ffffff #808080;
   outline: 1px solid #404040;
+  position: relative;
 }
 .lb-block {
   flex: 1 1 0;
   background: transparent;
+  transition: transform 0.35s cubic-bezier(0.45, 0, 0.9, 0.4);
 }
 .lb-block.on {
   background: #000080;
 }
-/* crack: a metade da direita despenca torta */
-.lb-bar.lb-broken .lb-block:nth-child(n + 11) {
-  transform: translateY(9px) rotate(11deg);
+/* crack_hinge: a metade da direita despenca torta pendurada */
+.lb-bar.lb-broken .lb-block:nth-child(n + 12) {
+  transform: translateY(18px) rotate(24deg);
   transform-origin: left top;
-  transition: transform 0.18s cubic-bezier(0.5, 1.8, 0.5, 1);
+  transition: transform 0.22s cubic-bezier(0.5, 1.8, 0.5, 1);
+}
+/* gravity_drop: os blocos despencam com gravidade pro chão */
+.lb-bar.lb-gravity .lb-block.on {
+  transform: translateY(140px) rotate(14deg);
 }
 .lb-bar.lb-snap {
   animation: lbSnap 0.26s steps(3);
@@ -2199,15 +2233,6 @@ body.cave-mode {
 .lb-block.lb-extra {
   flex: 0 0 calc((min(320px, 72vw) - 44px) / 20);
   outline: 1px dashed #000080;
-}
-/* jitter */
-.lb-bar.lb-shake {
-  animation: lbShake 0.11s steps(2) infinite;
-}
-@keyframes lbShake {
-  0% { transform: translate(2px, -1px); }
-  50% { transform: translate(-3px, 2px); }
-  100% { transform: translate(1px, 1px); }
 }
 
 /* ===== ROTAS SECRETAS NA URL (/tesla, /basile...) ===== */

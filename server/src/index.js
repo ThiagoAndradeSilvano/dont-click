@@ -1298,6 +1298,12 @@ const SECRET_ROUTE_ALIASES = {
   giambattistabasile: 'basile',
   pentamerone: 'basile',
   locuntodelicunti: 'basile',
+  talia: 'talia',
+  solelunaetalia: 'talia',
+  1697: 'perrault',
+  perrault: 'perrault',
+  schabowski: 'schabowski',
+  berlim: 'schabowski',
   naoclique: 'naoclique',
   naocliquenet: 'naoclique',
 };
@@ -1399,22 +1405,53 @@ function buildSecretRoute(player, rawPath) {
     };
   }
 
-  if (route === 'basile') {
+  if (route === 'basile' || route === 'talia') {
     // Só existe pra quem já caiu na Caverna dos Contos (a mina que ele NÃO programou)
-    if (!prog.cave) return { found: false, tab: '404', remark: 'basile? não conheço. deve ser coisa do teu tio' };
+    if (!prog.cave) return { found: false, tab: '404', remark: 'talia? basile? não conheço, deve ser parente teu' };
     return {
       found: true,
       kind: 'pergaminho',
-      tab: 'MDCXXXIV',
-      title: 'Lo cunto de li cunti',
+      tab: 'Napoli — MDCXXXIV',
+      title: 'Lo cunto de li cunti // Sole, Luna e Talia',
       lines: [
         'overo lo trattenemiento de peccerille.',
-        'Napoli — MDCXXXIV',
-        'o primeiro volume saiu quando o autor já estava morto.',
-        'jornada quinta, quinto passatempo: a princesa que vocês conhecem acordou de outro jeito aqui. bem pior.',
-        'a tinta mais velha vem antes. sempre.',
+        'Napoli — MDCXXXIV (publicação póstuma do 1º volume).',
+        'jornada quinta, quinto passatempo: não houve fuso mágico nem três fadas.',
+        'uma farpa de linho sob a unha bastou para o sono — e o resto do arquivo está escondido onde o Paint não lê, mas o Bloco de Notas sim.',
       ],
-      remark: ['pera.', 'eu não fiz essa página.', 'QUEM FEZ ESSA PÁGINA NO MEU DOMÍNIO?'],
+      remark: ['pera.', 'eu não criei essa rota.', 'QUEM ENFIOU PÁGINA EM ITALIANO ANTIGO NO MEU DOMÍNIO?!'],
+    };
+  }
+
+  if (route === 'perrault') {
+    if (!prog.cave) return { found: false, tab: '404', remark: 'tá digitando ano aleatório na url pq?' };
+    return {
+      found: true,
+      kind: 'pergaminho',
+      tab: 'Paris — 1697',
+      title: 'Histoires ou contes du temps passé (1697)',
+      lines: [
+        'Paris, 1697 — sete estojos de ouro maciço para as sete fadas boas.',
+        'mas Paris chegou sessenta e três anos atrasada.',
+        'procure mais fundo na penumbra de Nápoles: /talia',
+      ],
+      remark: 'mais uma página fantasma brotando sozinha nessa merda de domínio... lê logo e sai daí.',
+    };
+  }
+
+  if (route === 'schabowski') {
+    if (!prog.cave) return { found: false, tab: '404', remark: 'que nome é esse mano?' };
+    return {
+      found: true,
+      kind: 'ficha',
+      tab: '09.11.1989',
+      title: 'BERLIM ORIENTAL — COLETIVA DE IMPRENSA',
+      lines: [
+        '"Sofort, unverzüglich." (Imediatamente, sem demora.)',
+        'nascido em 4 de janeiro de 1929 — sessenta anos completos naquela noite de novembro.',
+        'vinte e oito anos de concreto derrubados por uma folha lida às pressas.',
+      ],
+      remark: 'arquivo daquele livro da alfândega vazando até pra barra de endereço agora... bizarro.',
     };
   }
 
@@ -1653,6 +1690,16 @@ if (process.env.NODE_ENV !== 'production') {
 
     saveDb(db);
     res.json({ ok: true, stage: player.stage, points: player.points, caveState: player.caveState });
+  });
+}
+
+// Em produção, serve o build estático do client e faz fallback SPA para qualquer caminho (/tesla, /talia, /basile...)!
+const CLIENT_DIST = path.join(__dirname, '..', '..', 'client', 'dist');
+if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {
+  app.use(express.static(CLIENT_DIST));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(CLIENT_DIST, 'index.html'));
   });
 }
 

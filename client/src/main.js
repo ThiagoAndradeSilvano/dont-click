@@ -154,9 +154,65 @@ const IDLE_VOICE_POOL = [
   },
 ];
 
+const TEIMOSO_VOICE_POOL = [
+  {
+    text: 'ah não, mano... cê faz de propósito pra me irritar, né possível.',
+    voiceUrl: '/voices/react_teimoso.mp3',
+    steps: [
+      { text: 'ah não, mano... ', durationMs: 1450 },
+      { pause: 150 },
+      { text: 'cê faz de propósito pra me irritar, né possível.', durationMs: 2700 },
+    ],
+  },
+  {
+    text: 'mano, namoral... tu tem algum problema com seguir instrução simples?',
+    voiceUrl: '/voices/react_teimoso_2.mp3',
+    optional: true,
+    steps: [
+      { text: 'mano, namoral... ', durationMs: 1400 },
+      { pause: 150 },
+      { text: 'tu tem algum problema com seguir instrução simples?', durationMs: 2650 },
+    ],
+  },
+  {
+    text: 'eu falo "não mexe" e o dedo do infeliz já vai seco lá clicar, impressionante.',
+    voiceUrl: '/voices/react_teimoso_3.mp3',
+    optional: true,
+    steps: [
+      { text: 'eu falo "não mexe" e o dedo do infeliz já vai seco lá clicar, ', durationMs: 3100 },
+      { text: 'impressionante.', durationMs: 1100 },
+    ],
+  },
+  {
+    text: 'continua cutucando tudo aí vai, depois quando der merda não chora.',
+    voiceUrl: '/voices/react_teimoso_4.mp3',
+    optional: true,
+    steps: [
+      { text: 'continua cutucando tudo aí vai, ', durationMs: 1850 },
+      { pause: 150 },
+      { text: 'depois quando der merda não chora.', durationMs: 2100 },
+    ],
+  },
+];
+
 let idleVoiceCursor = 0;
+let teimosoCursor = 0;
 let lastTeimosoVoiceAt = 0;
 let lastRisadaVoiceAt = 0;
+const probedOptionalVoices = new Map();
+
+async function probeVoiceExists(url) {
+  if (probedOptionalVoices.has(url)) return probedOptionalVoices.get(url);
+  try {
+    const r = await fetch(url, { method: 'HEAD' });
+    const ok = r.ok && (r.headers.get('content-type') || '').includes('audio');
+    probedOptionalVoices.set(url, ok);
+    return ok;
+  } catch {
+    probedOptionalVoices.set(url, false);
+    return false;
+  }
+}
 
 function pickNextIdleVoiceLine() {
   const item = IDLE_VOICE_POOL[idleVoiceCursor % IDLE_VOICE_POOL.length];
@@ -164,22 +220,34 @@ function pickNextIdleVoiceLine() {
   return item;
 }
 
-function triggerTeimosoVoiceReaction({ cooldownMs = 22000, priority = 'action' } = {}) {
+// Anti-spam: cooldown longo (95s) + rotaciona entre as 4 variações (se os MP3s extras ainda não existirem, usa texto variado sem repetir o mesmo áudio!)
+function triggerTeimosoVoiceReaction({ cooldownMs = 95000, priority = 'action' } = {}) {
   if (Date.now() - lastTeimosoVoiceAt < cooldownMs || isVoiceSpeakingNow) return false;
   lastTeimosoVoiceAt = Date.now();
-  setOperatorRemark('ah não, mano... cê faz de propósito pra me irritar, né possível.', {
+
+  const item = TEIMOSO_VOICE_POOL[teimosoCursor % TEIMOSO_VOICE_POOL.length];
+  teimosoCursor += 1;
+
+  if (item.optional) {
+    probeVoiceExists(item.voiceUrl).then((exists) => {
+      if (exists) {
+        setOperatorRemark(item.text, { priority, voiceUrl: item.voiceUrl, steps: item.steps });
+      } else {
+        setOperatorRemark(item.text, { priority });
+      }
+    });
+    return true;
+  }
+
+  setOperatorRemark(item.text, {
     priority,
-    voiceUrl: '/voices/react_teimoso.mp3',
-    steps: [
-      { text: 'ah não, mano... ', durationMs: 1450 },
-      { pause: 150 },
-      { text: 'cê faz de propósito pra me irritar, né possível.', durationMs: 2700 },
-    ],
+    voiceUrl: item.voiceUrl,
+    steps: item.steps,
   });
   return true;
 }
 
-function triggerRisadaVoiceReaction({ cooldownMs = 20000, priority = 'action' } = {}) {
+function triggerRisadaVoiceReaction({ cooldownMs = 45000, priority = 'action' } = {}) {
   if (Date.now() - lastRisadaVoiceAt < cooldownMs || isVoiceSpeakingNow) return false;
   lastRisadaVoiceAt = Date.now();
   setOperatorRemark('kkkkk nossa senhora... parabéns viu, mandou muito bem.', {
@@ -269,7 +337,7 @@ function playCheapBeep() {
   } catch {}
 }
 
-// SOM DE DIGITAÇÃO DELE NA TELA (Seco no normal, COM ECO CAVERNOSO quando cai na Caverna!)
+// ECO DE CAVERNA SUAVE (usado APENAS na voz humana dele — nunca na digitação pra não apitar/embolar!)
 let echoDelayNode = null;
 let echoFeedbackNode = null;
 let echoFilterNode = null;
@@ -277,14 +345,14 @@ let echoFilterNode = null;
 function ensureCaveEchoChain(ctx) {
   if (echoDelayNode) return echoDelayNode;
   echoDelayNode = ctx.createDelay(1.0);
-  echoDelayNode.delayTime.value = 0.19; // 190ms de eco batendo nas paredes de pedra!
+  echoDelayNode.delayTime.value = 0.17; // 170ms de reflexão natural nas paredes
 
   echoFeedbackNode = ctx.createGain();
-  echoFeedbackNode.gain.value = 0.44; // várias repetições decaindo no escuro
+  echoFeedbackNode.gain.value = 0.28; // decaimento limpo sem ressonância metálica
 
   echoFilterNode = ctx.createBiquadFilter();
   echoFilterNode.type = 'lowpass';
-  echoFilterNode.frequency.value = 1350; // eco abafado de rocha úmida
+  echoFilterNode.frequency.value = 1150;
 
   echoDelayNode.connect(echoFilterNode);
   echoFilterNode.connect(echoFeedbackNode);
@@ -375,36 +443,45 @@ function playOperatorVoiceClip(voiceUrl, { onBlocked = null } = {}) {
   }
 }
 
+let lastTypeTickAt = 0;
+
 function playOperatorTypeKey(ch = 'a') {
   if (ch === ' ' || ch === '\n') return;
+  // Quando a voz real dele está falando, silencia o tec-tec pra voz ficar 100% limpa!
+  if (isVoiceSpeakingNow) return;
+
+  const nowMs = performance.now();
+  if (nowMs - lastTypeTickAt < 46) return; // Evita metralhadora estridente em frases rápidas
+  lastTypeTickAt = nowMs;
+
   try {
     const ctx = ensureAudio();
     const isStoryMode = document.body?.className?.includes('story-mode-');
     const inCave = currentStage === 'cave_2d' || currentStage === 'cave_escaped' || isStoryMode;
 
     const osc = ctx.createOscillator();
+    const lp = ctx.createBiquadFilter();
     const gain = ctx.createGain();
-    osc.type = inCave ? 'sine' : 'triangle';
 
-    // Leve variação de frequência por tecla (fica bem baixinho quando a voz dele está falando no mic!)
-    const pitch = (inCave ? 620 : 760) + ((ch.charCodeAt(0) * 19) % 220);
+    // Estalo mecânico aveludado e grave (zero apito agudo e zero loop de feedback!)
+    osc.type = 'triangle';
+    const pitch = (inCave ? 195 : 240) + ((ch.charCodeAt(0) * 11) % 65);
     osc.frequency.setValueAtTime(pitch, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(190, ctx.currentTime + 0.028);
+    osc.frequency.exponentialRampToValueAtTime(85, ctx.currentTime + 0.018);
 
-    const baseVol = inCave ? 0.075 : 0.05;
-    gain.gain.setValueAtTime(isVoiceSpeakingNow ? baseVol * 0.22 : baseVol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+    lp.type = 'lowpass';
+    lp.frequency.value = inCave ? 420 : 580;
 
-    osc.connect(gain);
+    const baseVol = inCave ? 0.011 : 0.015;
+    gain.gain.setValueAtTime(baseVol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0005, ctx.currentTime + 0.02);
+
+    osc.connect(lp);
+    lp.connect(gain);
     gain.connect(ctx.destination);
 
-    if (inCave) {
-      const echoIn = ensureCaveEchoChain(ctx);
-      gain.connect(echoIn);
-    }
-
     osc.start();
-    osc.stop(ctx.currentTime + 0.034);
+    osc.stop(ctx.currentTime + 0.022);
   } catch {}
 }
 
@@ -844,10 +921,25 @@ function setBrokenPageFavicon() {
   if (link) link.href = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
-function resetFaviconAndTitle(title = 'Início') {
+function resetFaviconAndTitle(title = 'naoclique') {
   document.title = title;
   const link = document.getElementById('dynamic-favicon');
   if (link) link.href = '/favicon.png';
+}
+
+function computeClickerTabTitle(state) {
+  const owned = (state?.upgrades || []).length;
+  if (state?.stage === 'awakened_clicker') {
+    if (state.overheated) return '🔥 DIGITA SUBSOLO 🔥';
+    const missing = Math.max(0, 16 - owned);
+    if (missing === 0) return 'naoclique — acabou, fecha a aba';
+    if (missing === 1) return 'naoclique — falta só 1';
+    return `naoclique — faltam ${missing}`;
+  }
+  if (owned === 0) return 'naoclique';
+  if (owned <= 4) return `naoclique (${owned}/16)`;
+  if (owned <= 8) return `naoclique · ainda clicando (${owned}/16)`;
+  return `naoclique · ${owned}/16`;
 }
 
 function clearTimers() {
@@ -894,7 +986,7 @@ function renderInitialButtonScreen(buttonLabel = 'Botão') {
   clearTimers();
   currentStage = 'button';
   document.body.className = '';
-  resetFaviconAndTitle('Início');
+  resetFaviconAndTitle('naoclique');
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -950,7 +1042,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
   if (isAwakened) classes.push('awakened-cursors');
   document.body.className = classes.join(' ');
 
-  resetFaviconAndTitle(isAwakened ? 'naoclique.net' : 'Painel v1.0');
+  resetFaviconAndTitle(computeClickerTabTitle(state));
 
   const app = document.getElementById('app');
   app.style.visibility = 'visible';
@@ -1789,10 +1881,10 @@ function renderFakeBrowserCrash({
   const reloadBtn = document.getElementById('fake-reload-btn');
 
   if (!awakening) {
-    // Todo Recarregar passa pela barra de carregamento ruim (mouse ainda normal aqui)
+    // Todo Recarregar passa pela tela de carregamento estilo Superliminal (mouse ainda normal aqui)
     reloadBtn?.addEventListener('click', () => {
       reloadBtn.disabled = true;
-      reloadWithSuperliminal({ awake: false });
+      reloadWithSuperliminal({ blueCursor: false });
     });
 
     // SE DETECTOU QUE O CARA CLICOU CONTANDO NO COMPASSO ("1... 2... 3... 9"):
@@ -2100,9 +2192,10 @@ function getMuteStageKey() {
   return null;
 }
 
-// Títulos que a aba "respira" sozinha com o tempo (em minúsculas, voz dele; o clicker mudo é burocrático)
+// Títulos que a aba "respira" sozinha com o tempo (NUNCA usa "Painel v1.0", sempre evolui sobre `naoclique`)
 const LIVING_TAB_LINES = {
-  mute_clicker: ['(1) Painel v1.0', 'Painel v1.0 (Não Respondendo)', 'Painel v1.0 — sincronizando...', 'Painel v1.0 — 1 nova conquista'],
+  mute_door: ['não clique', 'naoclique.', 'ainda aí?'],
+  mute_clicker: ['naoclique · sincronizando...', 'naoclique (não respondendo)', 'naoclique · +1 conquista', 'naoclique...'],
   clicker: ['vc ainda tá aqui?', 'fecha a aba', 'eu tô vendo vc', '16 upgrades de nada', 'clica não'],
   subsolo: ['cof cof', 'tá escuro aí?', 'fumaça...', 'não mexe em nada'],
   cave: ['tem alguém mais aqui', 'eco... eco...', 'quem fez essa mina?', 'não olha pros olhos'],
@@ -2112,9 +2205,10 @@ const LIVING_TAB_LINES = {
 
 // Título enquanto o jogador está em OUTRA aba
 const HIDDEN_TAB_LINES = {
-  mute_clicker: '(1) Painel v1.0 — sentimos sua falta',
+  mute_door: 'naoclique',
+  mute_clicker: '(1) naoclique — continua esperando',
   clicker: 'foi pedir arrego pro google né',
-  subsolo: 'cadê vc?',
+  subsolo: 'foi traduzir morse né?',
   cave: 'volta pra caverna',
   story: 'pesquisando a resposta né?',
   escaped: 'não some agora',
@@ -2157,8 +2251,8 @@ async function sendBehaviorRemark(type, { force = false } = {}) {
   lastBehaviorRemarkAt = Date.now();
   const res = await apiPost('/api/behavior', { type, stageHint: getStageHint() });
   if (!res?.remark || !getLivingStageKey() || isOverheatedLocal) return;
-  // Na 2ª, 4ª... vez prefere a voz gravada (quando o clipe não estiver em cooldown)
-  if (res.count % 2 === 0 && BEHAVIOR_VOICE[type]?.()) return;
+  // Só dispara clipe de voz a cada 4ª ocorrência (e respeitando cooldown de 95s) pra nunca virar spam!
+  if (res.count % 4 === 0 && BEHAVIOR_VOICE[type]?.()) return;
   const inStory = getStageHint().includes('story-mode-');
   // Dentro dos contos espera o narrador local respirar antes de meter o bedelho
   setOperatorRemark(res.remark, { priority: 'action', delayBefore: inStory ? 650 : 220 });
@@ -2291,26 +2385,42 @@ function setupPsychologicalTraps() {
     }
   });
 
-  // A aba "respira" sozinha com o tempo em todo capítulo (mudo ou com ele), quanto mais tempo, mais vezes
+  // A aba "respira" sozinha com o tempo em todo capítulo (mudo ou com ele), mudando conforme avança ou trava
   const bootAt = Date.now();
   setInterval(() => {
-    const key = getLivingStageKey() || (getMuteStageKey() === 'mute_clicker' ? 'mute_clicker' : null);
+    const key = getLivingStageKey() || getMuteStageKey();
     if (!key || document.hidden || tabFlashTimer || isOverheatedLocal) return;
     const minutes = (Date.now() - bootAt) / 60000;
-    const chance = Math.min(0.55, 0.18 + minutes * 0.03);
+    const chance = Math.min(0.55, 0.22 + minutes * 0.03);
     if (Math.random() > chance) return;
     const lines = LIVING_TAB_LINES[key];
-    flashTabTitle(lines[Math.floor(Math.random() * lines.length)], 3500);
-  }, 25000);
+    if (lines?.length) flashTabTitle(lines[Math.floor(Math.random() * lines.length)], 3500);
+  }, 24000);
 }
 
 // ============================================================================
-// TELA DE CARREGAMENTO: SÓ UMA BARRA, BEM RUIM (toda vez que clica em Recarregar!)
-// Cada carregamento tem um defeito diferente, mas a barra SEMPRE termina.
-// 1º: barra feia normal | 2º: quebra e se conserta | depois: outras anomalias.
+// TELA DE CARREGAMENTO ESCROTA ESTILO SUPERLIMINAL (toda vez que clica em Recarregar!)
+// Cada clique em Recarregar prega uma peça diferente de perspectiva, escala, gravidade ou recursão!
 // ============================================================================
 const LB_BLOCKS = 20;
-const LB_ORDER = ['plain', 'crack', 'regret', 'shuffle', 'overflow', 'jitter', 'freeze'];
+const LB_ORDER = [
+  'perspective_zoom',
+  'crack_hinge',
+  'recursive',
+  'overflow',
+  'floor_3d',
+  'regret_mirror',
+  'gravity_drop',
+];
+const SL_DEADPAN_QUOTES = [
+  'objetos carregam no tamanho que você acredita que eles têm.',
+  'dica: encarar a barra reduz a velocidade dela em 14%.',
+  'se a barra sair da tela, não corra atrás dela.',
+  'perspectiva é só falta de paciência vista de longe.',
+  'recarregar não desfaz o clique. nada desfaz.',
+  'algumas barras só terminam quando você desiste de medir.',
+  'calibrando profundidade de uma página plana...',
+];
 let lbMemoryCount = 0;
 
 function nextLoadBarVariant() {
@@ -2321,8 +2431,7 @@ function nextLoadBarVariant() {
   } catch {
     lbMemoryCount += 1;
   }
-  if (n < LB_ORDER.length) return LB_ORDER[n];
-  return LB_ORDER[1 + Math.floor(Math.random() * (LB_ORDER.length - 1))];
+  return LB_ORDER[n % LB_ORDER.length];
 }
 
 const lbWait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -2333,66 +2442,104 @@ function showSuperliminalLoading({ blueCursor = false, fadeOut = true, variant =
     document.getElementById('sl-loading')?.remove();
     slActive = true;
     const kind = variant || nextLoadBarVariant();
+    const quote = SL_DEADPAN_QUOTES[Math.floor(Math.random() * SL_DEADPAN_QUOTES.length)];
 
     const ov = document.createElement('div');
     ov.id = 'sl-loading';
     ov.className = `lb-overlay lb-${kind} ${blueCursor ? 'sl-blue' : ''}`;
-    ov.innerHTML = `<div class="lb-bar" id="lb-bar">${'<i class="lb-block"></i>'.repeat(LB_BLOCKS)}</div>`;
+    ov.innerHTML = `
+      <div class="lb-scene" id="lb-scene">
+        <div class="lb-bar" id="lb-bar">${'<i class="lb-block"></i>'.repeat(LB_BLOCKS)}</div>
+        <div class="lb-caption" id="lb-caption">${quote}</div>
+      </div>
+    `;
     document.body.appendChild(ov);
     const bar = ov.querySelector('#lb-bar');
+    const cap = ov.querySelector('#lb-caption');
     const blocks = [...ov.querySelectorAll('.lb-block')];
     const on = (i) => blocks[i] && blocks[i].classList.add('on');
     const off = (i) => blocks[i] && blocks[i].classList.remove('on');
-    const jerk = () => 40 + Math.random() * 160 + (Math.random() < 0.15 ? 380 : 0);
+    const jerk = () => 38 + Math.random() * 125 + (Math.random() < 0.14 ? 260 : 0);
 
-    if (kind === 'plain') {
-      for (let i = 0; i < LB_BLOCKS - 1; i++) { on(i); await lbWait(jerk()); }
-      await lbWait(900); // trava no 99% como todo carregamento ruim
-      on(LB_BLOCKS - 1);
-    } else if (kind === 'crack') {
-      for (let i = 0; i < 12; i++) { on(i); await lbWait(jerk()); }
-      bar.classList.add('lb-broken'); // um pedaço despenca torto
-      await lbWait(500);
-      for (let i = 12; i < LB_BLOCKS; i++) { on(i); await lbWait(jerk() + 40); }
-      await lbWait(350);
+    if (kind === 'perspective_zoom') {
+      // Começa minúscula lá no fundo e vai crescendo na cara do jogador até vazar do monitor!
+      bar.style.transform = 'scale(0.18)';
+      bar.style.transition = 'transform 0.22s ease-out';
+      for (let i = 0; i < LB_BLOCKS; i++) {
+        on(i);
+        const sc = i < 14 ? 0.18 + (i / 14) * 0.92 : 1.1 + (i - 13) * 0.58;
+        bar.style.transform = `scale(${sc.toFixed(2)})`;
+        if (i === 15 && cap) cap.textContent = 'pera... tá perto demais.';
+        await lbWait(jerk() * 0.85);
+      }
+      await lbWait(360);
+    } else if (kind === 'crack_hinge') {
+      // Quebra no meio, despenca pendurada por um parafuso e continua enchendo torta!
+      for (let i = 0; i < 11; i++) { on(i); await lbWait(jerk()); }
+      bar.classList.add('lb-broken');
+      if (cap) cap.textContent = 'opa. caiu um pedaço.';
+      await lbWait(420);
+      for (let i = 11; i < LB_BLOCKS; i++) { on(i); await lbWait(jerk() * 0.9); }
+      await lbWait(320);
       bar.classList.remove('lb-broken');
-      bar.classList.add('lb-snap'); // volta no tranco
+      bar.classList.add('lb-snap');
       await lbWait(260);
+    } else if (kind === 'recursive') {
+      // Chega em 99%, dá zoom-out e descobre que a barra inteira era só o 1º quadradinho de outra barra!
+      for (let i = 0; i < LB_BLOCKS - 1; i++) { on(i); await lbWait(jerk() * 0.65); }
+      await lbWait(420);
+      bar.style.transition = 'transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1)';
+      bar.style.transform = 'translateX(-146px) scale(0.06)';
+      if (cap) cap.textContent = '1 de 20 barras concluída... (brincadeira)';
+      await lbWait(520);
+      bar.style.transform = 'scale(1)';
+      on(LB_BLOCKS - 1);
+      await lbWait(320);
     } else if (kind === 'overflow') {
-      for (let i = 0; i < LB_BLOCKS; i++) { on(i); await lbWait(jerk() * 0.7); }
-      for (let k = 0; k < 6; k++) { // continua carregando pra fora da caixa
+      // Passa reto da borda da caixa e continua caminhando pela tela branca!
+      for (let i = 0; i < LB_BLOCKS; i++) { on(i); await lbWait(jerk() * 0.65); }
+      if (cap) cap.textContent = '105%... 115%... alguém avisa pra ela parar.';
+      for (let k = 0; k < 9; k++) {
         const extra = document.createElement('i');
         extra.className = 'lb-block on lb-extra';
         bar.appendChild(extra);
-        await lbWait(120);
+        await lbWait(105);
       }
-      await lbWait(450);
-      bar.querySelectorAll('.lb-extra').forEach((e) => e.remove());
-    } else if (kind === 'shuffle') {
-      const order = [...blocks.keys()].sort(() => Math.random() - 0.5);
-      for (const i of order) { on(i); await lbWait(jerk() * 0.8); }
-    } else if (kind === 'regret') {
-      for (let i = 0; i < 16; i++) { on(i); await lbWait(jerk() * 0.8); }
-      await lbWait(400);
-      for (let i = 15; i >= 6; i--) { off(i); await lbWait(70); } // desistiu
-      await lbWait(500);
-      for (let i = 6; i < LB_BLOCKS; i++) { on(i); await lbWait(45); }
-    } else if (kind === 'jitter') {
-      bar.classList.add('lb-shake');
+      await lbWait(380);
+    } else if (kind === 'floor_3d') {
+      // Tomba em 3D no chão xadrez estilo corredor de Superliminal!
+      ov.classList.add('lb-checker-room');
+      bar.style.transition = 'transform 0.5s ease';
+      bar.style.transform = 'perspective(320px) rotateX(62deg) scale(1.35)';
       for (let i = 0; i < LB_BLOCKS; i++) {
         on(i);
-        if (Math.random() < 0.35 && i > 2) { off(i - 2); await lbWait(60); on(i - 2); }
-        await lbWait(jerk());
+        bar.style.transform = `perspective(${320 - i * 8}px) rotateX(${62 - i * 2.5}deg) rotateZ(${(i % 2 ? 1 : -1) * 0.8}deg) scale(${1.35 - i * 0.015})`;
+        await lbWait(jerk() * 0.85);
       }
-      bar.classList.remove('lb-shake');
-    } else { // freeze
-      for (let i = 0; i < 7; i++) { on(i); await lbWait(jerk()); }
-      await lbWait(1500); // morreu?
-      blocks.forEach((_, i) => on(i)); // não, só tava pensando
-      await lbWait(150);
+      bar.style.transform = 'none';
+      await lbWait(260);
+    } else if (kind === 'regret_mirror') {
+      // Começa espelhada de trás pra frente, se arrepende no meio e vira de ponta-cabeça!
+      bar.style.transform = 'scaleX(-1)';
+      for (let i = 0; i < 14; i++) { on(i); await lbWait(jerk() * 0.75); }
+      if (cap) cap.textContent = 'peraí, tava ao contrário.';
+      await lbWait(380);
+      bar.style.transition = 'transform 0.35s ease';
+      bar.style.transform = 'scaleX(1)';
+      for (let i = 14; i < LB_BLOCKS; i++) { on(i); await lbWait(75); }
+      await lbWait(260);
+    } else {
+      // gravity_drop: os bloquinhos despencam da caixa com gravidade e depois voltam!
+      for (let i = 0; i < 15; i++) { on(i); await lbWait(jerk() * 0.7); }
+      bar.classList.add('lb-gravity');
+      if (cap) cap.textContent = 'gravidade ligada sem querer.';
+      await lbWait(650);
+      bar.classList.remove('lb-gravity');
+      for (let i = 15; i < LB_BLOCKS; i++) { on(i); await lbWait(65); }
+      await lbWait(260);
     }
 
-    await lbWait(220);
+    await lbWait(180);
     if (!fadeOut) { resolve(); return; }
     ov.remove();
     slActive = false;
@@ -3049,34 +3196,23 @@ function renderSubsolo2DScreen(initialState = null) {
     document.getElementById('kp-close')?.addEventListener('click', () => backdrop.remove());
   }
 
-    let lampPokes = 0;
-
-    canvas.addEventListener('click', async (ev) => {
+  canvas.addEventListener('click', async (ev) => {
     resetIdleChillTimer();
     const rect = canvas.getBoundingClientRect();
     const mx = ((ev.clientX - rect.left) * canvas.width) / rect.width;
     const my = ((ev.clientY - rect.top) * canvas.height) / rect.height;
 
-    // 1. Clicou no Registro / Válvula Vermelha (x=130, y=225)
+    // 1. Clicou no Registro / Válvula Vermelha (x=130, y=225) — o `log` está no andar de cima e NÃO vê isso!
     if (Math.hypot(mx - 130, my - 225) <= 36) {
       valveOpen = !valveOpen;
       playCheapBeep();
-      flashCursorMood(valveOpen ? 'stop' : 'thumb', 1400);
-      if (valveOpen) {
-        triggerTeimosoVoiceReaction({ cooldownMs: 30000, priority: 'action' });
-      }
       return;
     }
 
-    // 2. Clicou na Lâmpada Pendurada no Teto (x=420, y=74) -> Balança suavemente (NÃO quebra!)
+    // 2. Clicou na Lâmpada Pendurada no Teto (x=420, y=74) -> Balança suavemente
     if (Math.hypot(mx - 420, my - 74) <= 36) {
       lampSwingVel = (mx < 420 ? 1 : -1) * 0.16;
       playCheapBeep();
-      lampPokes += 1;
-      if (lampPokes >= 3) {
-        lampPokes = 0;
-        triggerTeimosoVoiceReaction({ cooldownMs: 25000, priority: 'action' });
-      }
       return;
     }
 
@@ -3116,12 +3252,13 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.fillStyle = '#0f131a';
     ctx.fillRect(0, 24, 840, 4);
 
-    // 2. OS 3 CANOS VERTICAIS NUMERADOS DA PAREDE
+    // 2. OS 3 CANOS VERTICAIS NUMERADOS DA PAREDE (Sombra acompanha a altura exata do cano, sem sobrar sombra vazia!)
     const pipeXs = [68, 130, 295];
     pipeXs.forEach((px, idx) => {
-      // Sombra projetada do cano
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.fillRect(px - 7, 26, 24, 378);
+      const pipeH = idx === 1 ? 255 : 378;
+      // Sombra projetada discreta exatamente atrás do cano
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
+      ctx.fillRect(px - 7, 26, 22, pipeH);
 
       // Corpo cilíndrico metálico com brilho lateral
       const pGrad = ctx.createLinearGradient(px - 11, 0, px + 11, 0);
@@ -3129,7 +3266,6 @@ function renderSubsolo2DScreen(initialState = null) {
       pGrad.addColorStop(0.4, '#4b5b73');
       pGrad.addColorStop(1, '#1d2532');
       ctx.fillStyle = pGrad;
-      const pipeH = idx === 1 ? 255 : 378;
       ctx.fillRect(px - 11, 26, 22, pipeH);
 
       // Flanges / abraçadeiras com rebites
@@ -4562,7 +4698,6 @@ const DEV_TREE = [
     items: [
       ['goto_page_6_loading', '4.1 Loading Win98 + chat'],
       ['goto_page_7_subsolo', '4.2 Porão 2D (Morse + vapor → 2585)'],
-      ['goto_page_7_subsolo_dark', '4.3 Porão com lâmpada estourada'],
     ],
   },
   {
@@ -4589,7 +4724,9 @@ const DEV_TREE = [
       ['route_/2585', '/2585 (senha no lugar errado)'],
       ['route_/subsolo', '/subsolo (acesso negado)'],
       ['route_/log', '/log (recusa)'],
-      ['route_/basile', '/basile (só pós-caverna)'],
+      ['route_/1697', '/1697 (pista Paris → /talia)'],
+      ['route_/talia', '/talia (Nápoles 1634, pós-caverna)'],
+      ['route_/schabowski', '/schabowski (Berlim 1989)'],
       ['route_/naoclique', '/naoclique'],
       ['route_/qualquercoisa', '/qualquercoisa (404 vivo)'],
     ],

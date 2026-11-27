@@ -16,6 +16,7 @@ export function runStory1Burocracia({
   caveState,
 }) {
   document.body.className = 'story-mode-1';
+  document.title = 'naoclique // livro I';
   if (resetIdleChillTimer) resetIdleChillTimer();
 
   // ---- ÁUDIO DEDICADO DA CABINE (Web Audio API) ----

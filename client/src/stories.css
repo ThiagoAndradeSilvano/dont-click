@@ -1551,17 +1551,300 @@ body.story-mode-2 {
 }
 
 .s2-scene-canvas {
-  border: 3px solid #500724;
-  border-radius: 8px;
+  position: relative;
+  height: 256px;
   overflow: hidden;
-  background: #14050c;
+  background: #1a0711;
 }
 
-.s2-svg {
-  display: block;
+/* PROSCÊNIO DE TEATRO DE PAPELÃO (Cortinas, Bambolina, Cordas e Ribalta!) */
+.s2-theater-proscenium {
+  position: relative;
+  border: 4px solid #3d091d;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #14050c;
+  box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.8), 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+.s2-curtain-valance {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 18px;
+  z-index: 6;
+  background: repeating-linear-gradient(90deg, #881337 0px, #be123c 24px, #4c0519 48px);
+  border-bottom: 3px solid #fbbf24;
+  pointer-events: none;
+}
+
+.s2-curtain-side {
+  position: absolute;
+  top: 0;
+  bottom: 18px;
+  width: 24px;
+  z-index: 5;
+  background: linear-gradient(90deg, #4c0519, #9f1239, #4c0519);
+  pointer-events: none;
+}
+.s2-curtain-side.left { left: 0; border-right: 2px solid #fbbf24; border-bottom-right-radius: 18px; }
+.s2-curtain-side.right { right: 0; border-left: 2px solid #fbbf24; border-bottom-left-radius: 18px; }
+
+.s2-stage-floor {
+  height: 20px;
+  background: repeating-linear-gradient(90deg, #5c2814 0px, #5c2814 48px, #431b0c 48px, #431b0c 51px);
+  border-top: 3px solid #92400e;
+}
+
+.s2-stage-room {
+  position: relative;
   width: 100%;
-  height: auto;
-  max-height: 245px;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+.s2-bg-tavern { background: radial-gradient(circle at 50% 35%, #591c36 0%, #2a0a18 100%); }
+.s2-bg-stable { background: linear-gradient(180deg, #2d1b36 0%, #3f2622 100%); }
+.s2-bg-bridge { background: linear-gradient(180deg, #172554 0%, #1e1b4b 75%, #0369a1 100%); }
+.s2-bg-backstage { background: radial-gradient(circle at 75% 25%, #4c0519 0%, #12060a 100%); }
+.s2-bg-dragon { background: radial-gradient(circle at 50% 45%, #450a1a 0%, #18050b 100%); }
+.s2-bg-elevator { background: linear-gradient(180deg, #27272a 0%, #09090b 100%); }
+.s2-bg-penthouse { background: radial-gradient(circle at 50% 30%, #831843 0%, #3b071e 100%); }
+
+/* Nuvens/estrelas de papelão penduradas por barbante! */
+.s2-hanging-prop {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: s2Sway 3.8s ease-in-out infinite;
+  transform-origin: top center;
+  pointer-events: none;
+}
+@keyframes s2Sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+.s2-string {
+  width: 2px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.45);
+}
+.s2-cardboard-cloud {
+  font-size: 22px;
+  filter: drop-shadow(0 3px 0 #1f0610);
+}
+
+.s2-cardboard-sign {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  background: #fef3c7;
+  color: #500724;
+  border: 2.5px solid #451a03;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+  padding: 3px 12px;
+  font-family: monospace;
+  font-size: 11.5px;
+  font-weight: bold;
+  white-space: nowrap;
+  z-index: 4;
+}
+.s2-cardboard-sign.warn {
+  background: #fde047;
+  color: #7f1d1d;
+}
+
+.s2-red-darkroom-lamp {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #450a0a;
+  color: #fda4af;
+  border: 2px solid #f43f5e;
+  box-shadow: 0 0 18px rgba(244, 63, 94, 0.65);
+  padding: 3px 12px;
+  border-radius: 99px;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: bold;
+  z-index: 4;
+}
+
+/* Balão de fala vivo dos atores no palco */
+.s2-stage-bubble {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.92);
+  max-width: min(460px, 84%);
+  background: #fffef7;
+  color: #290916;
+  border: 2.5px solid #290916;
+  border-radius: 12px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
+  z-index: 8;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.s2-stage-bubble.visible {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* Recortes dos Personagens (PNG se existir ou SVG detalhado!) */
+.s2-actor-hitbox {
+  position: absolute;
+  width: 175px;
+  height: 175px;
+  z-index: 4;
+  cursor: inherit;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.s2-actor-hitbox:hover {
+  transform: translateY(-4px) scale(1.03);
+  filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.65));
+}
+
+.s2-cutout-wrap,
+.s2-cutout-fallback,
+.s2-cutout-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.s2-cutout-png {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  display: block;
+}
+
+/* Objetos clicáveis no palco */
+.s2-stage-prop {
+  position: absolute;
+  z-index: 4;
+  background: rgba(34, 8, 21, 0.88);
+  color: #fce7f3;
+  border: 2px solid #f472b6;
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: inherit;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.45);
+  transition: transform 0.14s ease, border-color 0.15s ease;
+}
+.s2-stage-prop:hover:not(:disabled) {
+  transform: translateY(-3px);
+  border-color: #fde047;
+}
+.s2-stage-prop.dark-neg {
+  background: #09090b;
+  border-color: #f43f5e;
+}
+.s2-stage-prop.gold-book {
+  background: #831843;
+  border-color: #fde047;
+  animation: pulseBtn 1.2s infinite;
+}
+.s2-prop-emoji { font-size: 24px; line-height: 1.1; }
+.s2-prop-tag { font-family: monospace; font-size: 10.5px; font-weight: bold; white-space: nowrap; }
+
+/* Cardápio pendurado na Taverna */
+.s2-menu-board {
+  position: absolute;
+  right: 34px;
+  bottom: 18px;
+  width: 196px;
+  background: #220815;
+  border: 2.5px solid #f472b6;
+  border-radius: 8px;
+  padding: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 4;
+}
+.s2-menu-hdr {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: bold;
+  color: #fde047;
+  text-align: center;
+  border-bottom: 1px dashed #831843;
+  padding-bottom: 3px;
+}
+.s2-menu-item {
+  display: flex;
+  justify-content: space-between;
+  background: #3b0d23;
+  color: #fce7f3;
+  border: 1px solid #be185d;
+  border-radius: 5px;
+  padding: 5px 7px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: inherit;
+}
+.s2-menu-item:hover:not(:disabled) { background: #701a43; border-color: #fde047; }
+.s2-menu-item:disabled { opacity: 0.4; }
+
+/* Quadro de disjuntores 220V no palco */
+.s2-breakers-box {
+  position: absolute;
+  left: 12%;
+  bottom: 28px;
+  display: flex;
+  gap: 8px;
+  background: #27272a;
+  border: 3px solid #71717a;
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 4;
+}
+.s2-breaker-switch {
+  width: 52px;
+  height: 76px;
+  background: #3f3f46;
+  color: #e4e4e7;
+  border: 2px solid #18181b;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 4px;
+  font-family: monospace;
+  font-weight: bold;
+  cursor: inherit;
+}
+.s2-breaker-switch.on {
+  background: #15803d;
+  color: #fff;
+  border-color: #fde047;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.45);
+}
+.s2-brk-v { font-size: 12px; }
+.s2-brk-lever { font-size: 10px; background: rgba(0, 0, 0, 0.4); padding: 2px 6px; border-radius: 4px; }
+
+.s2-ringlight-prop {
+  position: absolute;
+  font-size: 46px;
+  filter: drop-shadow(0 0 16px #fff);
+  pointer-events: none;
 }
 
 .s2-hotspots-bar {
