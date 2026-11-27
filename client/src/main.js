@@ -112,30 +112,139 @@ function flashCursorMood(mood, durationMs = 2000) {
   }
 }
 
+const IDLE_VOICE_POOL = [
+  {
+    text: 'alôôô? ... tá aí ainda ou morreu na cadeira, mano?',
+    voiceUrl: '/voices/idle_1.mp3',
+    steps: [
+      { text: 'alôôô? ', durationMs: 1100 },
+      { pause: 850 }, // batidinhas no microfone ("toc toc toc")
+      { text: 'tá aí ainda ou morreu na cadeira, mano?', durationMs: 2550 },
+    ],
+  },
+  {
+    text: 'ué... parou? foi embora mesmo? ...ah não, o mouse tá aí ainda, seu filho da puta.',
+    voiceUrl: '/voices/idle_2.mp3',
+    steps: [
+      { text: 'ué... parou? foi embora mesmo? ', durationMs: 2550 },
+      { pause: 450 },
+      { text: '...ah não, o mouse tá aí ainda, seu filho da puta.', durationMs: 3150 },
+    ],
+  },
+  {
+    text: 'pô mano, se for ficar olhando pro nada fecha a aba logo, namoral.',
+    voiceUrl: '/voices/idle_3.mp3',
+    steps: [
+      { pause: 1050 }, // suspiro fundo no mic ("fffff...")
+      { text: 'pô mano, ', durationMs: 900 },
+      { text: 'se for ficar olhando pro nada fecha a aba logo, namoral.', durationMs: 3250 },
+    ],
+  },
+  {
+    text: 'ô... psiu... acordaaa caralho.',
+    voiceUrl: '/voices/idle_5.mp3',
+    steps: [
+      { text: 'ô... psiu... ', durationMs: 1350 },
+      { pause: 150 },
+      { text: 'acordaaa caralho.', durationMs: 1750 },
+    ],
+  },
+];
+
+let idleVoiceCursor = 0;
+let lastTeimosoVoiceAt = 0;
+let lastRisadaVoiceAt = 0;
+
+function pickNextIdleVoiceLine() {
+  const item = IDLE_VOICE_POOL[idleVoiceCursor % IDLE_VOICE_POOL.length];
+  idleVoiceCursor += 1;
+  return item;
+}
+
+function triggerTeimosoVoiceReaction({ cooldownMs = 22000, priority = 'action' } = {}) {
+  if (Date.now() - lastTeimosoVoiceAt < cooldownMs || isVoiceSpeakingNow) return false;
+  lastTeimosoVoiceAt = Date.now();
+  setOperatorRemark('ah não, mano... cê faz de propósito pra me irritar, né possível.', {
+    priority,
+    voiceUrl: '/voices/react_teimoso.mp3',
+    steps: [
+      { text: 'ah não, mano... ', durationMs: 1450 },
+      { pause: 150 },
+      { text: 'cê faz de propósito pra me irritar, né possível.', durationMs: 2700 },
+    ],
+  });
+  return true;
+}
+
+function triggerRisadaVoiceReaction({ cooldownMs = 20000, priority = 'action' } = {}) {
+  if (Date.now() - lastRisadaVoiceAt < cooldownMs || isVoiceSpeakingNow) return false;
+  lastRisadaVoiceAt = Date.now();
+  setOperatorRemark('kkkkk nossa senhora... parabéns viu, mandou muito bem.', {
+    priority,
+    voiceUrl: '/voices/react_risada.mp3',
+    steps: [
+      { text: 'kkkkk ', durationMs: 900 },
+      { text: 'nossa senhora... ', durationMs: 1400 },
+      { text: 'parabéns viu, mandou muito bem.', durationMs: 2650 },
+    ],
+  });
+  return true;
+}
+
+function isLogPresentOnScreen() {
+  const isStory = document.body?.className?.includes('story-mode-');
+  return (
+    currentStage === 'awakened_clicker' ||
+    currentStage === 'subsolo_2d' ||
+    currentStage === 'cave_2d' ||
+    currentStage === 'cave_escaped' ||
+    isStory
+  );
+}
+
 function resetIdleChillTimer() {
   if (idleTimeout) clearTimeout(idleTimeout);
   if (idleNudgeTimer) clearTimeout(idleNudgeTimer);
   document.body.classList.remove('cursor-mood-chill');
-  if (currentStage !== 'awakened_clicker' && currentStage !== 'subsolo_2d') return;
+  if (!isLogPresentOnScreen()) return;
 
-  idleTimeout = setTimeout(() => {
-    if (
-      (currentStage === 'awakened_clicker' || currentStage === 'subsolo_2d') &&
-      !document.body.className.includes('cursor-mood-')
-    ) {
-      document.body.classList.add('cursor-mood-chill');
-    }
-  }, 9000);
+  if (currentStage === 'awakened_clicker' || currentStage === 'subsolo_2d') {
+    idleTimeout = setTimeout(() => {
+      if (
+        (currentStage === 'awakened_clicker' || currentStage === 'subsolo_2d') &&
+        !document.body.className.includes('cursor-mood-')
+      ) {
+        document.body.classList.add('cursor-mood-chill');
+      }
+    }, 9000);
+  }
 
-  // Interação de Inatividade: Se o jogador ficar 26 segundos sem fazer nada quando tem objetivo pendente!
+  // Interação Global de Inatividade com VOZ REAL: se o jogador largar mouse/teclado por ~36s onde o `log` existe!
   idleNudgeTimer = setTimeout(() => {
-    if (isOverheatedLocal) return; // O incêndio já tem seu próprio timer de urgência!
-    if (currentStage === 'awakened_clicker' && !latestState?.allOwned) {
-      setOperatorRemark('congelou aí pq? compra logo o resto das coisas pra acabar com isso.', {
+    if (isOverheatedLocal || document.hidden || isVoiceSpeakingNow) return;
+    if (!isLogPresentOnScreen() || !document.getElementById('operator-msg')) return;
+    // Não atropela vídeo de introdução da caverna nem modal aberto de prólogo
+    if (document.getElementById('cave-intro-vid') || document.getElementById('story-portal-overlay')) return;
+
+    const chosen = pickNextIdleVoiceLine();
+    setOperatorRemark(chosen.text, {
+      priority: 'ambient',
+      voiceUrl: chosen.voiceUrl,
+      steps: chosen.steps,
+    });
+
+    // Re-arma um próximo cutucão mais espaçado (~55s) caso a pessoa continue moscando parada
+    idleNudgeTimer = setTimeout(() => {
+      if (isOverheatedLocal || document.hidden || isVoiceSpeakingNow) return;
+      if (!isLogPresentOnScreen() || !document.getElementById('operator-msg')) return;
+      const nextChosen = pickNextIdleVoiceLine();
+      setOperatorRemark(nextChosen.text, {
         priority: 'ambient',
+        voiceUrl: nextChosen.voiceUrl,
+        steps: nextChosen.steps,
       });
-    }
-  }, 26000);
+    }, 55000);
+  }, 36000);
 }
 
 function playCheapBeep() {
@@ -990,8 +1099,10 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
   document.getElementById('derpy-sun')?.addEventListener('click', async () => {
     if (currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2200);
-      const res = await apiPost('/api/behavior', { type: 'sun_poke' });
-      if (res?.remark) setOperatorRemark(res.remark);
+      if (!triggerTeimosoVoiceReaction()) {
+        const res = await apiPost('/api/behavior', { type: 'sun_poke' });
+        if (res?.remark) setOperatorRemark(res.remark);
+      }
     }
   });
 
@@ -1038,6 +1149,8 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     resetIdleChillTimer();
   }
 
+  let postCompleteStubbornClicks = 0;
+
   document.getElementById('clicker-button')?.addEventListener('click', async (ev) => {
     if (checkCookieBlock()) return;
 
@@ -1062,6 +1175,15 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
       }, 150);
     } else {
       spawnFloatingNumber(x - 6, y - 16, `+${formatPts(res.grossGain)}`, 'gain');
+    }
+
+    if (isAwakened && res.allOwned) {
+      postCompleteStubbornClicks += 1;
+      if (postCompleteStubbornClicks === 6) {
+        triggerTeimosoVoiceReaction({ cooldownMs: 12000, priority: 'action' });
+        resetIdleChillTimer();
+        return;
+      }
     }
 
     if (res.remark) {
@@ -1570,14 +1692,17 @@ let lastAmbientAt = 0;
  * - 'action'  -> Resposta direta a algo que o jogador fez (comprar, mexer na temp, girar válvula, busca). Entra na fila!
  * - 'ambient' -> Comentário passivo de clique/ociosidade. Ignorado se já tiver fala rolando ou fila cheia (zero spam!).
  */
-function setOperatorRemark(textOrArray, { delayBefore = 220, priority = 'action', force = false, voiceUrl = null } = {}) {
+function setOperatorRemark(
+  textOrArray,
+  { delayBefore = 220, priority = 'action', force = false, voiceUrl = null, steps = null } = {}
+) {
   if (!textOrArray) return;
   const effPriority = force ? 'urgent' : priority;
   const items = Array.isArray(textOrArray) ? textOrArray.filter(Boolean) : [textOrArray];
   if (items.length === 0) return;
 
   if (effPriority === 'ambient') {
-    if (isProcessingQueue || remarkQueue.length > 0 || Date.now() - lastAmbientAt < 8000) {
+    if (isProcessingQueue || remarkQueue.length > 0 || isVoiceSpeakingNow || Date.now() - lastAmbientAt < 8000) {
       return;
     }
     lastAmbientAt = Date.now();
@@ -1598,6 +1723,7 @@ function setOperatorRemark(textOrArray, { delayBefore = 220, priority = 'action'
     remarkQueue.push({
       text: txt,
       voiceUrl: idx === 0 ? voiceUrl : null,
+      steps: idx === 0 ? steps : null,
       delayBefore: idx === 0 ? delayBefore : 180,
       holdAfterMs: items.length > 1 && idx < items.length - 1 ? 950 : 650,
     });
@@ -1636,13 +1762,35 @@ async function processRemarkQueue() {
     const span = document.createElement('span');
     el.insertBefore(span, cursor);
 
-    for (const ch of current.text) {
-      if (myId !== remarkTypingId) return;
-      span.textContent += ch;
-      playOperatorTypeKey(ch);
-      // Se chegou outra ação do jogador na fila, acelera levemente o fim desta frase pra ficar ágil!
-      const speedMul = remarkQueue.length > 0 ? 0.55 : 1;
-      await sleep((18 + Math.random() * 20) * speedMul);
+    if (Array.isArray(current.steps) && current.steps.length > 0) {
+      for (const st of current.steps) {
+        if (myId !== remarkTypingId) return;
+        if (st.pause) {
+          await sleep(st.pause);
+        } else if (st.text) {
+          const startT = performance.now();
+          const len = Math.max(1, st.text.length);
+          const dur = st.durationMs || len * 36;
+          for (let idx = 0; idx < st.text.length; idx++) {
+            if (myId !== remarkTypingId) return;
+            const ch = st.text[idx];
+            span.textContent += ch;
+            playOperatorTypeKey(ch);
+            const targetElapsed = ((idx + 1) / len) * dur;
+            const waitMs = targetElapsed - (performance.now() - startT);
+            if (waitMs > 4) await sleep(waitMs);
+          }
+        }
+      }
+    } else {
+      for (const ch of current.text) {
+        if (myId !== remarkTypingId) return;
+        span.textContent += ch;
+        playOperatorTypeKey(ch);
+        // Se chegou outra ação do jogador na fila, acelera levemente o fim desta frase pra ficar ágil!
+        const speedMul = remarkQueue.length > 0 ? 0.55 : 1;
+        await sleep((18 + Math.random() * 20) * speedMul);
+      }
     }
 
     // Pausa rápida entre uma mensagem da fila e a próxima (pra dar tempo de ler sem travar!)
@@ -1658,12 +1806,16 @@ async function processRemarkQueue() {
 }
 
 // ============================================================================
-// ARMADILHAS PSICOLÓGICAS (PÓS-DESPERTAR)
+// ARMADILHAS PSICOLÓGICAS (PÓS-DESPERTAR) + RESET DE INATIVIDADE GLOBAL
 // ============================================================================
 function setupPsychologicalTraps() {
   let originalTitle = document.title;
+  let lastMoveResetAt = 0;
 
   document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden) {
+      resetIdleChillTimer();
+    }
     if (currentStage !== 'awakened_clicker' && currentStage !== 'subsolo_2d') return;
 
     if (document.hidden) {
@@ -1680,22 +1832,32 @@ function setupPsychologicalTraps() {
     resetIdleChillTimer();
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2500);
-      const res = await apiPost('/api/behavior', { type: 'select_all' });
-      if (res?.remark) setOperatorRemark(res.remark);
+      if (!triggerTeimosoVoiceReaction()) {
+        const res = await apiPost('/api/behavior', { type: 'select_all' });
+        if (res?.remark) setOperatorRemark(res.remark);
+      }
     }
+  });
+
+  document.addEventListener('pointerdown', () => {
+    resetIdleChillTimer();
   });
 
   document.addEventListener('contextmenu', async () => {
     resetIdleChillTimer();
     if (currentStage === 'awakened_clicker') {
       flashCursorMood('middle', 2500);
-      const res = await apiPost('/api/behavior', { type: 'context_menu' });
-      if (res?.remark) setOperatorRemark(res.remark);
+      if (!triggerTeimosoVoiceReaction()) {
+        const res = await apiPost('/api/behavior', { type: 'context_menu' });
+        if (res?.remark) setOperatorRemark(res.remark);
+      }
     }
   });
 
   document.addEventListener('mousemove', () => {
-    if (document.body.classList.contains('cursor-mood-chill')) {
+    const now = Date.now();
+    if (document.body.classList.contains('cursor-mood-chill') || now - lastMoveResetAt > 2500) {
+      lastMoveResetAt = now;
       resetIdleChillTimer();
     }
   });
@@ -2218,7 +2380,11 @@ function renderSubsolo2DScreen(initialState = null) {
             scr.classList.add('err');
             scr.textContent = res.screenMsg || 'NEGADO';
             flashCursorMood(res.errorType === 'glare' ? 'point' : 'middle', 2200);
-            if (res.remark) setOperatorRemark(res.remark, { priority: 'action' });
+            if (res.errorType !== 'glare' && triggerRisadaVoiceReaction()) {
+              // Tocou a risada irônica dele ao errar a senha!
+            } else if (res.remark) {
+              setOperatorRemark(res.remark, { priority: 'action' });
+            }
             typed = '';
             isUnlocking = false;
           }
@@ -2235,7 +2401,9 @@ function renderSubsolo2DScreen(initialState = null) {
     document.getElementById('kp-close')?.addEventListener('click', () => backdrop.remove());
   }
 
-  canvas.addEventListener('click', async (ev) => {
+    let lampPokes = 0;
+
+    canvas.addEventListener('click', async (ev) => {
     resetIdleChillTimer();
     const rect = canvas.getBoundingClientRect();
     const mx = ((ev.clientX - rect.left) * canvas.width) / rect.width;
@@ -2246,6 +2414,9 @@ function renderSubsolo2DScreen(initialState = null) {
       valveOpen = !valveOpen;
       playCheapBeep();
       flashCursorMood(valveOpen ? 'stop' : 'thumb', 1400);
+      if (valveOpen) {
+        triggerTeimosoVoiceReaction({ cooldownMs: 30000, priority: 'action' });
+      }
       return;
     }
 
@@ -2253,6 +2424,11 @@ function renderSubsolo2DScreen(initialState = null) {
     if (Math.hypot(mx - 420, my - 74) <= 36) {
       lampSwingVel = (mx < 420 ? 1 : -1) * 0.16;
       playCheapBeep();
+      lampPokes += 1;
+      if (lampPokes >= 3) {
+        lampPokes = 0;
+        triggerTeimosoVoiceReaction({ cooldownMs: 25000, priority: 'action' });
+      }
       return;
     }
 
@@ -2933,9 +3109,10 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     activeOpenBookId = bookId;
     refreshInventoryUI();
     const storyNum = bookId.replace('book_', '');
-    openBookReaderModal(bookId, state, {
+      openBookReaderModal(bookId, state, {
       apiPost,
       setOperatorRemark,
+      triggerRisadaVoiceReaction,
       onSolved: (newCaveState) => {
         activeOpenBookId = null;
         if (newCaveState) {
@@ -2951,6 +3128,9 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
           clearTimers,
           apiPost,
           setOperatorRemark,
+          triggerRisadaVoiceReaction,
+          triggerTeimosoVoiceReaction,
+          resetIdleChillTimer,
           playBeep: playCheapBeep,
           caveState: state,
           returnToCave: (updatedCave, extra = {}) => {
@@ -3279,7 +3459,9 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         if (res.remark) setOperatorRemark(res.remark, { priority: 'action' });
       } else {
         playErrorBuzzer();
-        if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+        if (!triggerRisadaVoiceReaction()) {
+          if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+        }
       }
     });
   }
@@ -3397,6 +3579,9 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         clearTimers,
         apiPost,
         setOperatorRemark,
+        triggerRisadaVoiceReaction,
+        triggerTeimosoVoiceReaction,
+        resetIdleChillTimer,
         playBeep: playCheapBeep,
         caveState: state,
         returnToCave: (updatedCave, extra = {}) => {
@@ -3644,6 +3829,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
 
       state.introDone = true;
       await syncCave('intro_done');
+      resetIdleChillTimer();
     })();
   } else {
     if (remark) {
@@ -3657,6 +3843,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     if (justEarnedBook) {
       setTimeout(() => openBookFromBag(justEarnedBook), 450);
     }
+    resetIdleChillTimer();
   }
 }
 

@@ -5,8 +5,18 @@
 // suporte híbrido para artes PNG geradas (`/story1/chars/char_X_normal|approved|denied.png`) + SVG rico!
 // ============================================================================
 
-export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishStory, returnToCave, caveState }) {
+export function runStory1Burocracia({
+  app,
+  setOperatorRemark,
+  triggerRisadaVoiceReaction,
+  resetIdleChillTimer,
+  playBeep,
+  finishStory,
+  returnToCave,
+  caveState,
+}) {
   document.body.className = 'story-mode-1';
+  if (resetIdleChillTimer) resetIdleChillTimer();
 
   // ---- ÁUDIO DEDICADO DA CABINE (Web Audio API) ----
   let boothAudio = null;
@@ -2019,11 +2029,13 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
         return;
       }
 
-      await supervisorThenLog(
-        `KSHHH— VIOLAÇÃO REGISTRADA (${citationsToday}/3): ${person.violationReason}`,
-        logCitationMocks[mockIdx++ % logCitationMocks.length],
-        'action'
-      );
+      await saySupervisor(`KSHHH— VIOLAÇÃO REGISTRADA (${citationsToday}/3): ${person.violationReason}`);
+      await new Promise((r) => setTimeout(r, 650));
+      if (isAlive) {
+        if (!(triggerRisadaVoiceReaction && triggerRisadaVoiceReaction({ cooldownMs: 45000, priority: 'action' }))) {
+          setOperatorRemark(logCitationMocks[mockIdx++ % logCitationMocks.length], { priority: 'action' });
+        }
+      }
     }
 
     setTimeout(() => {

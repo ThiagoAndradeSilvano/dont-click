@@ -96,7 +96,11 @@ export const STORY_RUNNERS = {
   '6': runStory61984,
 };
 
-export function openBookReaderModal(bookId, caveState, { apiPost, setOperatorRemark, onSolved, onReplay }) {
+export function openBookReaderModal(
+  bookId,
+  caveState,
+  { apiPost, setOperatorRemark, triggerRisadaVoiceReaction, onSolved, onReplay }
+) {
   const meta = BOOKS_META[bookId];
   if (!meta) return;
 
@@ -179,7 +183,9 @@ export function openBookReaderModal(bookId, caveState, { apiPost, setOperatorRem
       if (onSolved) onSolved(res.caveState);
     } else {
       if (feedbackEl) feedbackEl.textContent = 'Resposta incorreta.';
-      if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+      if (!(triggerRisadaVoiceReaction && triggerRisadaVoiceReaction())) {
+        if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+      }
     }
   };
 
