@@ -23,28 +23,123 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     }
   }
 
+  // Som rico completo de "PRÓXIMO!": Clack de microfone + Chiado de corneta AM + Voz rouca modulada ("BÉÉH-PRÓ-XI-MO!") + eco!
   function playMegaphoneCall() {
     const ctx = getAudio();
     if (!ctx) return;
-    [
-      [290, 0, 0.16],
-      [215, 0.18, 0.28],
-    ].forEach(([freq, delay, dur]) => {
+    const t0 = ctx.currentTime;
+
+    // 1. Clack seco de apertar o botão PTT do megafone
+    const clickBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.03), ctx.sampleRate);
+    const cd = clickBuf.getChannelData(0);
+    for (let i = 0; i < cd.length; i++) cd[i] = (Math.random() * 2 - 1) * Math.exp(-i / 180);
+    const clickSrc = ctx.createBufferSource();
+    clickSrc.buffer = clickBuf;
+    const clickGain = ctx.createGain();
+    clickGain.gain.value = 0.25;
+    clickSrc.connect(clickGain);
+    clickGain.connect(ctx.destination);
+    clickSrc.start(t0);
+
+    // 2. Chiado estático abafado de rádio/alto-falante externo durante a chamada
+    const hissDur = 0.72;
+    const hissBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * hissDur), ctx.sampleRate);
+    const hd = hissBuf.getChannelData(0);
+    for (let i = 0; i < hd.length; i++) hd[i] = (Math.random() * 2 - 1) * 0.14;
+    const hissSrc = ctx.createBufferSource();
+    hissSrc.buffer = hissBuf;
+    const hissBp = ctx.createBiquadFilter();
+    hissBp.type = 'bandpass';
+    hissBp.frequency.value = 1150;
+    hissBp.Q.value = 1.8;
+    const hissGain = ctx.createGain();
+    hissGain.gain.setValueAtTime(0.08, t0 + 0.02);
+    hissGain.gain.exponentialRampToValueAtTime(0.001, t0 + hissDur);
+    hissSrc.connect(hissBp);
+    hissBp.connect(hissGain);
+    hissGain.connect(ctx.destination);
+    hissSrc.start(t0 + 0.02);
+
+    // 3. Sílabas graves distorcidas no alto-falante igual ao "PRÓ-XI-MO!" do Papers, Please!
+    const syllables = [
+      { f1: 320, f2: 280, start: 0.05, dur: 0.19, vol: 0.17 },
+      { f1: 235, f2: 185, start: 0.27, dur: 0.34, vol: 0.19 },
+    ];
+    syllables.forEach((s) => {
       const osc = ctx.createOscillator();
+      const sub = ctx.createOscillator();
+      const bp = ctx.createBiquadFilter();
       const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
+
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-      filter.type = 'bandpass';
-      filter.frequency.value = 680;
-      gain.gain.setValueAtTime(0.13, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
-      osc.connect(filter);
-      filter.connect(gain);
+      sub.type = 'square';
+      osc.frequency.setValueAtTime(s.f1, t0 + s.start);
+      osc.frequency.linearRampToValueAtTime(s.f2, t0 + s.start + s.dur);
+      sub.frequency.setValueAtTime(s.f1 * 0.5, t0 + s.start);
+
+      bp.type = 'bandpass';
+      bp.frequency.value = 760;
+      bp.Q.value = 2.4;
+
+      gain.gain.setValueAtTime(0.001, t0 + s.start);
+      gain.gain.linearRampToValueAtTime(s.vol, t0 + s.start + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + s.start + s.dur);
+
+      osc.connect(bp);
+      sub.connect(bp);
+      bp.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + dur + 0.02);
+
+      osc.start(t0 + s.start);
+      sub.start(t0 + s.start);
+      osc.stop(t0 + s.start + s.dur + 0.02);
+      sub.stop(t0 + s.start + s.dur + 0.02);
     });
+  }
+
+  // Buzzer metálico da catraca abrindo ("BZZZT-CLACK!")
+  function playGateBuzzSound() {
+    const ctx = getAudio();
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(118, t0);
+    g.gain.setValueAtTime(0.11, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.24);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.25);
+  }
+
+  // Passos crocantes na neve/cimento até entrar na porta da cabine!
+  function playFootsteps(steps = 5, intervalMs = 130) {
+    const ctx = getAudio();
+    if (!ctx) return;
+    for (let i = 0; i < steps; i++) {
+      setTimeout(() => {
+        if (!isAlive) return;
+        const t = ctx.currentTime;
+        const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.055), ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let k = 0; k < d.length; k++) {
+          d[k] = (Math.random() * 2 - 1) * Math.exp(-k / (ctx.sampleRate * 0.015));
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 620 + (i % 2) * 140;
+        const g = ctx.createGain();
+        g.gain.value = 0.14;
+        src.connect(lp);
+        lp.connect(g);
+        g.connect(ctx.destination);
+        src.start(t);
+      }, i * intervalMs);
+    }
   }
 
   function playShutterClank() {
@@ -822,8 +917,31 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       <div class="pp-booth-grid" id="pp-booth-grid">
         <!-- ESQUERDA: FILA + JANELA DA CABINE + BOTÕES TÁTICOS + MANUAL -->
         <div class="pp-left-col">
-          <div class="pp-queue-strip">
-            <div class="pp-queue-silhouettes" id="pp-queue-silhouettes"></div>
+          <div class="pp-queue-strip" id="pp-ext-scene">
+            <div class="pp-ext-fence"></div>
+            <div class="pp-ext-walkway"></div>
+            <div class="pp-ext-snow"></div>
+
+            <!-- Alto-falante na cerca que treme e solta ondas sonoras ao chamar! -->
+            <div class="pp-ext-megaphone-pole" id="pp-ext-horn">📢</div>
+
+            <!-- Catraca / Portão antes da cabine -->
+            <div class="pp-ext-gate" id="pp-ext-gate"></div>
+
+            <!-- A CABINE / GUARITA DE INSPEÇÃO ONDE OS BONEQUINHOS ENTRAM! -->
+            <div class="pp-ext-booth" id="pp-ext-booth">
+              <div class="pp-ext-booth-lamp"></div>
+              <div class="pp-ext-booth-win"></div>
+              <div class="pp-ext-booth-door"></div>
+            </div>
+
+            <!-- Guardas de prontidão na saída -->
+            <div class="pp-ext-guard" style="left:252px;" title="Guarda da Fronteira"></div>
+            <div class="pp-ext-guard" style="left:268px;" title="Guarda da Fronteira"></div>
+
+            <!-- Bonequinhos vivos na fila e entrando/saindo da cabine -->
+            <div id="pp-ext-walkers-layer"></div>
+
             <button type="button" class="pp-megaphone-btn pulse-call" id="pp-next-btn">📢 PRÓXIMO!</button>
           </div>
 
@@ -1049,6 +1167,144 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     });
   });
 
+  // ---- MINI-CENA EXTERNA: FILA DE BONEQUINHOS CAMINHANDO E ENTRANDO NA CABINE! ----
+  function getCoatColorForPerson(p) {
+    const map = {
+      char_1: '#2b3a4a',
+      char_2: '#4a3d2b',
+      char_3: '#6b2130',
+      char_4: '#1e293b',
+      char_5: '#522522',
+      char_6: '#364a2e',
+      char_7: '#5c1919',
+      char_8: '#111115',
+    };
+    return map[p?.charId] || '#2b3336';
+  }
+
+  function renderWaitingWalkers() {
+    const layer = document.getElementById('pp-ext-walkers-layer');
+    if (!layer) return;
+    const dayObj = DAYS[dayIdx];
+    const startIdx = appIdx + 1;
+    const waitingList = dayObj.applicants.slice(startIdx);
+
+    // Fila parada antes da catraca (x=134 pra trás: 134, 108, 82...)
+    layer.innerHTML = waitingList
+      .map((p, idx) => {
+        const leftPx = Math.max(10, 134 - idx * 26);
+        const coat = getCoatColorForPerson(p);
+        return `
+          <div class="pp-mini-walker" data-q-idx="${idx}" style="left:${leftPx}px;">
+            <div class="pp-mini-walker-head"></div>
+            <div class="pp-mini-walker-body" style="background:${coat};"></div>
+            <div class="pp-mini-walker-legs"></div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  function triggerMegaphoneVisualWaves() {
+    const scene = document.getElementById('pp-ext-scene');
+    const horn = document.getElementById('pp-ext-horn');
+    if (horn) {
+      horn.classList.remove('ringing');
+      void horn.offsetWidth;
+      horn.classList.add('ringing');
+    }
+    if (scene) {
+      [0, 190, 380].forEach((delay) => {
+        setTimeout(() => {
+          if (!isAlive) return;
+          const ring = document.createElement('div');
+          ring.className = 'pp-sound-ring';
+          scene.appendChild(ring);
+          setTimeout(() => ring.remove(), 700);
+        }, delay);
+      });
+    }
+  }
+
+  // Anima o 1º boneco da fila passando pela catraca e ENTRANDO na porta da cabine, enquanto os de trás avançam!
+  async function animateMiniWalkerEnteringBooth(person) {
+    const layer = document.getElementById('pp-ext-walkers-layer');
+    const gate = document.getElementById('pp-ext-gate');
+    const booth = document.getElementById('pp-ext-booth');
+    if (!layer) return;
+
+    booth?.classList.add('calling');
+    playGateBuzzSound();
+    gate?.classList.add('open');
+
+    const firstWalker = layer.querySelector('.pp-mini-walker[data-q-idx="0"]');
+    const otherWalkers = layer.querySelectorAll('.pp-mini-walker:not([data-q-idx="0"])');
+
+    playFootsteps(5, 125);
+
+    if (firstWalker) {
+      firstWalker.classList.add('walking');
+      firstWalker.style.left = '214px'; // caminha exatamente até a portinha escura da cabine!
+    }
+
+    // Os de trás na fila dão um passo pra frente ocupando a vaga!
+    otherWalkers.forEach((w) => {
+      const idx = Number(w.getAttribute('data-q-idx'));
+      w.classList.add('walking');
+      w.style.left = `${Math.max(10, 134 - (idx - 1) * 26)}px`;
+    });
+
+    await new Promise((r) => setTimeout(r, 660));
+
+    // O bonequinho entra pela porta da cabine (some na porta e acende a janela amarela com a sombra dele lá dentro!)
+    if (firstWalker) {
+      firstWalker.style.opacity = '0';
+      firstWalker.style.transform = 'scale(0.6)';
+    }
+    otherWalkers.forEach((w) => w.classList.remove('walking'));
+    gate?.classList.remove('open');
+    booth?.classList.remove('calling');
+    booth?.classList.add('occupied');
+
+    await new Promise((r) => setTimeout(r, 180));
+    renderWaitingWalkers();
+  }
+
+  // Anima o bonequinho SAINDO da cabine no fim do atendimento (direita se aprovado, esquerda se negado, ou escoltado pelos guardas!)
+  function animateMiniWalkerExitingBooth(person, decision) {
+    const scene = document.getElementById('pp-ext-scene');
+    const booth = document.getElementById('pp-ext-booth');
+    booth?.classList.remove('occupied', 'calling');
+    if (!scene) return;
+
+    const walker = document.createElement('div');
+    walker.className = 'pp-mini-walker walking';
+    walker.style.left = '214px';
+    walker.innerHTML = `
+      <div class="pp-mini-walker-head"></div>
+      <div class="pp-mini-walker-body" style="background:${getCoatColorForPerson(person)};"></div>
+      <div class="pp-mini-walker-legs"></div>
+    `;
+    scene.appendChild(walker);
+
+    playFootsteps(4, 130);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (decision === 'approved') {
+          walker.style.left = '395px'; // cruza a fronteira pra direita!
+        } else if (decision === 'detained') {
+          walker.style.left = '262px'; // levado até os 2 guardas!
+          setTimeout(() => { walker.style.opacity = '0'; }, 480);
+        } else {
+          walker.style.left = '-24px'; // volta cabisbaixo pra esquerda!
+        }
+      });
+    });
+
+    setTimeout(() => walker.remove(), 780);
+  }
+
   // ---- ATUALIZA HUD, FILA E FERRAMENTAS ----
   function updateHudAndQueue() {
     const dayObj = DAYS[dayIdx];
@@ -1063,11 +1319,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     document.getElementById('pp-hud-credits').textContent = `💰 ${credits} CR`;
     document.getElementById('pp-hud-citations').textContent = `⚠️ MULTAS HOJE: ${citationsToday} / 3`;
 
-    const qEl = document.getElementById('pp-queue-silhouettes');
-    if (qEl) {
-      qEl.innerHTML = Array.from({ length: waitingOutside })
-        .map((_, i) => `<div class="pp-q-person ${i === 0 && travelerState === 'present' ? 'walking-in' : ''}"></div>`)
-        .join('');
+    if (travelerState === 'waiting_call') {
+      renderWaitingWalkers();
     }
 
     // Cartaz de Procurados (Dia 3+)
@@ -1141,6 +1394,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     inspectMode = false;
     uvOn = false;
     document.getElementById('pp-desk')?.classList.remove('uv-lit', 'pp-inspect-mode');
+    document.getElementById('pp-ext-booth')?.classList.remove('occupied', 'calling');
+    document.getElementById('pp-ext-gate')?.classList.remove('open');
     document.getElementById('pp-docs-layer').innerHTML = '';
     document.getElementById('pp-citation-mount').innerHTML = '';
     document.getElementById('pp-returned-badge-mount').innerHTML = '';
@@ -1170,26 +1425,29 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     });
   }
 
-  // ---- CHAMAR PRÓXIMO VIAJANTE NO MEGAFONE ----
+  // ---- CHAMAR PRÓXIMO VIAJANTE NO MEGAFONE (Com cena externa do boneco caminhando até entrar na cabine!) ----
   let isCallingNext = false;
-  document.getElementById('pp-next-btn')?.addEventListener('click', () => {
+  document.getElementById('pp-next-btn')?.addEventListener('click', async () => {
     if (travelerState !== 'waiting_call' || isCallingNext) return;
     isCallingNext = true;
     const nextBtnEl = document.getElementById('pp-next-btn');
-    if (nextBtnEl) nextBtnEl.disabled = true;
+    if (nextBtnEl) {
+      nextBtnEl.disabled = true;
+      nextBtnEl.classList.remove('pulse-call');
+    }
 
     const dayObj = DAYS[dayIdx];
-    appIdx += 1;
-    const person = dayObj.applicants[appIdx];
-    if (!person) {
+    const nextPerson = dayObj.applicants[appIdx + 1];
+    if (!nextPerson) {
       isCallingNext = false;
       return;
     }
 
+    // 1. Megafone toca + ondas sonoras visuais na cerca + catraca abre e o bonequinho caminha até entrar na cabine!
     playMegaphoneCall();
-    playShutterClank();
+    triggerMegaphoneVisualWaves();
 
-    travelerState = 'present';
+    travelerState = 'transitioning';
     currentStamp = null;
     discrepancyVerified = false;
     canDetainNow = false;
@@ -1199,6 +1457,15 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     document.getElementById('pp-xray-screen')?.classList.remove('active');
     document.getElementById('pp-desk')?.classList.remove('pp-inspect-mode');
 
+    await animateMiniWalkerEnteringBooth(nextPerson);
+    if (!isAlive) return;
+
+    // 2. Agora que o bonequinho entrou na porta da cabine lá fora, avança o índice e sobe a persiana metálica!
+    appIdx += 1;
+    const person = dayObj.applicants[appIdx];
+    travelerState = 'present';
+
+    playShutterClank();
     const shutter = document.getElementById('pp-shutter');
     shutter?.classList.add('open');
 
@@ -1216,6 +1483,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     sp.style.display = 'block';
 
     setTimeout(() => {
+      if (!isAlive) return;
       isCallingNext = false;
       playPaperSlide();
       spawnDocumentsOnDesk(person);
@@ -1228,7 +1496,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           { priority: 'urgent' }
         );
       }
-    }, 320);
+    }, 300);
 
     updateHudAndQueue();
   });
@@ -1590,9 +1858,10 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       await new Promise((r) => setTimeout(r, 1150));
     }
 
-    // 2. Agora o cliente sai pela direita (aprovado), esquerda (negado) ou arrastado (detido)!
+    // 2. Agora o cliente sai pela direita (aprovado), esquerda (negado) ou arrastado (detido) — tanto na janela quanto lá fora na mini-cabine!
     if (sp) sp.style.display = 'none';
     if (retMount) retMount.innerHTML = '';
+    animateMiniWalkerExitingBooth(person, decision);
     if (decision === 'detained') stage?.classList.add('detained');
     else if (decision === 'approved') stage?.classList.add('leaving-ok');
     else stage?.classList.add('leaving-denied');

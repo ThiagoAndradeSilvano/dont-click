@@ -269,64 +269,285 @@ body.story-mode-1 {
   padding: 8px;
 }
 
-/* Corredor superior da fila com silhuetas andando */
+/* ==========================================================================
+   MINI-CENA EXTERNA DE FRONTEIRA (Topo Esquerdo — IGUAL AO PAPERS, PLEASE!)
+   Cerca, passarela de neve, fila de bonequinhos, catraca, CABINE iluminada e
+   saída de aprovados à direita / rejeitados à esquerda / guardas!
+   ========================================================================== */
 .pp-queue-strip {
-  height: 54px;
-  background: linear-gradient(180deg, #1b2226 0%, #2a3132 70%, #181c1d 100%);
-  border: 2px solid #0d0a07;
+  height: 92px;
+  background: linear-gradient(180deg, #12181c 0%, #1f282d 52%, #2c3539 53%, #232a2d 100%);
+  border: 3px solid #0b0907;
   position: relative;
   overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 4px 10px;
+  display: block;
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.75);
 }
 
-.pp-queue-silhouettes {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
+/* Cerca de arame no horizonte */
+.pp-ext-fence {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34px;
+  height: 15px;
+  background:
+    repeating-linear-gradient(90deg, rgba(160, 174, 184, 0.25) 0px, rgba(160, 174, 184, 0.25) 2px, transparent 2px, transparent 22px),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 6px);
+  border-top: 1px solid rgba(200, 210, 220, 0.3);
+  border-bottom: 2px solid #0f1315;
+  pointer-events: none;
 }
 
-.pp-q-person {
-  width: 16px;
-  height: 30px;
-  background: #0b0e10;
-  border-radius: 6px 6px 0 0;
-  position: relative;
-  transition: transform 0.35s ease, opacity 0.3s ease;
+/* Passarela cimentada no chão onde a fila anda */
+.pp-ext-walkway {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  height: 16px;
+  background: repeating-linear-gradient(90deg, #333b3e 0px, #333b3e 26px, #293033 26px, #293033 28px);
+  border-top: 2px solid #475257;
+  border-bottom: 2px solid #14181a;
 }
-.pp-q-person::before {
+
+/* Neve caindo fininha no pátio externo */
+.pp-ext-snow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 18% 25%, rgba(255,255,255,0.55) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 46% 65%, rgba(255,255,255,0.45) 50%, transparent 100%),
+    radial-gradient(2px 2px at 74% 35%, rgba(255,255,255,0.5) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 75%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  background-size: 120px 80px;
+  animation: ppSnowDrift 3.6s linear infinite;
+  z-index: 6;
+}
+@keyframes ppSnowDrift {
+  0% { background-position: 0 0; }
+  100% { background-position: -40px 80px; }
+}
+
+/* Cone de luz do holofote + Megafone piscando ondas sonoras */
+.pp-ext-megaphone-pole {
+  position: absolute;
+  left: 162px;
+  top: 8px;
+  z-index: 5;
+  font-size: 12px;
+  transform-origin: center;
+}
+.pp-ext-megaphone-pole.ringing {
+  animation: ppHornShake 0.14s ease-in-out 5;
+}
+@keyframes ppHornShake {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-14deg) scale(1.22); }
+  75% { transform: rotate(12deg) scale(1.22); }
+}
+
+.pp-sound-ring {
+  position: absolute;
+  left: 166px;
+  top: 10px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fde047;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 7;
+  animation: ppSoundWave 0.65s ease-out forwards;
+}
+@keyframes ppSoundWave {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(3.6); opacity: 0; }
+}
+
+/* Portão / Catraca antes da Cabine (x = 156px) */
+.pp-ext-gate {
+  position: absolute;
+  left: 156px;
+  bottom: 18px;
+  width: 6px;
+  height: 22px;
+  background: #991b1b;
+  border: 1px solid #000;
+  z-index: 4;
+  transition: background 0.2s ease, transform 0.22s ease;
+}
+.pp-ext-gate.open {
+  background: #16a34a;
+  transform: scaleY(0.35);
+  transform-origin: bottom;
+}
+
+/* A CABINE / GUARITA DE INSPEÇÃO NO MEIO-DIREITA (x = 188px) */
+.pp-ext-booth {
+  position: absolute;
+  left: 186px;
+  bottom: 14px;
+  width: 50px;
+  height: 56px;
+  background: #2f271f;
+  border: 2px solid #0b0907;
+  z-index: 5;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+}
+/* Telhado inclinado da cabine */
+.pp-ext-booth::before {
   content: '';
   position: absolute;
-  top: -10px;
-  left: 3px;
+  top: -8px;
+  left: -5px;
+  right: -5px;
+  height: 8px;
+  background: #47392b;
+  border: 2px solid #0b0907;
+}
+/* Luzinha indicadora no teto da cabine (vermelha fechado / verde chamando!) */
+.pp-ext-booth-lamp {
+  position: absolute;
+  top: -15px;
+  left: 19px;
+  width: 8px;
+  height: 6px;
+  background: #dc2626;
+  border: 1px solid #000;
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.8);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.pp-ext-booth.calling .pp-ext-booth-lamp,
+.pp-ext-booth.occupied .pp-ext-booth-lamp {
+  background: #22c55e;
+  box-shadow: 0 0 12px #4ade80;
+}
+
+/* Janelinha amarela iluminada da cabine onde dá pra ver a sombra de quem entrou! */
+.pp-ext-booth-win {
+  position: absolute;
+  top: 10px;
+  left: 8px;
+  width: 20px;
+  height: 16px;
+  background: #42331b;
+  border: 1.5px solid #120e0a;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
+}
+.pp-ext-booth.occupied .pp-ext-booth-win {
+  background: #fef08a;
+  box-shadow: 0 0 12px rgba(254, 240, 138, 0.65);
+}
+/* Sombra da cabeça do cliente lá dentro da janelinha da cabine! */
+.pp-ext-booth.occupied .pp-ext-booth-win::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 5px;
+  width: 9px;
+  height: 11px;
+  background: #1c1610;
+  border-radius: 4px 4px 0 0;
+}
+
+/* Porta lateral escura da cabine por onde o boneco ENTRA! */
+.pp-ext-booth-door {
+  position: absolute;
+  bottom: 0;
+  left: 31px;
+  width: 13px;
+  height: 30px;
+  background: #120e0b;
+  border-top: 2px solid #000;
+  border-left: 2px solid #000;
+}
+
+/* Dois Guardas armados de prontidão perto da saída! */
+.pp-ext-guard {
+  position: absolute;
+  bottom: 22px;
   width: 10px;
-  height: 10px;
+  height: 21px;
+  background: #1e293b;
+  border: 1px solid #090d14;
+  border-radius: 3px 3px 0 0;
+  z-index: 3;
+}
+.pp-ext-guard::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 1px;
+  width: 7px;
+  height: 7px;
+  background: #334155;
   border-radius: 50%;
-  background: #0b0e10;
-}
-.pp-q-person.walking-in {
-  animation: ppBobWalk 0.35s ease-in-out 2;
 }
 
-@keyframes ppBobWalk {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+/* BONEQUINHOS ARTICULADOS NA FILA EXTERNA! */
+.pp-mini-walker {
+  position: absolute;
+  bottom: 16px;
+  width: 12px;
+  height: 24px;
+  z-index: 4;
+  transition: left 0.68s linear, opacity 0.22s ease, transform 0.2s ease;
+}
+.pp-mini-walker-body {
+  width: 100%;
+  height: 15px;
+  position: absolute;
+  bottom: 3px;
+  border-radius: 3px 3px 1px 1px;
+  border: 1px solid #09090b;
+}
+.pp-mini-walker-head {
+  width: 8px;
+  height: 8px;
+  position: absolute;
+  top: 0;
+  left: 2px;
+  background: #d6b292;
+  border-radius: 50%;
+  border: 1px solid #18120c;
+}
+/* Perninhas mexendo ao caminhar! */
+.pp-mini-walker-legs {
+  position: absolute;
+  bottom: 0;
+  left: 2px;
+  width: 8px;
+  height: 4px;
+  border-left: 2.5px solid #09090b;
+  border-right: 2.5px solid #09090b;
+}
+.pp-mini-walker.walking {
+  animation: ppTinyStep 0.16s ease-in-out infinite alternate;
+}
+@keyframes ppTinyStep {
+  0% { transform: translateY(0) rotate(-3deg); }
+  100% { transform: translateY(-2.5px) rotate(3deg); }
 }
 
+/* Cordão/Botão PRÓXIMO! no canto superior direito da faixa externa */
 .pp-megaphone-btn {
-  background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background: linear-gradient(180deg, #dc2626 0%, #7f1d1d 100%);
   color: #fef2f2;
   border: 2px solid #450a0a;
   border-bottom-width: 4px;
-  padding: 7px 12px;
-  font-family: inherit;
-  font-weight: bold;
-  font-size: 12px;
+  padding: 6px 11px;
+  font-family: 'Verdana', sans-serif;
+  font-weight: 900;
+  font-size: 11px;
+  border-radius: 4px;
   cursor: inherit;
-  z-index: 3;
-  letter-spacing: 0.6px;
+  z-index: 8;
+  letter-spacing: 0.5px;
   transition: transform 0.08s ease, filter 0.15s ease;
 }
 .pp-megaphone-btn:hover:not(:disabled) {
@@ -1000,6 +1221,10 @@ body.story-mode-1 {
   padding: 28px;
   text-align: center;
   gap: 14px;
+}
+.pp-day-overlay .pp-megaphone-btn {
+  position: static;
+  margin-top: 6px;
 }
 .pp-night-ledger {
   width: min(460px, 92%);
