@@ -1159,13 +1159,15 @@ export function runStory1Burocracia({
     }
   }
 
-  async function supervisorThenLog(supText, logText = null, logPriority = 'action') {
+  let playedEntryVoice = false;
+
+  async function supervisorThenLog(supText, logText = null, logPriority = 'action', extraOpts = {}) {
     const expected = intercomSeq + 1;
     await saySupervisor(supText);
     if (!isAlive || expected !== intercomSeq || !logText) return;
     await new Promise((r) => setTimeout(r, 700));
     if (!isAlive || expected !== intercomSeq) return;
-    setOperatorRemark(logText, { priority: logPriority });
+    setOperatorRemark(logText, { priority: logPriority, ...extraOpts });
   }
 
   document.getElementById('pp-back-cave')?.addEventListener('click', () => {
@@ -1530,10 +1532,25 @@ export function runStory1Burocracia({
       </div>
     `;
 
+    // Assim que o jogador é sugado para dentro da guarita gelada no Dia 1, o `log` reage com VOZ REAL (e eco)!
+    if (dayIdx === 0 && !playedEntryVoice) {
+      playedEntryVoice = true;
+      setOperatorRemark('que lugar gelado do caralho é esse?! ...cê me puxou pra dentro da porra de um livro, mano?!', {
+        delayBefore: 320,
+        priority: 'urgent',
+        voiceUrl: '/voices/story1_entrada.mp3',
+        steps: [
+          { text: 'que lugar gelado do caralho é esse?! ', durationMs: 2450 },
+          { pause: 200 },
+          { text: '...cê me puxou pra dentro da porra de um livro, mano?!', durationMs: 2850 },
+        ],
+      });
+    }
+
     document.getElementById('pp-start-shift-btn')?.addEventListener('click', () => {
       playShutterClank();
       mount.innerHTML = '';
-      supervisorThenLog(dayObj.supervisorIntro, dayObj.logIntro, 'urgent');
+      supervisorThenLog(dayObj.supervisorIntro, dayIdx === 0 ? null : dayObj.logIntro, 'urgent');
     });
   }
 

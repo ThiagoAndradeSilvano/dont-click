@@ -63,8 +63,9 @@ O coração do jogo inteiro é **o cara que fala pela tag `log` (e `[log]:` no c
    - `'urgent'` (ou `force: true`): Limpa fila e corta na hora.
    - `'action'` (padrão): Entra na fila `remarkQueue` (acelera em `0.55x` a frase atual pra acompanhar cliques do jogador sem engolir resposta).
    - `'ambient'`: Ignorada se já estiver falando ou em cooldown `< 8000ms` (zero spam!).
-3. **Som Mecânico de Teclado + Eco Acústico (`playOperatorTypeKey(ch)`):**
-   - Pulso via `Web Audio API` por tecla; ativa eco cavernoso automático (`ensureCaveEchoChain`) quando em `cave_2d` / `cave_escaped`.
+3. **Som Mecânico de Teclado + Motor de Voz ElevenLabs + Eco Acústico (`playOperatorTypeKey` & `playOperatorVoiceClip`):**
+   - Pulso via `Web Audio API` por tecla; ativa eco cavernoso automático (`ensureCaveEchoChain`) quando em `cave_2d`, `cave_escaped` ou qualquer `story-mode-*` (mantendo o rótulo visual apenas `log`, sem `(eco)` escrito).
+   - **Voz Real ElevenLabs (`client/public/voices/`):** `setOperatorRemark(text, { voiceUrl, steps })` e `humanTypeSequence` sincronizam letra por letra no relógio (`performance.now()` + `durationMs`), reduzem o volume do tec-tec pra 22% enquanto ele fala e aplicam o mesmo eco de caverna automaticamente na voz dentro da Mina/Contos! Clipes ativos: `log_awakening.mp3`, `idle_1..3,5.mp3`, `react_teimoso.mp3`, `react_risada.mp3`, `clicker_100pct.mp3`, `meltdown_fire.mp3`, `loading_bronca.mp3`, `cave_queda.mp3`, `story1_entrada.mp3`.
 4. **Cursores Personalizados (`client/public/cursors/`):**
    - Mãozinha Azul do jogador (`user-blue.png`), Mãos Vermelhas reativas do `log` (`op-point.png`, `op-stop.png`, `op-middle.png`, `op-thumb.png`, `op-chill.png`, `op-hd.png` via `flashCursorMood`) e cursores temáticos dedicados dos 6 Contos (`cursor_1.png` a `cursor_6.png` em 40x40px).
 
@@ -77,8 +78,8 @@ Toda validação sensível de senhas/enigmas fica em `server/src/index.js`.
 ### Página 1 — Botão Inicial + Detector Psicológico de Contagem (`stage: 'button'`)
 - Tela branca anos 90 (`Botão`). Cai no **9º clique** (`ERR_CONNECTION_RESET`), ou `ERR_CONTANDO_NO_DEDINHO_9` se o `detectDeliberateCounting` pegar clique cadenciado (`340ms–1850ms`, `CV <= 0.23`). No reload, cai no **5º clique**.
 
-### Página 2 — Teste de Aptidão Cognitiva: Bloquinhos de Criança (`stage: 'shape_test'`)
-- Encaixar Quadrado, Círculo e Triângulo na tábua de madeira → dispara 3ª queda (`post_shapes_crash`).
+### Página 2 — Formas Secas de Encaixar (`stage: 'shape_test'`)
+- Zero cor, zero 3D e zero texto na tela inteira: apenas uma caixa preta chapada no fundo branco com 3 buracos tracejados (`◻ ◯ △`) e 3 peças cinzas → dispara 3ª queda (`post_shapes_crash`).
 
 ### Página 3 — O Fake Game Mudo de ~20 Minutos (`stage: 'mundane_clicker'`)
 - Sem `log` ainda. Abas `⚙️ Automação` (6 geradores repetíveis: Dedo Terceirizado, Pombo, Ventilador no Mouse, Sobrinho, Macro Excel, Lan House 2007) e `🛠️ Melhorias` (16 upgrades: som xoxo, barra 99%, Tema Creche + Sol, Cookie Banner bloqueante a cada 45s, Barra de Pesquisa, Tarifa x2, Clima `23°C` + Relógio, Conquistas, Contrato com receita de bolo e botão fujão, etc.) + eventos a cada 38s (Mosca, Pesquisa nota 10, Caixa Rara de +1 pt).

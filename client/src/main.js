@@ -1274,8 +1274,23 @@ function renderActiveShopTab() {
         }
 
         renderClickerScreen(res, { newlyBought: res.bought });
-        if (res.remark && res.stage === 'awakened_clicker') {
-          setOperatorRemark(res.remark, { delayBefore: 250, force: Boolean(res.allOwned) });
+        if (res.stage === 'awakened_clicker') {
+          if (res.allOwned) {
+            setOperatorRemark('pronto... 100%, botão dourado. acabou o jogo, beleza? tchau.', {
+              delayBefore: 220,
+              force: true,
+              voiceUrl: '/voices/clicker_100pct.mp3',
+              steps: [
+                { text: 'pronto... ', durationMs: 1650 },
+                { text: '100%, botão dourado. ', durationMs: 2100 },
+                { text: 'acabou o jogo, beleza? ', durationMs: 1450 },
+                { pause: 250 },
+                { text: 'tchau.', durationMs: 650 },
+              ],
+            });
+          } else if (res.remark) {
+            setOperatorRemark(res.remark, { delayBefore: 250 });
+          }
           flashCursorMood(res.allOwned ? 'stop' : res.bought === 'tax_mult' ? 'middle' : 'thumb', 2400);
         }
       });
@@ -1914,7 +1929,17 @@ function triggerMeltdownChaos(burstOrText) {
   }
 
   if (burstOrText) {
-    setOperatorRemark(burstOrText, { delayBefore: 80, priority: 'urgent' });
+    setOperatorRemark('QUE QUE CÊ FEZ ANIMAL?! TÁ PEGANDO FOGO EM TUDO, DIGITA subsolo LÁ EM CIMA LOGO!!', {
+      delayBefore: 80,
+      priority: 'urgent',
+      voiceUrl: '/voices/meltdown_fire.mp3',
+      steps: [
+        { text: 'QUE QUE CÊ FEZ ANIMAL?! ', durationMs: 1450 },
+        { pause: 100 },
+        { text: 'TÁ PEGANDO FOGO EM TUDO, ', durationMs: 1350 },
+        { text: 'DIGITA subsolo LÁ EM CIMA LOGO!!', durationMs: 2050 },
+      ],
+    });
   }
 
   // E SE O JOGADOR FICAR PARADO OLHANDO O FOGO E NÃO ESCREVER "subsolo"?!
@@ -2014,7 +2039,7 @@ function renderShittyLoadingScreen({ forcedByOperator = false } = {}) {
   let readyToTransition = false;
   let replyIdleTimer = null;
 
-  const appendChat = async (who, text) => {
+  const appendChat = async (who, text, { voiceUrl = null, steps = null } = {}) => {
     const line = document.createElement('div');
     line.className = `loading-chat-line ${who === 'you' ? 'you' : 'op'}`;
     chatEl.appendChild(line);
@@ -2026,6 +2051,32 @@ function renderShittyLoadingScreen({ forcedByOperator = false } = {}) {
     }
 
     line.textContent = `[log]: `;
+    if (voiceUrl) {
+      playOperatorVoiceClip(voiceUrl);
+    }
+
+    if (Array.isArray(steps) && steps.length > 0) {
+      for (const st of steps) {
+        if (st.pause) {
+          await sleep(st.pause);
+        } else if (st.text) {
+          const startT = performance.now();
+          const len = Math.max(1, st.text.length);
+          const dur = st.durationMs || len * 32;
+          for (let idx = 0; idx < st.text.length; idx++) {
+            const ch = st.text[idx];
+            line.textContent += ch;
+            playOperatorTypeKey(ch);
+            chatEl.scrollTop = chatEl.scrollHeight;
+            const targetElapsed = ((idx + 1) / len) * dur;
+            const waitMs = targetElapsed - (performance.now() - startT);
+            if (waitMs > 4) await sleep(waitMs);
+          }
+        }
+      }
+      return;
+    }
+
     for (const ch of text) {
       line.textContent += ch;
       playOperatorTypeKey(ch);
@@ -2072,14 +2123,19 @@ function renderShittyLoadingScreen({ forcedByOperator = false } = {}) {
   };
 
   (async () => {
-    await sleep(500);
+    await sleep(450);
     if (forcedByOperator || latestState?.forcedSubsolo) {
       await appendChat('op', 'se eu não digito "subsolo" por vc a gente tinha virado carvão né seu lerdo do caralho.');
-    } else {
-      await appendChat('op', 'pqp... por um segundo achei que vc ia fritar a memória inteira lá em cima.');
+      await sleep(350);
     }
-    await sleep(500);
-    await appendChat('op', 'quem em sã consciência vê um número de temperatura quieto e taca no talo, mano??');
+    await appendChat('op', 'puta que pariu, mano... quem vê um termômetro quieto num canto e taca 99 graus?!', {
+      voiceUrl: '/voices/loading_bronca.mp3',
+      steps: [
+        { text: 'puta que pariu, mano... ', durationMs: 2250 },
+        { pause: 200 },
+        { text: 'quem vê um termômetro quieto num canto e taca 99 graus?!', durationMs: 3650 },
+      ],
+    });
 
     const askRound1 = () => {
       repliesEl.innerHTML = `
@@ -3762,15 +3818,23 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
   if (!state.introDone || justFell) {
     torchLit = false;
     updateViewportPosition(false);
-    setOperatorRemark(
-      'pqp o chão do porão inteiro cedeu!! vc tá inteiro aí embaixo mano?! que buraco escuro é esse?!',
-      { delayBefore: 120, priority: 'urgent' }
-    );
+    setOperatorRemark('eita porra... onde é que cê se enfiou agora, mano? até minha voz tá dando eco aqui.', {
+      delayBefore: 250,
+      priority: 'urgent',
+      voiceUrl: '/voices/cave_queda.mp3',
+      steps: [
+        { text: 'eita porra... ', durationMs: 1550 },
+        { pause: 150 },
+        { text: 'onde é que cê se enfiou agora, mano? ', durationMs: 2150 },
+        { pause: 150 },
+        { text: 'até minha voz tá dando eco aqui.', durationMs: 2150 },
+      ],
+    });
     (async () => {
       showSegmentBubble(state.row, state.col, 'O chão do porão desabou...');
-      await sleep(2200);
+      await sleep(3400);
       showSegmentBubble(state.row, state.col, 'Escuro demais aqui embaixo.');
-      await sleep(1500);
+      await sleep(3100);
       torchLit = true;
       updateViewportPosition(false);
 
