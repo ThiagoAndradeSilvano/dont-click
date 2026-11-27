@@ -314,10 +314,10 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     `;
   }
 
-  // Renderiza automaticamente o PNG gerado pelo GPT (se existir em /story1/chars/) com fallback instantâneo pro SVG!
+  // Renderiza automaticamente o PNG em Pixel-Art nítida (de /story1/chars/) com fallback pro SVG!
   function renderCharacterArt(charId = 'char_1', mood = 'normal', scale = 1) {
-    const w = Math.round(136 * scale);
-    const h = Math.round(158 * scale);
+    const w = Math.round(168 * scale);
+    const h = Math.round(172 * scale);
     const pngPath = `/story1/chars/${charId}_${mood}.png`;
     const svgMarkup = renderPortraitFallbackSvg(charId, mood, scale);
 
@@ -326,7 +326,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
         <img
           src="${pngPath}"
           alt=""
-          style="width:100%; height:100%; object-fit:contain; image-rendering:auto; display:block;"
+          style="width:100%; height:100%; object-fit:contain; object-position:bottom center; image-rendering:pixelated; display:block;"
           onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
         />
         <div style="display:none;">${svgMarkup}</div>
@@ -1078,7 +1078,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           <div class="pp-wanted-strip pp-field" data-disc-key="wanted_poster" title="Cartaz Oficial de Procurados">
             <div class="pp-wanted-strip-title">PROCURADOS</div>
             <div class="pp-wanted-faces">
-              ${dayObj.wanted.map((w) => `<div title="${w.name}">${renderCharacterArt(w.charId, 'normal', 0.31)}</div>`).join('')}
+              ${dayObj.wanted.map((w) => `<div title="${w.name}">${renderCharacterArt(w.charId, 'normal', 0.28)}</div>`).join('')}
             </div>
           </div>
         `;
@@ -1257,7 +1257,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       </div>
       <div class="pp-pass-body">
         <div class="pp-pass-photo pp-field" data-disc-key="pass_photo" title="Foto do Passaporte">
-          ${renderCharacterArt(passPhotoChar, 'normal', 0.54)}
+          ${renderCharacterArt(passPhotoChar, 'normal', 0.48)}
         </div>
         <div>
           <div><strong>Nome:</strong> <span class="pp-field" data-disc-key="pass_name">${person.name}</span></div>

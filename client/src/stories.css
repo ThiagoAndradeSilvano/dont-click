@@ -435,8 +435,8 @@ body.story-mode-1 {
 .pp-traveler-stage {
   position: relative;
   z-index: 3;
-  width: 168px;
-  height: 185px;
+  width: 192px;
+  height: 196px;
   display: flex;
   justify-content: center;
   align-items: flex-end;
