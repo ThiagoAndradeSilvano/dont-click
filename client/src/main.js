@@ -2514,22 +2514,25 @@ function renderSubsolo2DScreen(initialState = null) {
 // Convertido fielmente do mapa 4x12 original, agora com controle WASD e o Operador perdido com você!
 // ============================================================================
 const CAVE_INVENTORY_META = {
-  '0': { img: '/cave/apple.gif', name: 'Maçã', details: 'Um lanche estranhamente intacto' },
+  '0': { img: '/cave/apple.gif', altImg: '/cave/apple.gif', name: 'Maçã', details: 'Um lanche estranhamente intacto', hasToggle: true, onLabel: 'Mordida', offLabel: 'Morder', oneShot: true },
   'lantern': { img: '/cave/swingingLantern.gif', altImg: '/cave/swingingLantern.gif', name: 'Lanterna', details: 'Liga/desliga a luz na caverna (Tecla F)', hasToggle: true, onLabel: 'Desligar', offLabel: 'Ligar' },
-  '2': { img: '/cave/pickInventory.gif', name: 'Picareta', details: 'Firme o bastante pra quebrar rocha' },
-  '6': { img: '/cave/plankInventory.gif', name: 'Tábua', details: 'Tábua grossa de madeira' },
-  '8': { img: '/cave/note1.gif', name: 'Nota 1', details: '1º dígito: 1 barra (=5) + 2 pontos (=2) → [ 7 ]' },
-  '9': { img: '/cave/note2.gif', name: 'Nota 2', details: '2º dígito: 1 barra (=5) + 1 ponto (=1) → [ 6 ]' },
-  '10': { img: '/cave/note3.gif', name: 'Nota 3', details: '3º dígito: 3 pontos → [ 3 ]' },
-  '12': { img: '/cave/handleInventory.gif', name: 'Manivela', details: 'Encaixa em alguma engrenagem' },
-  '15': { img: '/cave/dynamiteInventory.gif', name: 'Dinamite', details: 'Explosivo antigo' },
-  '16': { img: '/cave/fusesInventory.gif', name: 'Estopins', details: 'Pavio para acender dinamite' },
-  'book_1': { img: '/cave/note1.gif', name: 'Livro I', details: 'Conto 1: Fronteira da Burocracia (Clique para abrir)' },
-  'book_2': { img: '/cave/note2.gif', name: 'Livro II', details: 'Conto 2: Princesa de Plástico (Clique para abrir)' },
-  'book_3': { img: '/cave/note3.gif', name: 'Livro III', details: 'Conto 3: Corredor 0999 P.T. (Clique para abrir)' },
-  'book_4': { img: '/cave/note1.gif', name: 'Livro IV', details: 'Conto 4: Naufrágio da Porta (Clique para abrir)' },
-  'book_5': { img: '/cave/note2.gif', name: 'Livro V', details: 'Conto 5: Plantão da Floresta (Clique para abrir)' },
-  'book_6': { img: '/cave/note3.gif', name: 'Livro VI', details: 'Conto 6: Terminal 1984 (Clique para abrir)' },
+  '2': { img: '/cave/pickInventory.gif', altImg: '/cave/pickInventory.gif', name: 'Picareta', details: 'Firme o bastante pra quebrar rocha', hasToggle: true, onLabel: 'Guardar', offLabel: 'Equipar' },
+  '6': { img: '/cave/plankInventory.gif', altImg: '/cave/plankInventory.gif', name: 'Tábua', details: 'Tábua grossa de madeira', hasToggle: true, onLabel: 'Guardar', offLabel: 'Segurar' },
+  '8': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Nota 1', details: '1º dígito: 1 barra (=5) + 2 pontos (=2) → [ 7 ]', hasToggle: true, onLabel: 'Fechar', offLabel: 'Ler' },
+  '9': { img: '/cave/note2.gif', altImg: '/cave/note2.gif', name: 'Nota 2', details: '2º dígito: 1 barra (=5) + 1 ponto (=1) → [ 6 ]', hasToggle: true, onLabel: 'Fechar', offLabel: 'Ler' },
+  '10': { img: '/cave/note3.gif', altImg: '/cave/note3.gif', name: 'Nota 3', details: '3º dígito: 3 pontos → [ 3 ]', hasToggle: true, onLabel: 'Fechar', offLabel: 'Ler' },
+  '12': { img: '/cave/handleInventory.gif', altImg: '/cave/handleInventory.gif', name: 'Manivela', details: 'Encaixa em alguma engrenagem', hasToggle: true, onLabel: 'Soltar', offLabel: 'Girar' },
+  '15': { img: '/cave/dynamiteInventory.gif', altImg: '/cave/dynamiteInventory.gif', name: 'Dinamite', details: 'Explosivo antigo', hasToggle: true, onLabel: 'Desarmar', offLabel: 'Armar' },
+  '16': { img: '/cave/fusesInventory.gif', altImg: '/cave/fusesInventory.gif', name: 'Estopins', details: 'Pavio para acender dinamite', hasToggle: true, onLabel: 'Apagar', offLabel: 'Preparar' },
+  'decoder_lens': { img: '/cave/pickInventory.gif', altImg: '/cave/pickInventory.gif', name: 'Lupa', details: 'Revela símbolos ocultos', hasToggle: true, onLabel: 'Desativar', offLabel: 'Ativar' },
+  'cassette': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Fita K7', details: 'Gravação antiga empoeirada', hasToggle: true, onLabel: 'Parar', offLabel: 'Tocar' },
+  'shelf_key': { img: '/cave/handleInventory.gif', altImg: '/cave/handleInventory.gif', name: 'Chave Mestra', details: 'Chave antiga da estante', hasToggle: true, onLabel: 'Polida', offLabel: 'Limpar', oneShot: true },
+  'book_1': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Livro I', details: 'Conto 1: Fronteira da Burocracia', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_2': { img: '/cave/note2.gif', altImg: '/cave/note2.gif', name: 'Livro II', details: 'Conto 2: Princesa de Plástico', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_3': { img: '/cave/note3.gif', altImg: '/cave/note3.gif', name: 'Livro III', details: 'Conto 3: Corredor 0999 P.T.', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_4': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Livro IV', details: 'Conto 4: Naufrágio da Porta', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_5': { img: '/cave/note2.gif', altImg: '/cave/note2.gif', name: 'Livro V', details: 'Conto 5: Plantão da Floresta', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_6': { img: '/cave/note3.gif', altImg: '/cave/note3.gif', name: 'Livro VI', details: 'Conto 6: Terminal 1984', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
 };
 
 // Elevadores verticais entre (row, col) e (row + 1, col) do SCSS original (@include moveVerticleOnTile)
@@ -2714,6 +2717,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
   let torchLit = state.introDone;
   let lanternOn = state.inventory.includes('lantern');
   let activeOpenBookId = null;
+  const itemVariations = {}; // rastreia variação ativa de cada item (ex: mordida, aberta, armada, etc.)
 
   function showSegmentBubble(r, c, text) {
     document.querySelectorAll('.cave-bubble').forEach((b) => b.remove());
@@ -2759,19 +2763,20 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         const isBook = id.startsWith('book_');
         const solved = isBook && state.booksSolved.includes(id);
         const isLantern = id === 'lantern';
-        const isActive = isLantern ? lanternOn : (isBook ? activeOpenBookId === id : false);
+        const isActive = isLantern ? lanternOn : (isBook ? activeOpenBookId === id : Boolean(itemVariations[id]));
         const iconSrc = isActive && m.altImg ? m.altImg : m.img;
 
         let actionBtnHtml = '';
-        if (isLantern) {
-          actionBtnHtml = `<button type="button" class="inv-toggle-btn ${lanternOn ? 'active' : ''}" data-inv-toggle="lantern">${lanternOn ? 'Desligar' : 'Ligar'}</button>`;
-        } else if (isBook) {
-          actionBtnHtml = `<button type="button" class="inv-toggle-btn ${isActive ? 'active' : ''}" data-inv-toggle="${id}">${isActive ? 'Fechar' : 'Abrir'}</button>`;
+        if (m.hasToggle) {
+          const btnLabel = isActive ? m.onLabel : m.offLabel;
+          actionBtnHtml = `<button type="button" class="inv-toggle-btn ${isActive ? 'active' : ''}" data-inv-toggle="${id}" ${
+            m.oneShot && isActive ? 'disabled' : ''
+          }>${btnLabel}</button>`;
         }
 
         return `
           <div class="cave-inv-item ${isBook ? 'cave-inv-book' : ''}" data-inv-id="${id}">
-            <img src="${iconSrc}" alt="${m.name}" />
+            <img src="${iconSrc}" alt="${m.name}" style="${isActive && id === '0' ? 'opacity:0.65; filter:grayscale(0.5);' : ''}" />
             <div style="margin-top:4px;">${isBook ? (solved ? `✅ ${m.name}` : `📖 ${m.name}`) : m.name}</div>
             ${actionBtnHtml}
             <div class="inv-tooltip"><strong>${m.name}</strong><br/>${m.details}</div>
@@ -2785,6 +2790,9 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         ev.stopPropagation();
         playCheapBeep();
         const id = btn.getAttribute('data-inv-toggle');
+        const meta = CAVE_INVENTORY_META[id];
+        if (!meta) return;
+
         if (id === 'lantern') {
           lanternOn = !lanternOn;
           refreshInventoryUI();
@@ -2797,6 +2805,16 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
           } else {
             openBookFromBag(id);
           }
+        } else {
+          itemVariations[id] = !itemVariations[id];
+          if (id === '0' && itemVariations[id]) {
+            setOperatorRemark('parabéns, comeu uma maçã podre encontrada num servidor subterrâneo. se der botulismo não me culpa.', { priority: 'action' });
+          } else if (['8', '9', '10'].includes(id) && itemVariations[id]) {
+            showSegmentBubble(state.row, state.col, meta.details);
+          } else if (id === '15' && itemVariations[id]) {
+            setOperatorRemark('armou a dinamite na mão mesmo. excelente instinto de autopreservação.', { priority: 'action' });
+          }
+          refreshInventoryUI();
         }
       });
     });
