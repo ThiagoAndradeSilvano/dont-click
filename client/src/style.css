@@ -459,9 +459,9 @@ body.awakened-cursors.cursor-mood-point * {
   flex: 1;
   min-height: 0;
   display: grid;
-  /* Arena do botão é só uma faixa compacta em cima; a loja fica com todo o resto */
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  /* Botão no meio da tela, numa janela compacta (não estica até o topo/rodapé); loja à direita */
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: minmax(0, 1fr);
   gap: clamp(10px, 1.8vw, 20px);
   align-items: stretch;
 }
@@ -469,14 +469,16 @@ body.awakened-cursors.cursor-mood-point * {
 .clicker-arena {
   background: #ffffff;
   border: 1px solid #bbb;
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 420px);
   padding: clamp(8px, 1.6vh, 16px) 16px;
   min-height: 0;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: clamp(14px, 4vw, 48px);
+  gap: clamp(6px, 1.4vh, 14px);
 }
 
 .score-board {
@@ -509,10 +511,12 @@ body.awakened-cursors.cursor-mood-point * {
     grid-template-rows: auto minmax(0, 1fr);
   }
   .clicker-arena {
+    align-self: stretch;
+    width: 100%;
     padding: 8px 12px;
-    flex-direction: row;
-    justify-content: space-around;
-    gap: 14px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
   }
   .derpy-sun {
     width: 48px;
