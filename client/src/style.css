@@ -827,157 +827,90 @@ body.awakened-cursors.cursor-mood-point * {
   100% { opacity: 0; transform: translateY(-38px); }
 }
 
-/* ===== ESTÁGIO 3: TESTE DOS BLOQUINHOS DE ENCAIXAR DE CRIANÇA ===== */
+/* ===== ESTÁGIO 3: FORMAS PORCAS (ZERO COR, ZERO 3D, ZERO TEXTO) ===== */
 body.shapes-mode {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #fff6d6;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
-  cursor: var(--cur-user-blue);
+  background: #ffffff;
+  cursor: default;
   padding: 20px;
 }
 
 .shapes-card {
   background: #ffffff;
-  border: 5px solid #ffb703;
-  border-radius: 26px;
-  padding: 28px 32px;
-  max-width: 560px;
+  border: 2px solid #000000;
+  padding: 28px 34px;
+  max-width: 440px;
   width: 100%;
-  text-align: center;
-  box-shadow: 0 10px 0 #fb8500;
-}
-
-.shapes-title {
-  margin: 0 0 6px;
-  color: #fb8500;
-  font-size: 22px;
-}
-
-.shapes-sub {
-  margin: 0 0 24px;
-  color: #555;
-  font-size: 14px;
 }
 
 .wood-board {
-  background: #eac086;
-  border: 4px solid #b6894c;
-  border-radius: 16px;
-  padding: 24px 16px;
+  border-bottom: 1px solid #000000;
+  padding: 8px 6px 26px;
   display: flex;
   justify-content: space-around;
   align-items: center;
   margin-bottom: 26px;
-  box-shadow: inset 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .hole-slot {
-  width: 86px;
-  height: 86px;
+  width: 78px;
+  height: 78px;
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
 }
 
-.hole-shape {
-  background: #6b4c28;
-  box-shadow: inset 0 4px 8px rgba(0,0,0,0.55);
-  transition: transform 0.15s;
+.hole-svg {
+  display: block;
 }
 
-.hole-shape.square {
-  width: 68px;
-  height: 68px;
-  border-radius: 6px;
+.hole-outline {
+  fill: #ffffff;
+  stroke: #000000;
+  stroke-width: 2.5;
+  stroke-dasharray: 5 4;
 }
 
-.hole-shape.circle {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
+.hole-slot.filled .hole-outline {
+  fill: #9e9e9e;
+  stroke-dasharray: none;
 }
-
-.hole-shape.triangle {
-  width: 0;
-  height: 0;
-  background: transparent;
-  box-shadow: none;
-  border-left: 38px solid transparent;
-  border-right: 38px solid transparent;
-  border-bottom: 66px solid #6b4c28;
-}
-
-.hole-slot.filled .hole-shape.square { background: #ef476f; box-shadow: none; }
-.hole-slot.filled .hole-shape.circle { background: #118ab2; box-shadow: none; }
-.hole-slot.filled .hole-shape.triangle { border-bottom-color: #06d6a0; }
 
 .pieces-tray {
   display: flex;
-  justify-content: center;
-  gap: 28px;
-  min-height: 82px;
+  justify-content: space-around;
   align-items: center;
+  min-height: 74px;
+  padding: 0 6px;
 }
 
 .toy-piece {
   cursor: grab;
   user-select: none;
-  transition: transform 0.15s;
+  padding: 4px;
+  border: 1px solid transparent;
 }
-.toy-piece:hover {
-  transform: scale(1.08);
+
+.toy-piece:active {
+  cursor: grabbing;
 }
+
+.toy-piece.selected {
+  border: 1px dotted #000000;
+}
+
 .toy-piece.placed {
   visibility: hidden;
   pointer-events: none;
 }
 
-.toy-piece.square {
-  width: 64px;
-  height: 64px;
-  background: #ef476f;
-  border: 3px solid #b5173e;
-  border-radius: 6px;
-}
-
-.toy-piece.circle {
-  width: 66px;
-  height: 66px;
-  background: #118ab2;
-  border: 3px solid #075975;
-  border-radius: 50%;
-}
-
-.toy-piece.triangle {
-  width: 0;
-  height: 0;
-  border-left: 36px solid transparent;
-  border-right: 36px solid transparent;
-  border-bottom: 64px solid #06d6a0;
-  filter: drop-shadow(0 3px 0 #048a67);
-}
-
-.shapes-finish-box {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 2px dashed #ffd166;
-}
-
-.shapes-enter-btn {
-  margin-top: 10px;
-  background: #06d6a0;
-  color: #073b4c;
-  border: 3px solid #048a67;
-  border-radius: 12px;
-  padding: 10px 22px;
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: var(--cur-user-blue);
+.piece-fill {
+  fill: #bdbdbd;
+  stroke: #000000;
+  stroke-width: 2.5;
 }
 
 /* Tela de rota falsa (/admin, /segredo, etc.) */

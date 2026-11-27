@@ -1206,87 +1206,100 @@ function renderActiveShopTab() {
 }
 
 // ============================================================================
-// CAP 0.5: BLOQUINHOS DE CRIANÇA
+// CAP 0.5: BLOQUINHOS DE ENCAIXAR (SECO, SEM COR, SEM 3D, SEM TEXTO — BEM PORCO!)
 // ============================================================================
 function renderShapeTestScreen() {
   clearTimers();
   currentStage = 'shape_test';
   document.body.className = 'shapes-mode';
-  resetFaviconAndTitle('Verificação de Segurança');
+  resetFaviconAndTitle('naoclique.net');
 
   const app = document.getElementById('app');
   app.style.visibility = 'visible';
 
   app.innerHTML = `
     <div class="shapes-card">
-      <h1 class="shapes-title">⭐ Teste de Aptidão Cognitiva ⭐</h1>
-      <p class="shapes-sub">Arraste cada forminha para o buraquinho correspondente para liberar o sistema!</p>
-
       <div class="wood-board">
         <div class="hole-slot" data-hole="square">
-          <div class="hole-shape square"></div>
+          <svg width="70" height="70" viewBox="0 0 70 70" class="hole-svg">
+            <rect x="3" y="3" width="64" height="64" class="hole-outline" />
+          </svg>
         </div>
         <div class="hole-slot" data-hole="circle">
-          <div class="hole-shape circle"></div>
+          <svg width="70" height="70" viewBox="0 0 70 70" class="hole-svg">
+            <circle cx="35" cy="35" r="32" class="hole-outline" />
+          </svg>
         </div>
         <div class="hole-slot" data-hole="triangle">
-          <div class="hole-shape triangle"></div>
+          <svg width="74" height="70" viewBox="0 0 74 70" class="hole-svg">
+            <polygon points="37,4 70,66 4,66" class="hole-outline" />
+          </svg>
         </div>
       </div>
 
       <div class="pieces-tray">
-        <div class="toy-piece circle" draggable="true" data-piece="circle" title="Círculo"></div>
-        <div class="toy-piece triangle" draggable="true" data-piece="triangle" title="Triângulo"></div>
-        <div class="toy-piece square" draggable="true" data-piece="square" title="Quadrado"></div>
+        <div class="toy-piece" draggable="true" data-piece="circle">
+          <svg width="66" height="66" viewBox="0 0 66 66">
+            <circle cx="33" cy="33" r="30" class="piece-fill" />
+          </svg>
+        </div>
+        <div class="toy-piece" draggable="true" data-piece="triangle">
+          <svg width="70" height="66" viewBox="0 0 70 66">
+            <polygon points="35,4 66,62 4,62" class="piece-fill" />
+          </svg>
+        </div>
+        <div class="toy-piece" draggable="true" data-piece="square">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <rect x="2" y="2" width="60" height="60" class="piece-fill" />
+          </svg>
+        </div>
       </div>
-
-      <div id="shapes-done-area"></div>
     </div>
   `;
 
   let placedCount = 0;
   let draggedPieceType = null;
   let selectedPieceType = null;
+  let finished = false;
 
   const pieces = app.querySelectorAll('.toy-piece');
   const holes = app.querySelectorAll('.hole-slot');
 
-  function placeMatch(type) {
+  async function placeMatch(type) {
+    if (finished) return;
     const pieceEl = app.querySelector(`.toy-piece[data-piece="${type}"]`);
     const holeEl = app.querySelector(`.hole-slot[data-hole="${type}"]`);
     if (!pieceEl || !holeEl || holeEl.classList.contains('filled')) return;
 
     pieceEl.classList.add('placed');
     holeEl.classList.add('filled');
+    pieces.forEach((el) => el.classList.remove('selected'));
     playCheapBeep();
     placedCount += 1;
 
     if (placedCount >= 3) {
-      const doneArea = document.getElementById('shapes-done-area');
-      doneArea.innerHTML = `
-        <div class="shapes-finish-box">
-          <div>🎉 <strong>Parabéns! Coordenação motora aprovada!</strong> 🎉</div>
-          <button class="shapes-enter-btn" id="enter-main-sys-btn">Acessar Painel Principal</button>
-        </div>
-      `;
-
-      document.getElementById('enter-main-sys-btn')?.addEventListener('click', async () => {
-        await apiPost('/api/complete-shapes');
-        app.innerHTML = '';
-        document.title = 'Carregando...';
-        setTimeout(() => {
-          renderFakeBrowserCrash({ awakening: false });
-        }, 250);
-      });
+      finished = true;
+      await sleep(420);
+      await apiPost('/api/complete-shapes');
+      app.innerHTML = '';
+      setTimeout(() => {
+        renderFakeBrowserCrash({ awakening: false });
+      }, 220);
     }
   }
 
   pieces.forEach((p) => {
-    p.addEventListener('dragstart', () => {
+    p.addEventListener('dragstart', (e) => {
       draggedPieceType = p.getAttribute('data-piece');
+      if (e.dataTransfer) {
+        e.dataTransfer.setData('text/plain', draggedPieceType || '');
+        e.dataTransfer.effectAllowed = 'move';
+      }
     });
     p.addEventListener('click', () => {
-      selectedPieceType = p.getAttribute('data-piece');
+      const clickedType = p.getAttribute('data-piece');
+      selectedPieceType = selectedPieceType === clickedType ? null : clickedType;
+      pieces.forEach((el) => el.classList.toggle('selected', el.getAttribute('data-piece') === selectedPieceType));
     });
   });
 
@@ -1295,7 +1308,8 @@ function renderShapeTestScreen() {
     h.addEventListener('drop', (e) => {
       e.preventDefault();
       const holeType = h.getAttribute('data-hole');
-      if (draggedPieceType && draggedPieceType === holeType) {
+      const dropped = draggedPieceType || e.dataTransfer?.getData('text/plain');
+      if (dropped && dropped === holeType) {
         placeMatch(holeType);
       }
       draggedPieceType = null;
