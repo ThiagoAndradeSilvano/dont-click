@@ -15,8 +15,8 @@ export const BOOKS_META = {
     themeClass: 'book-theme-sepia',
     prologuePages: [
       {
-        heading: 'Capítulo I — A Grande Divisão dos Seis Distritos',
-        text: 'No inverno de 1953, após a Guerra do Carvão, os seis reinos mercantes assinaram o Tratado de Ferro e ergueram uma muralha de concreto armado cortando o continente de ponta a ponta. Famílias inteiras dormiram num país e acordaram em outro.',
+        heading: 'Capítulo I — A Grande Divisão das Quatro Nações',
+        text: 'No inverno de 1953, após a Guerra do Carvão, as quatro potências — República de Vostok, União de Karst, Principado de Alvor e Costa de Salina — ergueram uma muralha de concreto armado cortando o continente.',
       },
       {
         heading: 'Capítulo II — O Posto 04 de Estrada-Morta',

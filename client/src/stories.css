@@ -575,7 +575,7 @@ body.story-mode-1 {
   border: 3px solid #4a3520;
   display: flex;
   flex-direction: column;
-  min-height: 175px;
+  min-height: 196px;
 }
 .pp-rulebook-tabs {
   display: flex;
@@ -599,12 +599,32 @@ body.story-mode-1 {
   color: #1c130a;
 }
 .pp-rulebook-content {
-  padding: 9px 11px;
+  padding: 8px 10px;
   font-size: 11.5px;
-  line-height: 1.5;
+  line-height: 1.45;
   color: #24190c;
   overflow-y: auto;
-  max-height: 165px;
+  max-height: 192px;
+  scrollbar-width: thin;
+  scrollbar-color: #7c5c38 #dac7a4;
+}
+.pp-rulebook-content.no-scroll {
+  overflow: hidden !important;
+  max-height: none;
+}
+.pp-rulebook-content::-webkit-scrollbar {
+  width: 7px;
+}
+.pp-rulebook-content::-webkit-scrollbar-track {
+  background: #dac7a4;
+  border-left: 1px solid #bda57e;
+}
+.pp-rulebook-content::-webkit-scrollbar-thumb {
+  background: #6b4e2e;
+  border-radius: 2px;
+}
+.pp-rulebook-content::-webkit-scrollbar-thumb:hover {
+  background: #4a3520;
 }
 
 /* ==========================================================================
@@ -795,69 +815,108 @@ body.story-mode-1 {
   color: #000 !important;
 }
 
-/* MARCA DE TINTA DO CARIMBO NO PASSAPORTE! */
+/* MARCA DE TINTA DO CARIMBO NO PASSAPORTE (Nítida, legível e por cima de tudo!) */
 .pp-ink-stamp {
   position: absolute;
-  right: 12px;
-  bottom: 10px;
-  padding: 5px 10px;
-  border: 4px solid;
-  border-radius: 4px;
-  font-size: 16px;
+  right: 10px;
+  bottom: 8px;
+  z-index: 12;
+  padding: 4px 10px;
+  border: 3.5px solid;
+  border-radius: 3px;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-size: 15px;
   font-weight: 900;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.8px;
   text-transform: uppercase;
   pointer-events: none;
-  opacity: 0.88;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
   animation: ppStampSlam 0.14s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 .pp-ink-stamp.approved {
-  color: #15803d;
+  background: rgba(240, 253, 244, 0.94);
+  color: #14532d;
   border-color: #15803d;
-  transform: rotate(-8deg);
+  transform: rotate(-7deg);
 }
 .pp-ink-stamp.denied {
-  color: #b91c1c;
+  background: rgba(254, 242, 242, 0.94);
+  color: #7f1d1d;
   border-color: #b91c1c;
-  transform: rotate(7deg);
+  transform: rotate(6deg);
 }
 @keyframes ppStampSlam {
-  0% { transform: scale(1.9) rotate(0deg); opacity: 0.2; }
-  100% { transform: scale(1) rotate(-6deg); opacity: 0.88; }
+  0% { transform: scale(1.85) rotate(0deg); opacity: 0.25; }
+  100% { transform: scale(1) rotate(-6deg); opacity: 1; }
 }
 
-/* GAVETA DESLIZANTE DE CARIMBOS PESADOS (Canto Direito da Mesa, igual Papers, Please!) */
+/* Animação do Passaporte deslizando pela fresta de volta para a mão do viajante! */
+.pp-doc-item.sliding-to-window {
+  transition: left 0.42s cubic-bezier(0.3, 0.8, 0.2, 1), top 0.42s cubic-bezier(0.3, 0.8, 0.2, 1), transform 0.42s ease, opacity 0.38s ease !important;
+  left: -140px !important;
+  top: 8px !important;
+  transform: scale(0.55) rotate(-14deg) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Mão/passaporte recolhido na janela pelo cliente */
+.pp-returned-pass-badge {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-weight: bold;
+  border: 2px solid #140e08;
+  border-radius: 3px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.65);
+  animation: ppGrabDoc 0.35s ease;
+}
+.pp-returned-pass-badge.ok { background: #dcfce7; color: #14532d; border-color: #15803d; }
+.pp-returned-pass-badge.no { background: #fee2e2; color: #7f1d1d; border-color: #b91c1c; }
+@keyframes ppGrabDoc {
+  0% { transform: translate(-50%, 16px) scale(0.8); opacity: 0; }
+  100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+/* GAVETA DESLIZANTE DE CARIMBOS PESADOS (Alça larga horizontal 100% legível!) */
 .pp-stamp-bar {
   position: absolute;
-  top: 72px;
+  top: 66px;
   right: 0;
   z-index: 40;
   display: flex;
   align-items: center;
-  transform: translateX(calc(100% - 36px));
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateX(calc(100% - 118px));
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .pp-stamp-bar.open {
   transform: translateX(0);
 }
 .pp-stamp-tab {
-  width: 36px;
-  height: 92px;
-  background: #271c12;
-  color: #fde68a;
-  border: 2px solid #0e0a06;
+  width: 118px;
+  height: 54px;
+  background: linear-gradient(180deg, #3b2a1a 0%, #22170e 100%);
+  color: #fef08a;
+  border: 2.5px solid #0e0a06;
   border-right: none;
-  border-radius: 6px 0 0 6px;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 1px;
+  border-radius: 8px 0 0 8px;
+  font-family: 'Verdana', 'Trebuchet MS', sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
   cursor: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
+  box-shadow: -4px 6px 14px rgba(0, 0, 0, 0.6);
+}
+.pp-stamp-tab:hover {
+  background: #4d3723;
 }
 .pp-stamp-body {
   background: #2b2015;
@@ -869,29 +928,34 @@ body.story-mode-1 {
   box-shadow: -8px 10px 24px rgba(0, 0, 0, 0.7);
 }
 .pp-heavy-stamp {
-  width: 96px;
-  height: 76px;
+  width: 108px;
+  height: 80px;
   border: 3px solid #140e08;
   border-bottom-width: 6px;
   border-radius: 6px;
-  font-family: inherit;
+  font-family: 'Verdana', 'Trebuchet MS', sans-serif;
   font-weight: 900;
-  font-size: 12px;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.75);
   cursor: inherit;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  transition: transform 0.08s ease;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+.pp-heavy-stamp:hover:not(:disabled) {
+  filter: brightness(1.12);
 }
 .pp-heavy-stamp.green {
   background: linear-gradient(180deg, #16a34a 0%, #14532d 100%);
-  color: #dcfce7;
+  color: #ffffff;
 }
 .pp-heavy-stamp.red {
   background: linear-gradient(180deg, #dc2626 0%, #7f1d1d 100%);
-  color: #fee2e2;
+  color: #ffffff;
 }
 .pp-heavy-stamp:active:not(:disabled) {
   transform: translateY(5px);

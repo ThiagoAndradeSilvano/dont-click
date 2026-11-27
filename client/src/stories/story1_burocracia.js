@@ -1,14 +1,14 @@
 // ============================================================================
-// CONTO 1: FRONTEIRA DA BUROCRACIA — ALFÂNDEGA DE DESCARTE (PAPERS, PLEASE REAL!)
-// Hub largo de cabine, persiana metálica, alavanca PRÓXIMO!, documentos arrastáveis na mesa,
-// brasões gráficos reais (sem entregar "FALSO" em texto!), modo Discrepância + Interrogatório + DETER,
-// Scanner Raio-X visual, Cartaz de Procurados, Lanterna UV, Impressora Térmica de Multa e Contas Noturnas!
+// CONTO 1: FRONTEIRA DA BUROCRACIA — POSTO 04 DE ESTRADA-MORTA (PAPERS, PLEASE REAL!)
+// Hub largo, persiana metálica, alavanca PRÓXIMO!, documentos arrastáveis, gaveta legível de carimbos,
+// entrega animada do passaporte com reação facial + fala final do cliente, 4 Nações memoráveis,
+// suporte híbrido para artes PNG geradas (`/story1/chars/char_X_normal|approved|denied.png`) + SVG rico!
 // ============================================================================
 
 export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishStory, returnToCave, caveState }) {
   document.body.className = 'story-mode-1';
 
-  // ---- ÁUDIO DEDICADO DA CABINE (Web Audio API — zero dependência externa!) ----
+  // ---- ÁUDIO DEDICADO DA CABINE (Web Audio API) ----
   let boothAudio = null;
   function getAudio() {
     try {
@@ -26,7 +26,6 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
   function playMegaphoneCall() {
     const ctx = getAudio();
     if (!ctx) return;
-    // Clássico "BÉÉÉ-DÃÃ" abafado de alto-falante de fronteira!
     [
       [290, 0, 0.16],
       [215, 0.18, 0.28],
@@ -140,70 +139,50 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     osc.stop(ctx.currentTime + 0.02);
   }
 
-  // ---- GEOGRAFIA OFICIAL & BRASÕES GRÁFICOS (Sem entregar "FALSO" escrito!) ----
+  // ---- AS 4 NAÇÕES DE VOSTOK-CINZA (Claras, marcantes e zero barra de rolagem na aba Brasões!) ----
   const KINGDOMS = {
-    'Vale do Boleto': {
+    'República de Vostok': {
       cls: 'kingdom-boleto',
-      cities: ['Serasa Sul', 'Carnê Alto', 'Fatura Nova'],
-      emblemDesc: 'Triângulo apontando para CIMA com 3 estrelas no topo',
+      cities: ['Kievagrad', 'Porto Gelo', 'Usina Sete'],
     },
-    'Pântano Fiscal': {
+    'União de Karst': {
       cls: 'kingdom-pantano',
-      cities: ['Lama Seca', 'Brejo Branco', 'Imposto Velho'],
-      emblemDesc: 'Losango duplo com cruz central',
+      cities: ['Ferrovelho', 'Mina Funda', 'Cinza Alta'],
     },
-    'Bosque MEI': {
+    'Principado de Alvor': {
       cls: 'kingdom-bosque',
-      cities: ['Pinheiro Simples', 'Folha Única', 'Ramo Verde'],
-      emblemDesc: 'Árvore de 2 copas com sol à DIREITA',
+      cities: ['Monte Claro', 'Vila Real', 'Ponte Dourada'],
     },
-    'Ponte Leste': {
+    'Costa de Salina': {
       cls: 'kingdom-ponte',
-      cities: ['Pedágio 1', 'Arco de Pedra', 'Viga Norte'],
-      emblemDesc: 'Arco de pedra com 2 pilares verticais',
-    },
-    'Torre Cinza': {
-      cls: 'kingdom-torre',
-      cities: ['Cúpula Alta', 'Degrau 99', 'Sótão Sul'],
-      emblemDesc: 'Torre com olho central ABERTO',
-    },
-    'Vila do Meio': {
-      cls: 'kingdom-vila',
-      cities: ['Praça Central', 'Beco Torto', 'Mercado Baixo'],
-      emblemDesc: 'Engrenagem de 4 pontas com círculo interno',
+      cities: ['Baía Negra', 'Farol Sul', 'Doca Velha'],
     },
   };
 
-  // Desenha o Brasão SVG Real ou Falsificado (invertido / faltando peça!)
+  // Desenha o Brasão SVG Oficial ou Falsificado (4 brasões grandes e super fáceis de comparar!)
   function renderSealSvg(kingdom, isForged = false, size = 38) {
     const color = '#5b2323';
     let inner = '';
-    if (kingdom === 'Vale do Boleto') {
-      // Verdadeiro: triângulo pra cima + 3 bolinhas | Falso: triângulo pra BAIXO + 1 bolinha!
+    if (kingdom === 'República de Vostok') {
+      // Oficial: Estrela de 5 pontas / Triângulo pra CIMA com 3 pontos | Falso: Triângulo invertido pra BAIXO!
       inner = isForged
-        ? `<polygon points="12,14 28,14 20,29" fill="none" stroke="${color}" stroke-width="2"/><circle cx="20" cy="10" r="2" fill="${color}"/>`
-        : `<polygon points="20,12 11,27 29,27" fill="none" stroke="${color}" stroke-width="2"/><circle cx="14" cy="9" r="1.6" fill="${color}"/><circle cx="20" cy="7.5" r="1.6" fill="${color}"/><circle cx="26" cy="9" r="1.6" fill="${color}"/>`;
-    } else if (kingdom === 'Pântano Fiscal') {
+        ? `<polygon points="11,13 29,13 20,29" fill="none" stroke="${color}" stroke-width="2.2"/><circle cx="20" cy="9.5" r="2" fill="${color}"/>`
+        : `<polygon points="20,11 11,27 29,27" fill="none" stroke="${color}" stroke-width="2.2"/><circle cx="14" cy="9" r="1.7" fill="${color}"/><circle cx="20" cy="7.5" r="1.7" fill="${color}"/><circle cx="26" cy="9" r="1.7" fill="${color}"/>`;
+    } else if (kingdom === 'União de Karst') {
+      // Oficial: Losango com picareta/cruz central | Falso: Losango VAZIO sem cruz!
       inner = isForged
-        ? `<polygon points="20,9 30,20 20,31 10,20" fill="none" stroke="${color}" stroke-width="2"/>` // sem cruz!
-        : `<polygon points="20,9 30,20 20,31 10,20" fill="none" stroke="${color}" stroke-width="2"/><line x1="14" y1="20" x2="26" y2="20" stroke="${color}" stroke-width="2"/><line x1="20" y1="14" x2="20" y2="26" stroke="${color}" stroke-width="2"/>`;
-    } else if (kingdom === 'Bosque MEI') {
-      // Verdadeiro: sol à direita | Falso: sol à ESQUERDA e 1 copa só!
+        ? `<polygon points="20,8 31,20 20,32 9,20" fill="none" stroke="${color}" stroke-width="2.2"/>`
+        : `<polygon points="20,8 31,20 20,32 9,20" fill="none" stroke="${color}" stroke-width="2.2"/><line x1="14" y1="20" x2="26" y2="20" stroke="${color}" stroke-width="2.2"/><line x1="20" y1="14" x2="20" y2="26" stroke="${color}" stroke-width="2.2"/>`;
+    } else if (kingdom === 'Principado de Alvor') {
+      // Oficial: Coroa de 3 pontas + Sol acima | Falso: Coroa torta sem o Sol!
       inner = isForged
-        ? `<line x1="22" y1="15" x2="22" y2="30" stroke="${color}" stroke-width="2.2"/><circle cx="22" cy="16" r="5" fill="none" stroke="${color}" stroke-width="2"/><circle cx="12" cy="11" r="2.5" fill="${color}"/>`
-        : `<line x1="18" y1="14" x2="18" y2="30" stroke="${color}" stroke-width="2.2"/><polygon points="18,9 12,18 24,18" fill="none" stroke="${color}" stroke-width="1.8"/><polygon points="18,15 11,24 25,24" fill="none" stroke="${color}" stroke-width="1.8"/><circle cx="27" cy="11" r="2.5" fill="${color}"/>`;
-    } else if (kingdom === 'Ponte Leste') {
-      inner = isForged
-        ? `<path d="M 10 16 Q 20 28 30 16" fill="none" stroke="${color}" stroke-width="2.2"/>` // arco invertido sem pilares!
-        : `<path d="M 10 26 Q 20 11 30 26" fill="none" stroke="${color}" stroke-width="2.2"/><line x1="13" y1="20" x2="13" y2="29" stroke="${color}" stroke-width="2.2"/><line x1="27" y1="20" x2="27" y2="29" stroke="${color}" stroke-width="2.2"/>`;
-    } else if (kingdom === 'Torre Cinza') {
-      inner = isForged
-        ? `<rect x="14" y="11" width="12" height="19" fill="none" stroke="${color}" stroke-width="2"/><line x1="16" y1="18" x2="24" y2="22" stroke="${color}" stroke-width="2"/><line x1="24" y1="18" x2="16" y2="22" stroke="${color}" stroke-width="2"/>` // X em vez de olho!
-        : `<rect x="14" y="11" width="12" height="19" fill="none" stroke="${color}" stroke-width="2"/><ellipse cx="20" cy="20" rx="4" ry="2.5" fill="none" stroke="${color}" stroke-width="1.6"/><circle cx="20" cy="20" r="1.3" fill="${color}"/>`;
+        ? `<polygon points="11,27 11,17 17,22 20,15 23,22 29,17 29,27" fill="none" stroke="${color}" stroke-width="2"/>`
+        : `<polygon points="11,28 11,18 17,23 20,16 23,23 29,18 29,28" fill="none" stroke="${color}" stroke-width="2"/><circle cx="20" cy="10.5" r="2.6" fill="${color}"/>`;
     } else {
+      // Costa de Salina — Oficial: Âncora marítima com barra horizontal | Falso: Sem barra horizontal e invertida!
       inner = isForged
-        ? `<circle cx="20" cy="20" r="7" fill="none" stroke="${color}" stroke-width="2" stroke-dasharray="3 3"/>`
-        : `<circle cx="20" cy="20" r="6.5" fill="none" stroke="${color}" stroke-width="2"/><circle cx="20" cy="20" r="2.2" fill="${color}"/><line x1="20" y1="10" x2="20" y2="13" stroke="${color}" stroke-width="2.2"/><line x1="20" y1="27" x2="20" y2="30" stroke="${color}" stroke-width="2.2"/><line x1="10" y1="20" x2="13" y2="20" stroke="${color}" stroke-width="2.2"/><line x1="27" y1="20" x2="30" y2="20" stroke="${color}" stroke-width="2.2"/>`;
+        ? `<line x1="20" y1="11" x2="20" y2="27" stroke="${color}" stroke-width="2.2"/><path d="M 12 18 Q 20 10 28 18" fill="none" stroke="${color}" stroke-width="2.2"/>`
+        : `<circle cx="20" cy="11" r="2.2" fill="none" stroke="${color}" stroke-width="1.8"/><line x1="20" y1="13" x2="20" y2="28" stroke="${color}" stroke-width="2.2"/><line x1="14" y1="17" x2="26" y2="17" stroke="${color}" stroke-width="2"/><path d="M 12 23 Q 20 31 28 23" fill="none" stroke="${color}" stroke-width="2.2"/>`;
     }
 
     return `
@@ -215,65 +194,147 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     `;
   }
 
-  // Gerador de Retratos Pixel/SVG Expressivos (Permite foto de passaporte diferente da cara real!)
-  function renderPortraitSvg(look = {}, scale = 1) {
-    const {
-      skin = '#c69c72',
-      coat = '#2b3336',
-      hair = 'short', // 'short' | 'bald' | 'long' | 'hood' | 'horns' | 'hat' | 'glitch'
-      hairColor = '#1e1915',
-      glasses = false,
-      beard = false,
-      scar = false,
-      eyes = 'normal', // 'normal' | 'narrow' | 'wide' | 'hollow'
-    } = look;
+  // ---- CATÁLOGO DOS 8 ARQUÉTIPOS DE PERSONAGENS (Pronto para carregar PNGs do GPT ou SVG expressivo!) ----
+  // Assim que as imagens forem colocadas em `client/public/story1/chars/<charId>_<mood>.png`
+  // (mood = 'normal' | 'approved' | 'denied'), o jogo carrega os PNGs automaticamente!
+  const CHAR_LOOKS = {
+    char_1: { skin: '#d8ae8b', coat: '#2b3a4a', lapel: '#1b2631', hair: 'parted', hairColor: '#2c221b', glasses: true, mustache: true },
+    char_2: { skin: '#c49672', coat: '#3f3626', lapel: '#5c4d35', hair: 'ushanka', hairColor: '#231c16', beard: true },
+    char_3: { skin: '#e6c2a8', coat: '#4a1c24', lapel: '#290f14', hair: 'waves', hairColor: '#5c1d18', beret: true },
+    char_4: { skin: '#cfb195', coat: '#1e293b', lapel: '#0f172a', hair: 'fedora', hairColor: '#18181b', eyes: 'narrow' },
+    char_5: { skin: '#c29572', coat: '#3b1d1d', lapel: '#1f0f0f', hair: 'buzz', hairColor: '#1c1917', scar: true, eyes: 'narrow' },
+    char_6: { skin: '#d9b89c', coat: '#2e4028', lapel: '#1b2618', hair: 'bun', hairColor: '#71717a', glasses: true },
+    char_7: { skin: '#cfa382', coat: '#3f1616', lapel: '#7f1d1d', hair: 'slick', hairColor: '#27272a', glasses: true, mustache: true },
+    char_8: { skin: '#d4d4d8', coat: '#121216', lapel: '#050507', hair: 'hood', hairColor: '#09090b', eyes: 'hollow' },
+  };
 
-    const w = Math.round(130 * scale);
-    const h = Math.round(150 * scale);
+  function renderPortraitFallbackSvg(charId = 'char_1', mood = 'normal', scale = 1) {
+    const look = CHAR_LOOKS[charId] || CHAR_LOOKS.char_1;
+    const w = Math.round(136 * scale);
+    const h = Math.round(158 * scale);
 
-    let hairSvg = '';
-    if (hair === 'short') hairSvg = `<path d="M36 44 Q65 22 94 44 L92 54 Q65 40 38 54 Z" fill="${hairColor}"/>`;
-    if (hair === 'long') hairSvg = `<path d="M32 45 Q65 18 98 45 L102 102 L88 102 L88 56 Q65 40 42 56 L42 102 L28 102 Z" fill="${hairColor}"/>`;
-    if (hair === 'hood') hairSvg = `<path d="M24 115 L30 36 Q65 14 100 36 L106 115 L88 115 L86 50 Q65 36 44 50 L42 115 Z" fill="#18181b"/>`;
-    if (hair === 'horns') hairSvg = `<polygon points="38,44 26,18 48,36" fill="#451a03"/><polygon points="92,44 104,18 82,36" fill="#451a03"/>`;
-    if (hair === 'hat') hairSvg = `<rect x="24" y="38" width="82" height="8" fill="#1c1917"/><rect x="40" y="18" width="50" height="22" fill="#292524"/>`;
-    if (hair === 'glitch') hairSvg = `<rect x="34" y="28" width="62" height="16" fill="#09090b"/><rect x="28" y="36" width="24" height="6" fill="#dc2626"/>`;
+    // Boca e sobrancelhas mudam conforme 'normal' | 'approved' (feliz/aliviado) | 'denied' (puto/frustrado)!
+    let mouthSvg = `<path d="M55 90 Q68 89 81 90" stroke="#2b1b10" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+    let browLeft = `<line x1="47" y1="59" x2="60" y2="60" stroke="#231810" stroke-width="2.6" stroke-linecap="round"/>`;
+    let browRight = `<line x1="76" y1="60" x2="89" y2="59" stroke="#231810" stroke-width="2.6" stroke-linecap="round"/>`;
+    let blushSvg = '';
 
-    const eyeSvg =
-      eyes === 'hollow'
-        ? `<rect x="46" y="59" width="11" height="8" fill="#09090b"/><rect x="73" y="59" width="11" height="8" fill="#09090b"/><circle cx="51" cy="63" r="1.5" fill="#ef4444"/><circle cx="78" cy="63" r="1.5" fill="#ef4444"/>`
-        : eyes === 'narrow'
-          ? `<line x1="47" y1="63" x2="57" y2="63" stroke="#18120c" stroke-width="3"/><line x1="73" y1="63" x2="83" y2="63" stroke="#18120c" stroke-width="3"/>`
-          : `<circle cx="52" cy="63" r="3.2" fill="#18120c"/><circle cx="78" cy="63" r="3.2" fill="#18120c"/>`;
+    if (mood === 'approved') {
+      mouthSvg = `<path d="M53 87 Q68 99 83 87" stroke="#2b1b10" stroke-width="2.8" fill="#fef2f2" stroke-linecap="round"/>`;
+      browLeft = `<path d="M47 58 Q53 54 60 57" stroke="#231810" stroke-width="2.5" fill="none"/>`;
+      browRight = `<path d="M76 57 Q83 54 89 58" stroke="#231810" stroke-width="2.5" fill="none"/>`;
+      blushSvg = `<ellipse cx="48" cy="79" rx="5" ry="2.5" fill="#dc2626" opacity="0.22"/><ellipse cx="88" cy="79" rx="5" ry="2.5" fill="#dc2626" opacity="0.22"/>`;
+    } else if (mood === 'denied') {
+      mouthSvg = `<path d="M54 94 Q68 84 82 94" stroke="#2b1b10" stroke-width="2.8" fill="none" stroke-linecap="round"/>`;
+      browLeft = `<line x1="47" y1="56" x2="61" y2="62" stroke="#231810" stroke-width="3" stroke-linecap="round"/>`;
+      browRight = `<line x1="75" y1="62" x2="89" y2="56" stroke="#231810" stroke-width="3" stroke-linecap="round"/>`;
+    }
 
-    const glassesSvg = glasses
-      ? `<rect x="44" y="57" width="16" height="12" fill="none" stroke="#1c1917" stroke-width="2"/><rect x="70" y="57" width="16" height="12" fill="none" stroke="#1c1917" stroke-width="2"/><line x1="60" y1="63" x2="70" y2="63" stroke="#1c1917" stroke-width="2"/>`
+    let headGear = '';
+    if (look.hair === 'parted') {
+      headGear = `<path d="M36 48 Q52 24 82 28 Q100 32 100 50 L96 56 Q78 39 54 44 L40 55 Z" fill="${look.hairColor}"/>`;
+    } else if (look.hair === 'ushanka') {
+      headGear = `
+        <rect x="31" y="22" width="74" height="28" rx="8" fill="#3a2e24" stroke="#1a140f" stroke-width="2"/>
+        <rect x="27" y="42" width="14" height="26" rx="4" fill="#4a3b2e" stroke="#1a140f" stroke-width="2"/>
+        <rect x="95" y="42" width="14" height="26" rx="4" fill="#4a3b2e" stroke="#1a140f" stroke-width="2"/>
+        <rect x="42" y="29" width="52" height="16" rx="3" fill="#5c4b3b"/>
+      `;
+    } else if (look.hair === 'waves') {
+      headGear = `
+        <path d="M32 48 Q68 22 104 48 L108 112 L91 112 L91 58 Q68 42 45 58 L45 112 L28 112 Z" fill="${look.hairColor}"/>
+        <ellipse cx="66" cy="31" rx="36" ry="12" fill="#7f1d1d" stroke="#290f14" stroke-width="2" transform="rotate(-7 66 31)"/>
+      `;
+    } else if (look.hair === 'fedora') {
+      headGear = `
+        <ellipse cx="68" cy="42" rx="48" ry="7" fill="#18181b" stroke="#09090b" stroke-width="2"/>
+        <path d="M42 42 L48 18 Q68 13 88 18 L94 42 Z" fill="#27272a" stroke="#09090b" stroke-width="2"/>
+        <rect x="45" y="34" width="46" height="5" fill="#7f1d1d"/>
+      `;
+    } else if (look.hair === 'buzz') {
+      headGear = `<path d="M39 48 Q68 28 97 48 L95 54 Q68 38 41 54 Z" fill="${look.hairColor}"/>`;
+    } else if (look.hair === 'bun') {
+      headGear = `
+        <circle cx="68" cy="21" r="13" fill="${look.hairColor}" stroke="#27272a" stroke-width="2"/>
+        <path d="M36 50 Q68 26 100 50 L96 60 Q68 40 40 60 Z" fill="${look.hairColor}"/>
+      `;
+    } else if (look.hair === 'slick') {
+      headGear = `<path d="M38 46 Q68 23 98 46 L96 53 Q68 36 40 53 Z" fill="${look.hairColor}"/>`;
+    } else if (look.hair === 'hood') {
+      headGear = `<path d="M22 126 L30 34 Q68 10 106 34 L114 126 L93 126 L90 50 Q68 34 46 50 L43 126 Z" fill="#111115" stroke="#000" stroke-width="2"/>`;
+    }
+
+    const eyesSvg =
+      look.eyes === 'hollow'
+        ? `<rect x="48" y="62" width="13" height="9" rx="2" fill="#09090b"/><rect x="75" y="62" width="13" height="9" rx="2" fill="#09090b"/><circle cx="54.5" cy="66.5" r="1.8" fill="#ef4444"/><circle cx="81.5" cy="66.5" r="1.8" fill="#ef4444"/>`
+        : look.eyes === 'narrow'
+          ? `<ellipse cx="54" cy="67" rx="5" ry="2.2" fill="#fff"/><circle cx="54" cy="67" r="1.8" fill="#140e08"/><ellipse cx="82" cy="67" rx="5" ry="2.2" fill="#fff"/><circle cx="82" cy="67" r="1.8" fill="#140e08"/>`
+          : `<ellipse cx="54" cy="67" rx="5.5" ry="3.8" fill="#fff"/><circle cx="54" cy="67" r="2.3" fill="#140e08"/><ellipse cx="82" cy="67" rx="5.5" ry="3.8" fill="#fff"/><circle cx="82" cy="67" r="2.3" fill="#140e08"/>`;
+
+    const glassesSvg = look.glasses
+      ? `<rect x="45" y="60" width="18" height="13" rx="2" fill="rgba(255,255,255,0.12)" stroke="#1c1917" stroke-width="2"/><rect x="73" y="60" width="18" height="13" rx="2" fill="rgba(255,255,255,0.12)" stroke="#1c1917" stroke-width="2"/><line x1="63" y1="66" x2="73" y2="66" stroke="#1c1917" stroke-width="2"/>`
       : '';
 
-    const beardSvg = beard ? `<path d="M42 78 Q65 104 88 78 L84 94 Q65 108 46 94 Z" fill="${hairColor}" opacity="0.88"/>` : '';
-    const scarSvg = scar ? `<line x1="74" y1="51" x2="83" y2="75" stroke="#7f1d1d" stroke-width="2.2"/>` : '';
+    const beardSvg = look.beard
+      ? `<path d="M41 80 Q68 112 95 80 L90 99 Q68 115 46 99 Z" fill="${look.hairColor}" opacity="0.9"/>`
+      : '';
+    const mustacheSvg = look.mustache
+      ? `<path d="M55 84 Q68 79 81 84 Q68 87 55 84 Z" fill="${look.hairColor}"/>`
+      : '';
+    const scarSvg = look.scar
+      ? `<line x1="78" y1="52" x2="88" y2="80" stroke="#7f1d1d" stroke-width="2.5"/><line x1="76" y1="62" x2="84" y2="60" stroke="#7f1d1d" stroke-width="1.6"/>`
+      : '';
 
     return `
-      <svg width="${w}" height="${h}" viewBox="0 0 130 150" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-        <!-- Ombros / Casaco -->
-        <path d="M16 150 L24 106 Q65 96 106 106 L114 150 Z" fill="${coat}" stroke="#120e0a" stroke-width="2.5"/>
-        <rect x="54" y="92" width="22" height="18" fill="${skin}"/>
-        <!-- Rosto -->
-        <rect x="38" y="38" width="54" height="60" rx="14" fill="${skin}" stroke="#291d12" stroke-width="2.2"/>
+      <svg width="${w}" height="${h}" viewBox="0 0 136 158" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+        <!-- Casaco Pesado de Inverno + Gola -->
+        <path d="M14 158 L24 110 Q68 98 112 110 L122 158 Z" fill="${look.coat}" stroke="#0e0a07" stroke-width="2.5"/>
+        <polygon points="48,106 68,136 56,158 34,112" fill="${look.lapel}"/>
+        <polygon points="88,106 68,136 80,158 102,112" fill="${look.lapel}"/>
+        <!-- Pescoço e Orelhas -->
+        <rect x="57" y="95" width="22" height="18" fill="${look.skin}"/>
+        <ellipse cx="38" cy="70" rx="4" ry="8" fill="${look.skin}" stroke="#291d12" stroke-width="1.8"/>
+        <ellipse cx="98" cy="70" rx="4" ry="8" fill="${look.skin}" stroke="#291d12" stroke-width="1.8"/>
+        <!-- Rosto sombreado -->
+        <rect x="39" y="38" width="58" height="65" rx="18" fill="${look.skin}" stroke="#291d12" stroke-width="2.2"/>
+        <path d="M40 75 Q40 102 68 103 Q96 102 96 75" fill="rgba(0,0,0,0.07)"/>
+        ${blushSvg}
         ${beardSvg}
-        ${eyeSvg}
+        ${browLeft}
+        ${browRight}
+        ${eyesSvg}
         ${glassesSvg}
         ${scarSvg}
-        <!-- Nariz e Boca séria -->
-        <line x1="65" y1="63" x2="63" y2="75" stroke="#4a3520" stroke-width="2"/>
-        <line x1="55" y1="84" x2="75" y2="84" stroke="#291d12" stroke-width="2.4"/>
-        ${hairSvg}
+        <!-- Nariz sombreado -->
+        <path d="M68 64 L65 78 L71 79" fill="none" stroke="#4a3520" stroke-width="2.2" stroke-linejoin="round"/>
+        ${mustacheSvg}
+        ${mouthSvg}
+        ${headGear}
       </svg>
     `;
   }
 
-  // ---- OS 5 DIAS COMPLETOS COM PROGRESSÃO REAL DE MECÂNICAS & LORE ----
-  // Data oficial do posto: 24/11/2026
+  // Renderiza automaticamente o PNG gerado pelo GPT (se existir em /story1/chars/) com fallback instantâneo pro SVG!
+  function renderCharacterArt(charId = 'char_1', mood = 'normal', scale = 1) {
+    const w = Math.round(136 * scale);
+    const h = Math.round(158 * scale);
+    const pngPath = `/story1/chars/${charId}_${mood}.png`;
+    const svgMarkup = renderPortraitFallbackSvg(charId, mood, scale);
+
+    return `
+      <div class="pp-char-art-wrap" style="width:${w}px; height:${h}px; position:relative; display:flex; align-items:flex-end; justify-content:center;">
+        <img
+          src="${pngPath}"
+          alt=""
+          style="width:100%; height:100%; object-fit:contain; image-rendering:auto; display:block;"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+        />
+        <div style="display:none;">${svgMarkup}</div>
+      </div>
+    `;
+  }
+
+  // ---- OS 5 DIAS COMPLETOS COM NOMES FORTES E REAÇÕES AO ENTREGAR PASSAPORTE ----
   const CURRENT_DATE_STR = '24.11.2026';
 
   const DAYS = [
@@ -281,15 +342,15 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       day: 1,
       codeTitle: 'DIA 1 — REABERTURA DO POSTO 04 (ESTRADA-MORTA)',
       bulletin:
-        'MINISTÉRIO DA ORDEM TERRITORIAL — BOLETIM Nº 01:\nApós a nevasca de ontem, a fronteira leste foi reaberta sob vigilância militar.\nTodo cidadão deve apresentar PASSAPORTE dentro da validade (>= 2026) e BRASÃO OFICIAL do seu Distrito (compare o desenho na aba Brasões do Manual!).\nSalário: +10 cr por acerto. Aluguel & carvão da calefação à noite: 20 cr.',
+        'MINISTÉRIO DA ORDEM TERRITORIAL — BOLETIM Nº 01:\nApós a nevasca, a fronteira entre as 4 Nações foi reaberta sob vigilância militar.\nTodo viajante deve apresentar PASSAPORTE válido (>= 2026) e BRASÃO OFICIAL da sua Nação (compare na aba Brasões do Manual!).\nSalário: +10 cr por acerto. Aluguel & carvão à noite: 20 cr.',
       supervisorIntro:
-        'KSHHH— Posto 04 em operação. Chame o primeiro da fila no botão vermelho PRÓXIMO!, confira validade e brasão no Manual, bata o carimbo na gaveta à direita e devolva pela fresta.',
+        'KSHHH— Posto 04 em operação. Chame o primeiro no botão vermelho PRÓXIMO!, confira validade e brasão no Manual, puxe a gaveta CARIMBOS à direita e devolva o passaporte pela fresta.',
       logIntro:
-        'mano... o livro sugou a gente pra dentro de uma guarita gelada no meio do nada!! tem até um coronel falando chiado no rádio velho kkkkk faz o trampo aí pra gente ver onde essa história vai dar.',
+        'mano... o livro sugou a gente pra dentro de uma guarita gelada no meio do nada!! tem até coronel chiando no rádio velho kkkkk faz o trampo aí pra gente ver onde essa história vai dar.',
       rules: [
-        '• Todo viajante deve ter PASSAPORTE.',
-        '• Validade deve ser 2026 ou posterior (Data hoje: 24.11.2026).',
-        '• Compare o desenho do BRASÃO no passaporte com a aba [Brasões] do Manual!',
+        '• Todo viajante deve apresentar PASSAPORTE.',
+        '• Validade deve ser 2026 ou posterior (Hoje: 24.11.2026).',
+        '• Compare o desenho do BRASÃO no passaporte com a aba [Brasões]!',
       ],
       wanted: [],
       unlockDiscrepancy: false,
@@ -297,56 +358,62 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       unlockUV: false,
       applicants: [
         {
-          name: 'Geraldo, o Contínuo',
+          charId: 'char_1',
+          name: 'Dimitri Volkov',
           sex: 'M',
           birth: '1981',
-          kingdom: 'Vale do Boleto',
-          city: 'Serasa Sul',
+          kingdom: 'República de Vostok',
+          city: 'Kievagrad',
           expiry: '12.2028',
           weightPass: 68,
           weightReal: 68,
           forgedSeal: false,
-          look: { skin: '#d6a982', coat: '#293241', hair: 'short', hairColor: '#292018', glasses: true },
-          speech: 'noite chefe. só vim arquivar uns carnês prescritos no depósito, tá tudo em dia.',
+          speech: 'bom dia, inspetor. vim transferir arquivos ferroviários de Kievagrad, meus papéis estão em ordem.',
+          replyApproved: 'muito obrigado, camarada! bom turno aí nesse frio.',
+          replyDenied: 'como assim negado?! meus documentos de Vostok estão perfeitos!!',
           xrayDesc: 'Apenas chaves e uma marmita vazia.',
           xrayBad: false,
           valid: true,
-          violationReason: 'Documentação estava 100% regular.',
+          violationReason: 'Documentação de Dimitri estava 100% regular.',
         },
         {
-          name: 'Cláudio Barroso',
+          charId: 'char_2',
+          name: 'Boris Kovalenko',
           sex: 'M',
           birth: '1974',
-          kingdom: 'Pântano Fiscal',
-          city: 'Lama Seca',
+          kingdom: 'União de Karst',
+          city: 'Ferrovelho',
           expiry: '04.2021', // VENCIDO!
           weightPass: 92,
           weightReal: 92,
           forgedSeal: false,
-          look: { skin: '#9ca87c', coat: '#3f3624', hair: 'bald', beard: true, hairColor: '#1f2419' },
-          speech: 'ô meu consagrado, releva a data aí... cinco aninhos vencido não mata ninguém pô.',
+          speech: 'ô chefe, releva a data aí... cinco aninhos vencido na nevasca não faz mal a ninguém pô.',
+          replyApproved: 'hehehe valeu pela vista grossa, meu consagrado! fui!',
+          replyDenied: 'droga... sabia que iam implicar com esse documento de 2021. tô voltando.',
           xrayDesc: 'Nada ilegal.',
           xrayBad: false,
           valid: false,
           violationReason: 'Passaporte vencido (04.2021 < 2026).',
         },
         {
-          name: 'Morgana S. Faria',
+          charId: 'char_3',
+          name: 'Elena Rostova',
           sex: 'F',
           birth: '1993',
-          kingdom: 'Bosque MEI',
-          city: 'Pinheiro Simples',
+          kingdom: 'Principado de Alvor',
+          city: 'Monte Claro',
           expiry: '09.2028',
           weightPass: 56,
           weightReal: 56,
-          forgedSeal: true, // BRASÃO DESENHADO ERRADO (Sol na esquerda e 1 copa!)
-          look: { skin: '#e2bca0', coat: '#1e3f35', hair: 'long', hairColor: '#581c1c' },
-          speech: 'tudo certinho viu? eu mesma mandei plastificar lá no Bosque MEI ontem.',
-          xrayDesc: 'Caneta tinteiro usada pra falsificar carimbo.',
+          forgedSeal: true, // BRASÃO SEM O SOL ACIMA DA COROA!
+          speech: 'boa tarde querido, meu passaporte saiu novinho ontem lá em Monte Claro.',
+          replyApproved: 'obrigada docinho, nem reparou no meu carimbo artesanal...',
+          replyDenied: 'tsc! que olho miserável o seu... quase passou batido esse brasão.',
+          xrayDesc: 'Caneta tinteiro usada pra falsificar brasão.',
           xrayBad: false,
           valid: false,
-          violationReason: 'Brasão falsificado do Bosque MEI (desenho adulterado).',
-          logReactAfter: 'caralho vc viu o carimbo torto ou só chutou? tem até falsificador de documento dentro dessa merda kkkkk',
+          violationReason: 'Brasão falsificado do Principado de Alvor (faltando o sol acima da coroa).',
+          logReactAfter: 'caralho vc pegou o brasão sem o solzinho no olho clínico msm?! tem até falsificador profissa nessa fronteira kkkkk',
         },
       ],
     },
@@ -354,15 +421,15 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       day: 2,
       codeTitle: 'DIA 2 — BALANÇA DIGITAL, DISCREPÂNCIAS & RAIO-X',
       bulletin:
-        'BOLETIM OFICIAL Nº 02:\nContrabandistas estão entrando com carga oculta no corpo.\nNOVO EQUIPAMENTO LIBERADO: Modo [🔍 DISCREPÂNCIA] e [🩻 RAIO-X].\nSe o PESO no visor LED diferir em mais de 3kg do Passaporte, ou a CIDADE não pertencer ao Reino (veja aba Mapa), marque os 2 campos em [🔍 DISCREPÂNCIA] para INTERROGAR e DETER!',
+        'BOLETIM OFICIAL Nº 02:\nContrabandistas estão tentando cruzar com explosivos ocultos sob o sobretudo.\nEQUIPAMENTOS LIBERADOS: [🔍 DISCREPÂNCIA] e [🩻 RAIO-X].\nSe o PESO no piso diferir em >3kg do Passaporte, ou a CIDADE não pertencer à Nação (veja aba Mapa), marque os 2 campos em [🔍 DISCREPÂNCIA] para INTERROGAR e DETER!',
       supervisorIntro:
-        'KSHHH— Dia 2. Cidadãos de fora agora também exigem TICKET DE ENTRADA com data de 2026. Se achar divergência de peso, foto ou cidade, clique em [🔍 DISCREPÂNCIA] e aponte os dois itens conflitantes.',
+        'KSHHH— Dia 2. Exija também o TICKET DE ENTRADA (2026). Achou divergência de peso ou cidade? Clique em [🔍 DISCREPÂNCIA] e aponte os dois campos conflitantes.',
       logIntro:
-        'botaram até balança no chão e raio-x na guarita agora mano... os caras levam essa fronteira a sério msm, fica esperto pra não deixar bomba passar.',
+        'ligaram balança no chão e scanner de raio-x na guarita agora mano... fica esperto pra não deixar maluco entrar com bomba.',
       rules: [
         '• Regras do Dia 1 continuam valendo.',
         '• Obrigatório apresentar TICKET DE ENTRADA válido (2026).',
-        '• Confira a aba [Mapa]: a Cidade deve pertencer ao Reino do passaporte.',
+        '• Confira a aba [Mapa]: a Cidade deve pertencer à Nação do passaporte.',
         '• Se Peso LED ≠ Peso Passaporte (>3kg), use [🔍 Discrepância] → Raio-X → Negar/Deter!',
       ],
       wanted: [],
@@ -371,65 +438,71 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       unlockUV: false,
       applicants: [
         {
-          name: 'Tadeu Pedreira',
+          charId: 'char_2',
+          name: 'Mikhail Orlov',
           sex: 'M',
           birth: '1980',
-          kingdom: 'Ponte Leste',
-          city: 'Pedágio 1',
+          kingdom: 'Costa de Salina',
+          city: 'Baía Negra',
           expiry: '11.2029',
           weightPass: 88,
           weightReal: 89,
           forgedSeal: false,
           entryTicket: { code: 'TK-882', validYear: '2026', purpose: 'TRÂNSITO' },
-          look: { skin: '#b58463', coat: '#453222', hair: 'short', beard: true, hairColor: '#1c1613' },
-          speech: 'trouxe passaporte e o ticket novo que pediram hoje na rádio. confere aí.',
-          xrayDesc: 'Cinto de fivela comum.',
+          speech: 'trouxe o passaporte de Salina e o ticket novo que exigiram hoje no rádio.',
+          replyApproved: 'valeu chefe, seguir viagem antes que congele a estrada.',
+          replyDenied: 'ei!! tá tudo dentro da lei, você vai tomar multa por me barrar!',
+          xrayDesc: 'Cinto de couro comum.',
           xrayBad: false,
           valid: true,
-          violationReason: 'Viajante estava totalmente regular.',
+          violationReason: 'Mikhail estava totalmente regular.',
         },
         {
-          name: 'Valdir Serpente',
+          charId: 'char_4',
+          name: 'Viktor Lazarev',
           sex: 'M',
           birth: '1991',
-          kingdom: 'Vila do Meio',
-          city: 'Beco Torto',
+          kingdom: 'União de Karst',
+          city: 'Mina Funda',
           expiry: '08.2029',
           weightPass: 64,
           weightReal: 96, // +32 KG DE CONTRABANDO!!
           forgedSeal: false,
           entryTicket: { code: 'TK-904', validYear: '2026', purpose: 'COMÉRCIO' },
           bribe: 35,
-          look: { skin: '#cfb195', coat: '#1e293b', hair: 'hat', eyes: 'narrow' },
-          speech: 'é que essa jaqueta de inverno pesa um pouquinho chefe... aceita esses 35 créditos pro café.',
-          interrogateReply: 'TÁ BOM, TÁ BOM! São só umas bananas de dinamite coladas na costela, não aperta o botão vermelho!!',
+          speech: 'é só meu sobretudo pesado de lã, inspetor... fica com esses 35 créditos pro seu café.',
+          interrogateReply: 'CALMA, NÃO CHAMA OS GUARDAS! São só dinamites de mineração presas no colete!!',
+          replyApproved: 'hehehe negócios são negócios, inspetor... ninguém viu nada.',
+          replyDenied: 'ufa... pelo menos você só me mandou voltar e não chamou a guarda!',
           xrayDesc: '⚠️ CONTRABANDO GRAVE: 6 Bananas de Dinamite + Detonador presos ao tórax!',
           xrayBad: true,
           discrepancyType: 'weight',
           valid: false,
           canDetain: true,
           violationReason: 'Excesso de 32kg na balança com explosivos colados no corpo.',
-          logReactAfter: 'o maluco tava com seis bananas de dinamite amarradas na barriga mano kkkkkkk ainda tentou te comprar no cafézinho!',
+          logReactAfter: 'o maluco tava com seis bananas de dinamite amarradas na costela mano kkkkkkk ainda tentou te comprar no cafézinho!',
         },
         {
-          name: 'Lucas Saltério',
+          charId: 'char_1',
+          name: 'Anton Petrov',
           sex: 'M',
           birth: '1995',
-          kingdom: 'Vale do Boleto',
-          city: 'Lama Seca', // CIDADE DO PÂNTANO FISCAL, NÃO DO VALE DO BOLETO!
+          kingdom: 'República de Vostok',
+          city: 'Farol Sul', // FAROL SUL É DA COSTA DE SALINA, NÃO DE VOSTOK!
           expiry: '05.2028',
           weightPass: 71,
           weightReal: 71,
           forgedSeal: false,
           entryTicket: { code: 'TK-410', validYear: '2026', purpose: 'VISITA' },
-          look: { skin: '#d8b49a', coat: '#312e81', hair: 'long', hairColor: '#3f2718' },
-          speech: 'sou nascido e criado em Lama Seca, capital orgulhosa do Vale do Boleto!',
-          interrogateReply: 'Como assim Lama Seca não fica no Vale do Boleto?! O cara que me vendeu esse documento me garantiu!',
+          speech: 'sou nascido e criado em Farol Sul, orgulho da República de Vostok!',
+          interrogateReply: 'Farol Sul fica na Costa de Salina?! Maldito despachante da estação, me vendeu papel errado!',
+          replyApproved: 'passou batido! partiu cruzar o portão.',
+          replyDenied: 'vou atrás daquele falsificador safado que imprimiu a cidade errada...',
           xrayDesc: 'Nenhum metal oculto.',
           xrayBad: false,
           discrepancyType: 'city',
           valid: false,
-          violationReason: 'Cidade emissora "Lama Seca" pertence ao Pântano Fiscal (veja aba Mapa).',
+          violationReason: 'Cidade "Farol Sul" pertence à Costa de Salina, não à República de Vostok.',
         },
       ],
     },
@@ -437,141 +510,151 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       day: 3,
       codeTitle: 'DIA 3 — PROCURADOS NA PAREDE & IDENTIDADE ROUBADA',
       bulletin:
-        'BOLETIM OFICIAL Nº 03:\nDois criminosos foragidos da Prisão Estadual escaparam hoje cedo — confira os ROSTOS no cartaz colado na janela!\nAlém disso, trabalhadores devem portar PERMISSÃO DE TRABALHO com NOME IDÊNTICO ao Passaporte.',
+        'BOLETIM OFICIAL Nº 03:\nDois criminosos foragidos escaparam hoje cedo — confira os ROSTOS no cartaz colado na janela!\nAlém disso, quem vier a TRABALHO deve portar PERMISSÃO DE TRABALHO com NOME IDÊNTICO ao Passaporte.',
       supervisorIntro:
-        'KSHHH— Dia 3. Fixamos o Cartaz de Procurados no vidro da sua cabine. Compare sempre o rosto real do sujeito com a foto do passaporte e com o cartaz de procurados. Se for fugitivo, DETENHA.',
+        'KSHHH— Dia 3. Fixamos o Cartaz de Procurados no vidro. Compare sempre o rosto real na janela com a foto do passaporte e com o cartaz. Se for fugitivo, DETENHA.',
       logIntro:
-        'colaram cartaz de procurado na janela igual filme policial antigo... olha bem pra cara do maluco antes de bater o verde hein.',
+        'colaram cartaz de procurado na janela igual filme policial antigo... olha bem pra cara do sujeito antes de bater o carimbo verde hein.',
       rules: [
         '• Regras anteriores continuam valendo.',
         '• Compare o ROSTO na janela com o Cartaz de PROCURADOS e com a FOTO do passaporte!',
-        '• Se o Ticket indicar "TRABALHO", exija PERMISSÃO DE TRABALHO com o mesmo nome e validade >= 2026.',
+        '• Se o Ticket indicar "TRABALHO", exija PERMISSÃO DE TRABALHO com nome idêntico.',
       ],
       wanted: [
-        { name: 'Ígor Navalha', look: { skin: '#c49a76', coat: '#3f1d1d', hair: 'bald', scar: true, eyes: 'narrow' } },
-        { name: 'Dona Zulmira', look: { skin: '#d9b89c', coat: '#365314', hair: 'long', glasses: true, hairColor: '#52525b' } },
+        { name: 'Ígor Navalha', charId: 'char_5' },
+        { name: 'Marta Krol', charId: 'char_6' },
       ],
       unlockDiscrepancy: true,
       unlockXray: true,
       unlockUV: false,
       applicants: [
         {
-          name: 'Mago Patrício',
+          charId: 'char_2',
+          name: 'Pavel Morozov',
           sex: 'M',
           birth: '1968',
-          kingdom: 'Torre Cinza',
-          city: 'Cúpula Alta',
+          kingdom: 'Principado de Alvor',
+          city: 'Vila Real',
           expiry: '12.2030',
           weightPass: 74,
           weightReal: 74,
           forgedSeal: false,
           entryTicket: { code: 'TK-512', validYear: '2026', purpose: 'TRABALHO' },
-          workPermit: { holder: 'Mago Patrício', role: 'Arquivista', until: '2028' },
-          look: { skin: '#d6b498', coat: '#3b3355', hair: 'hat', beard: true, hairColor: '#71717a' },
-          speech: 'trouxe o passaporte, o ticket e a permissão de arquivista. tô atrasado pro turno.',
-          xrayDesc: 'Óculos reserva no bolso.',
+          workPermit: { holder: 'Pavel Morozov', role: 'Relojoeiro', until: '2028' },
+          speech: 'trouxe passaporte, ticket e permissão de relojoeiro. tudo certinho.',
+          replyApproved: 'agradecido, inspetor! até a volta.',
+          replyDenied: 'mas minha permissão de trabalho está impecável!! que absurdo!',
+          xrayDesc: 'Lupa e engrenagens pequenas de relógio.',
           xrayBad: false,
           valid: true,
-          violationReason: 'Todos os 3 documentos estavam corretos.',
+          violationReason: 'Todos os 3 documentos de Pavel estavam corretos.',
         },
         {
-          name: 'Roberto Nogueira', // mas a cara na janela é o procurado ÍGOR NAVALHA com cicatriz!
+          charId: 'char_5', // Na janela é o procurado Ígor Navalha (char_5), mas a foto do passaporte roubado é char_1!
+          photoCharId: 'char_1',
+          name: 'Roman Belov',
           sex: 'M',
           birth: '1985',
-          kingdom: 'Ponte Leste',
-          city: 'Arco de Pedra',
+          kingdom: 'Costa de Salina',
+          city: 'Doca Velha',
           expiry: '10.2028',
           weightPass: 82,
           weightReal: 82,
           forgedSeal: false,
           entryTicket: { code: 'TK-619', validYear: '2026', purpose: 'TRÂNSITO' },
-          look: { skin: '#c49a76', coat: '#3f1d1d', hair: 'bald', scar: true, eyes: 'narrow' },
-          photoLook: { skin: '#c49a76', coat: '#1e3a5f', hair: 'short', scar: false, eyes: 'normal' }, // foto diferente da cara!
-          speech: 'cortei o cabelo hoje cedo seu guarda, por isso tô um pouco diferente da foto.',
-          interrogateReply: 'Maldito cartaz!! Sai da frente que eu não vou voltar pra jaula de descarte!!',
+          speech: 'raspei o cabelo e peguei essa cicatriz na doca ontem, chefe... sou o Roman da foto sim.',
+          interrogateReply: 'Maldito cartaz na janela!! Abre essa grade logo senão vai ter confusão!!',
+          replyApproved: 'otário demais kkkkk passei com documento roubado na cara dura.',
+          replyDenied: 'tsc... deu sorte que eu não puxei a faca aqui mesmo.',
           xrayDesc: '⚠️ Lâmina serrilhada escondida na manga!',
           xrayBad: true,
           discrepancyType: 'face',
           valid: false,
           canDetain: true,
-          violationReason: 'Fugitivo procurado (Ígor Navalha) usando passaporte roubado!',
+          violationReason: 'Fugitivo procurado (Ígor Navalha) usando passaporte roubado de Roman Belov!',
         },
         {
-          name: 'Helena Viana',
+          charId: 'char_3',
+          name: 'Natasha Sokolova',
           sex: 'F',
           birth: '1990',
-          kingdom: 'Bosque MEI',
-          city: 'Ramo Verde',
+          kingdom: 'República de Vostok',
+          city: 'Porto Gelo',
           expiry: '07.2029',
           weightPass: 61,
           weightReal: 61,
           forgedSeal: false,
           entryTicket: { code: 'TK-701', validYear: '2026', purpose: 'TRABALHO' },
-          workPermit: { holder: 'Heloísa Viana', role: 'Botânica', until: '2027' }, // NOME DIFERENTE!
-          look: { skin: '#cca080', coat: '#14532d', hair: 'long', hairColor: '#291d12', glasses: true },
-          speech: 'a digitação do RH trocou duas letrinhas no meu nome, mas dá um desconto vai...',
-          interrogateReply: 'É permissão da minha irmã gêmea tá bom?! Eu perdi a minha na mudança!',
+          workPermit: { holder: 'Nadia Sokolova', role: 'Engenheira', until: '2027' }, // NOME DIFERENTE!
+          speech: 'o escrivão trocou Natasha por Nadia na minha permissão, mas releva por favorzinho...',
+          interrogateReply: 'Tá bom, peguei a permissão da minha irmã emprestada porque a minha atrasou!',
+          replyApproved: 'ufa, salvou meu emprego! obrigada!',
+          replyDenied: 'poxa vida... perder viagem inteira por causa de um nome trocado.',
           xrayDesc: 'Bolsa comum sem contrabando.',
           xrayBad: false,
           discrepancyType: 'name',
           valid: false,
-          violationReason: 'Divergência de nome: "Helena Viana" vs "Heloísa Viana" na Permissão.',
+          violationReason: 'Divergência de nome: "Natasha Sokolova" vs "Nadia Sokolova" na Permissão.',
         },
       ],
     },
     {
       day: 4,
-      codeTitle: 'DIA 4 — SURTO EPIDÊMICO & O MENSAGEIRO CIFRADO',
+      codeTitle: 'DIA 4 — QUARENTENA SANITÁRIA & O DIPLOMATA',
       bulletin:
-        'BOLETIM OFICIAL Nº 04:\nDevido à praga de ferrugem no Pântano Fiscal e Vila do Meio, viajantes desses DOIS reinos exigem CERTIFICADO DE VACINAÇÃO em dia.\nAtenção redobrada a mensageiros anônimos na fila.',
+        'BOLETIM OFICIAL Nº 04:\nDevido ao surto de febre cinza na União de Karst e na Costa de Salina, viajantes dessas DUAS nações exigem CERTIFICADO DE VACINAÇÃO em dia (2026).\nAtenção a malas diplomáticas blindadas no Raio-X.',
       supervisorIntro:
-        'KSHHH— Dia 4. Exija o cartão amarelo de vacina para qualquer um vindo do Pântano Fiscal ou Vila do Meio. E não aceite conversa paralela de encapuzados.',
+        'KSHHH— Dia 4. Exija o cartão amarelo de vacina para qualquer um vindo da União de Karst ou Costa de Salina.',
       logIntro:
-        'quatro dias trancado nessa cabine escura... mas fica de olho aberto, se o supervisor mandou ignorar encapuzado é justamente aí que tem caroço nesse angu.',
+        'quatro dias trancado nessa guarita... fica de olho no raio-x hoje mano, vai que algum diplomata tá carregando segredo escondido na mala.',
       rules: [
         '• Regras anteriores continuam valendo.',
-        '• Viajantes de PÂNTANO FISCAL ou VILA DO MEIO devem ter CERTIFICADO DE VACINA (Lote válido 2026).',
-        '• Sempre passe o Raio-X em bagagens suspeitas ou metálicas!',
+        '• Viajantes da UNIÃO DE KARST ou COSTA DE SALINA devem ter CERTIFICADO DE VACINA (2026).',
+        '• Sempre passe o Raio-X em bagagens diplomáticas ou suspeitas!',
       ],
       wanted: [
-        { name: 'Dona Zulmira', look: { skin: '#d9b89c', coat: '#365314', hair: 'long', glasses: true, hairColor: '#52525b' } },
+        { name: 'Marta Krol', charId: 'char_6' },
       ],
       unlockDiscrepancy: true,
       unlockXray: true,
       unlockUV: false,
       applicants: [
         {
-          name: 'Bárbara Brejeira',
+          charId: 'char_3',
+          name: 'Olga Dragan',
           sex: 'F',
           birth: '1988',
-          kingdom: 'Pântano Fiscal',
-          city: 'Brejo Branco',
+          kingdom: 'União de Karst',
+          city: 'Cinza Alta',
           expiry: '03.2028',
-          weightPass: 72,
-          weightReal: 72,
+          weightPass: 64,
+          weightReal: 64,
           forgedSeal: false,
           entryTicket: { code: 'TK-811', validYear: '2026', purpose: 'VISITA' },
           vaccineCert: { status: 'VENCIDA (2022)', batch: 'LT-09' }, // VACINA VENCIDA!
-          look: { skin: '#a3b18a', coat: '#3f3f46', hair: 'long', hairColor: '#1c1917' },
-          speech: 'trouxe até o cartãozinho amarelo de vacina ó! pode bater o verde sem medo.',
-          xrayDesc: 'Frascos de xarope.',
+          speech: 'trouxe até o cartãozinho amarelo de vacina ó! pode bater o carimbo verde.',
+          replyApproved: 'cof cof... obrigada moço, juro que é só um resfriadinho.',
+          replyDenied: 'ah não, só porque a vacina venceu em 2022?! que burocracia infernal!',
+          xrayDesc: 'Frascos de xarope na bolsa.',
           xrayBad: false,
           valid: false,
-          violationReason: 'Certificado de Vacinação vencido (2022) vindo do Pântano Fiscal.',
+          violationReason: 'Certificado de Vacinação vencido (2022) vindo da União de Karst.',
         },
         {
+          charId: 'char_4',
           name: 'Diplomata K.',
           sex: 'M',
           birth: '1978',
-          kingdom: 'Torre Cinza',
-          city: 'Sótão Sul',
+          kingdom: 'Principado de Alvor',
+          city: 'Ponte Dourada',
           expiry: '11.2030',
           weightPass: 75,
           weightReal: 75,
           forgedSeal: false,
           entryTicket: { code: 'TK-004', validYear: '2026', purpose: 'DIPLOMÁTICO' },
-          look: { skin: '#cbb59d', coat: '#18181b', hair: 'hood', eyes: 'narrow' },
-          speech: 'psiu. meus documentos diplomáticos tão em ordem... mas passa o Raio-X na minha pasta antes de carimbar. guardei uma chapa de chumbo pra vc.',
+          speech: 'psiu. meus documentos diplomáticos tão limpos... mas passa o Raio-X na minha pasta antes de carimbar. guardei uma placa de chumbo pra vc.',
+          replyApproved: 'guarde bem esses números binários. amanhã o segundo mensageiro trará a chave.',
+          replyDenied: 'você acabou de barrar um diplomata legítimo com imunidade, seu tolo!',
           xrayDesc: '📄 PLACA DE CHUMBO NA PASTA (PARTE 1/2):\n01001101  01010101  01010010  01001111',
           xrayBad: false,
           isLoreSecret1: true,
@@ -579,23 +662,25 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           violationReason: 'Diplomata K. possuía documentação diplomática 100% válida.',
         },
         {
-          name: 'Sérgio Contábil',
+          charId: 'char_1',
+          name: 'Hugo Varga',
           sex: 'M',
           birth: '1976',
-          kingdom: 'Vila do Meio',
-          city: 'Praça Central',
+          kingdom: 'Costa de Salina',
+          city: 'Baía Negra',
           expiry: '06.2029',
           weightPass: 79,
           weightReal: 79,
           forgedSeal: false,
           entryTicket: { code: 'TK-899', validYear: '2026', purpose: 'COMÉRCIO' },
           vaccineCert: { status: 'IMUNIZADO (2026)', batch: 'LT-94' },
-          look: { skin: '#d4a682', coat: '#334155', hair: 'short', glasses: true, hairColor: '#27272a' },
-          speech: 'sou da Vila do Meio mas tomei o reforço da vacina semana passada, tudo nos conformes.',
-          xrayDesc: 'Calculadora e pastas limpas.',
+          speech: 'vim da Costa de Salina mas tomei o lote de 2026 semana passada, tudo certinho.',
+          replyApproved: 'excelente trabalho, inspetor. tenha uma ótima noite!',
+          replyDenied: 'ei! minha vacina é de 2026! olha direito antes de carimbar vermelho!',
+          xrayDesc: 'Bússola marítima e notas fiscais.',
           xrayBad: false,
           valid: true,
-          violationReason: 'Documentação e vacina de Sérgio estavam em dia.',
+          violationReason: 'Documentação e vacina de Hugo estavam em dia.',
         },
       ],
     },
@@ -603,9 +688,9 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       day: 5,
       codeTitle: 'DIA 5 — AUDITORIA FINAL, LUZ NEGRA UV & O EMISSÁRIO FANTASMA',
       bulletin:
-        'BOLETIM OFICIAL Nº 05 (ÚLTIMO TURNO):\nFalsificadores de elite estão imprimindo passaportes perfeitos a olho nu!\nNOVO EQUIPAMENTO NA MESA: [🟣 LANTERNA UV]. Ligue a luz negra sobre a mesa: todo passaporte legítimo revela o selo fluorescente "AUTÊNTICO // CHANCELARIA". Se aparecer "FALSO / ADULTERADO", NEGUE ou DETENHA!',
+        'BOLETIM OFICIAL Nº 05 (ÚLTIMO TURNO):\nFalsificadores estão imprimindo passaportes idênticos aos originais!\nNOVO EQUIPAMENTO: [🟣 LANTERNA UV]. Ligue a luz negra sobre a mesa: todo passaporte real revela "AUTÊNTICO // CHANCELARIA". Se aparecer "CLONE FALSO", NEGUE ou DETENHA!',
       supervisorIntro:
-        'KSHHH— Último turno da auditoria, Inspetor. Acenda a [🟣 LANTERNA UV] em TODOS os passaportes hoje. Se passar deste turno sem ser demitido, encerramos sua convocação.',
+        'KSHHH— Último turno da auditoria, Inspetor. Acenda a [🟣 LANTERNA UV] em TODOS os passaportes hoje.',
       logIntro:
         'último dia nessa guarita congelada mano!! usa essa luz roxa aí nos papéis pra ninguém te passar a perna na reta final, vamo pegar logo esse livro e cair fora!',
       rules: [
@@ -613,18 +698,19 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
         '• OBRIGATÓRIO ligar a [🟣 Lanterna UV]: passaportes reais brilham "AUTÊNTICO // CHANCELARIA". Se brilhar "CLONE FALSO", é fraude!',
       ],
       wanted: [
-        { name: 'Dona Zulmira', look: { skin: '#d9b89c', coat: '#365314', hair: 'long', glasses: true, hairColor: '#52525b' } },
+        { name: 'Marta Krol', charId: 'char_6' },
       ],
       unlockDiscrepancy: true,
       unlockXray: true,
       unlockUV: true,
       applicants: [
         {
-          name: 'Auditor-Chefe Vagner',
+          charId: 'char_7',
+          name: 'Comissário Vagner',
           sex: 'M',
           birth: '1970',
-          kingdom: 'Vale do Boleto',
-          city: 'Fatura Nova',
+          kingdom: 'República de Vostok',
+          city: 'Usina Sete',
           expiry: '12.2030',
           weightPass: 84,
           weightReal: 84,
@@ -632,55 +718,63 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           uvText: '⚠️ CLONE FALSO // SEM REGISTRO', // PEGO SÓ NA LUZ UV!!
           entryTicket: { code: 'TK-999', validYear: '2026', purpose: 'AUDITORIA' },
           bribe: 80,
-          look: { skin: '#cfa382', coat: '#450a0a', hair: 'short', glasses: true, beard: true, hairColor: '#3f3f46' },
-          speech: 'sou o Auditor Regional! nem precisa ligar essa lanterninha roxa em mim não... toma 80 créditos de bônus e bate o verde logo!',
-          interrogateReply: 'Apaga essa luz roxa seu idiota!! Quer estragar meu esquema aqui dentro?!',
-          xrayDesc: 'Maleta cheia de carimbos clonados.',
+          speech: 'sou o Comissário Regional! nem precisa ligar essa lanterninha roxa em mim... toma 80 créditos de gratificação e bate o verde logo!',
+          interrogateReply: 'Apaga essa luz roxa seu insolente!! Quer arruinar meu esquema na fronteira?!',
+          replyApproved: 'hahaha sabia que todo inspetor tem seu preço. bom garoto.',
+          replyDenied: 'maldito rato de guarita... você ainda vai ouvir falar de mim!',
+          xrayDesc: 'Maleta cheia de matrizes falsas de passaporte.',
           xrayBad: true,
           valid: false,
           canDetain: true,
           violationReason: 'Passaporte clonado revelado na Luz Negra UV ("CLONE FALSO") + tentativa de suborno!',
-          logReactAfter: 'KKKKKKK o próprio auditor era falsificado na luz negra!! se vc cai no papinho dele já era!',
+          logReactAfter: 'KKKKKKK o próprio comissário era falsificado na luz negra!! se vc cai no papinho dele já era!',
         },
         {
-          name: 'Clara Mendonça', // Mas o rosto E a marca UV revelam a procurada Dona Zulmira!
+          charId: 'char_6', // Procurada Marta Krol tentando passar com nome falso!
+          name: 'Clara Mendonça',
           sex: 'F',
           birth: '1964',
-          kingdom: 'Bosque MEI',
-          city: 'Folha Única',
+          kingdom: 'Principado de Alvor',
+          city: 'Vila Real',
           expiry: '08.2028',
           weightPass: 60,
           weightReal: 60,
           forgedSeal: true,
           uvText: '⚠️ DOCUMENTO ADULTERADO',
           entryTicket: { code: 'TK-940', validYear: '2026', purpose: 'TRÂNSITO' },
-          look: { skin: '#d9b89c', coat: '#365314', hair: 'long', glasses: true, hairColor: '#52525b' },
-          speech: 'só uma senhorinha indo visitar os netos no bosque, meu filho...',
-          xrayDesc: 'Chaves mestras no casaco.',
+          speech: 'só uma senhora tranquila indo visitar os sobrinhos em Vila Real, meu jovem...',
+          interrogateReply: 'Droga, esqueci que meu retrato ainda estava pregado nesse vidro maldito!',
+          replyApproved: 'que rapaz gentil... adeusinho!',
+          replyDenied: 'quase consegui cruzar... maldita fiscalização!',
+          xrayDesc: 'Gazuas escondidas na gola do casaco.',
           xrayBad: false,
+          discrepancyType: 'face',
           valid: false,
           canDetain: true,
-          violationReason: 'Fugitiva procurada (Dona Zulmira) + selo e UV falsos.',
+          violationReason: 'Fugitiva procurada (Marta Krol) + brasão e UV adulterados.',
         },
         {
+          charId: 'char_8',
           name: 'Emissário Fantasma',
           sex: '?',
           birth: '1929',
-          kingdom: 'Torre Cinza',
-          city: 'Cúpula Alta',
+          kingdom: 'União de Karst',
+          city: 'Cinza Alta',
           expiry: '12.2035',
           weightPass: 72,
           weightReal: 72,
           forgedSeal: false,
           uvText: 'AUTÊNTICO // CÉSAR +3 → EHUOLP', // PARTE 2 DO ENIGMA NA LUZ UV!!
           entryTicket: { code: 'TK-000', validYear: '2026', purpose: 'CHANCELARIA' },
-          look: { skin: '#d4d4d8', coat: '#09090b', hair: 'hood', eyes: 'hollow' },
+          vaccineCert: { status: 'IMUNIZADO (2026)', batch: 'LT-00' },
           speech: '...acende a luz roxa no meu passaporte. junta com a placa de chumbo do Diplomata de ontem... e abre o portão.',
+          replyApproved: '...o muro sempre cai quando alguém erra o discurso. boa sorte com o livro, inspetor.',
+          replyDenied: '...sem a minha passagem, a fronteira nunca termina.',
           xrayDesc: '🔐 RAIO-X E LUZ UV CONFIRMAM: CÉSAR +3 → EHUOLP (Chancelaria Diplomática autêntica!)',
           xrayBad: false,
           isLoreSecret2: true,
           valid: true,
-          violationReason: 'O Emissário possuía salvo-conduto autêntico da Chancelaria.',
+          violationReason: 'O Emissário possuía salvo-conduto e vacina autênticos da Chancelaria.',
         },
       ],
     },
@@ -688,7 +782,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
   // ---- ESTADO DO JOGO ----
   let dayIdx = 0;
-  let appIdx = -1; // começa precisando chamar o 1º no botão PRÓXIMO!
+  let appIdx = -1;
   let credits = 30;
   let citationsToday = 0;
   let totalApprovedToday = 0;
@@ -702,8 +796,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
   let discrepancyVerified = false;
   let canDetainNow = false;
   let uvOn = false;
-  let xrayActive = false;
-  let activeRuleTab = 'rules'; // 'rules' | 'map' | 'seals'
+  let activeRuleTab = 'rules';
   let capturedClue1 = false;
   let capturedClue2 = false;
   let topZ = 15;
@@ -720,8 +813,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
         <button type="button" class="story-back-btn" id="pp-back-cave">← Voltar para a Caverna</button>
         <div class="pp-status-pills">
           <div class="pp-pill" id="pp-hud-day">DIA 1 / 5</div>
-          <div class="pp-pill" id="pp-hud-queue">FILA: 3 RESTANTES</div>
-          <div class="pp-pill gold" id="pp-hud-credits">💰 30 CRÉDITOS</div>
+          <div class="pp-pill" id="pp-hud-queue">FILA LÁ FORA: 3</div>
+          <div class="pp-pill gold" id="pp-hud-credits">💰 30 CR</div>
           <div class="pp-pill warn" id="pp-hud-citations">⚠️ MULTAS HOJE: 0 / 3</div>
         </div>
       </div>
@@ -738,6 +831,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
             <div class="pp-window-bars"></div>
             <div id="pp-wanted-mount"></div>
             <div class="pp-speech-bubble" id="pp-speech" style="display:none;"></div>
+            <div id="pp-returned-badge-mount"></div>
 
             <div class="pp-traveler-stage" id="pp-traveler-stage"></div>
 
@@ -789,16 +883,16 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
           <div id="pp-docs-layer"></div>
 
-          <!-- Gaveta lateral deslizante dos 2 Carimbos Pesados -->
+          <!-- Gaveta lateral deslizante dos 2 Carimbos Pesados (Alça horizontal 100% nítida!) -->
           <div class="pp-stamp-bar" id="pp-stamp-bar">
-            <button type="button" class="pp-stamp-tab" id="pp-stamp-toggle">CARIMBOS</button>
+            <button type="button" class="pp-stamp-tab" id="pp-stamp-toggle">◀ CARIMBOS</button>
             <div class="pp-stamp-body">
               <button type="button" class="pp-heavy-stamp green" id="pp-stamp-approve" disabled>
-                <span style="font-size:18px;">✅</span>
+                <span style="font-size:19px;">✔</span>
                 <span>APROVAR</span>
               </button>
               <button type="button" class="pp-heavy-stamp red" id="pp-stamp-deny" disabled>
-                <span style="font-size:18px;">❌</span>
+                <span style="font-size:19px;">✖</span>
                 <span>NEGAR</span>
               </button>
             </div>
@@ -818,7 +912,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     </div>
   `;
 
-  // ---- SISTEMA SINCRONIZADO DE VOZES (Supervisor primeiro -> pausa humana -> `log` sem atropelar!) ----
+  // ---- SISTEMA SINCRONIZADO DE VOZES ----
   let intercomSeq = 0;
   let isAlive = true;
 
@@ -850,7 +944,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     returnToCave(caveState);
   });
 
-  // ---- TORNA QUALQUER DOCUMENTO NA MESA ARRASTÁVEL COM O MOUSE! ----
+  // ---- ARRASTAR DOCUMENTOS ----
   function makeDraggable(el) {
     let dragging = false;
     let startX = 0;
@@ -888,7 +982,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     });
   }
 
-  // ---- RENDERIZAÇÃO DO MANUAL COM ABAS (Regras, Mapa, Brasões Visuais Reais e Notas Cifradas) ----
+  // ---- RENDERIZAÇÃO DO MANUAL (Zero barra de rolagem na aba Brasões!) ----
   function renderRulebook() {
     const body = document.getElementById('pp-rb-body');
     if (!body) return;
@@ -898,6 +992,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       btn.classList.toggle('active', btn.getAttribute('data-rbtab') === activeRuleTab);
     });
 
+    body.classList.toggle('no-scroll', activeRuleTab === 'seals');
+
     if (activeRuleTab === 'rules') {
       body.innerHTML = `
         <div style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #8c6d46;">DIRETRIZES — DIA ${dayObj.day}</div>
@@ -905,23 +1001,23 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       `;
     } else if (activeRuleTab === 'map') {
       body.innerHTML = `
-        <div class="pp-field" data-disc-key="rulebook_map" style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #8c6d46;">
-          JURISDIÇÕES OFICIAIS (Clique aqui na Discrepância de Cidade)
+        <div class="pp-field" data-disc-key="rulebook_map" style="font-weight:bold; margin-bottom:6px; border-bottom:1px solid #8c6d46;">
+          AS 4 NAÇÕES & SUAS CIDADES (Clique na Discrepância)
         </div>
         ${Object.entries(KINGDOMS)
-          .map(([k, info]) => `<div style="margin-bottom:3px;"><strong>${k}:</strong> ${info.cities.join(', ')}</div>`)
+          .map(([k, info]) => `<div style="margin-bottom:5px;"><strong>${k}:</strong><br/><span style="opacity:0.9;">${info.cities.join(' • ')}</span></div>`)
           .join('')}
       `;
     } else if (activeRuleTab === 'seals') {
       body.innerHTML = `
-        <div style="font-weight:bold; margin-bottom:6px; border-bottom:1px solid #8c6d46;">CATÁLOGO OFICIAL DE BRASÕES</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+        <div style="font-weight:bold; margin-bottom:6px; border-bottom:1px solid #8c6d46;">BRASÕES OFICIAIS DAS 4 NAÇÕES</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:7px;">
           ${Object.entries(KINGDOMS)
             .map(
               ([k]) => `
-            <div style="display:flex; align-items:center; gap:6px; background:#dfd0b4; padding:4px; border:1px solid #8c6d46;">
-              ${renderSealSvg(k, false, 30)}
-              <span style="font-size:10px; font-weight:bold; line-height:1.15;">${k}</span>
+            <div style="display:flex; align-items:center; gap:8px; background:#dfd0b4; padding:6px 7px; border:1px solid #8c6d46; border-radius:2px;">
+              ${renderSealSvg(k, false, 34)}
+              <span style="font-size:10.5px; font-weight:bold; line-height:1.2;">${k}</span>
             </div>
           `
             )
@@ -957,10 +1053,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
   function updateHudAndQueue() {
     const dayObj = DAYS[dayIdx];
     const totalInDay = dayObj.applicants.length;
-    // Se appIdx === -1, ninguém entrou ainda (faltam todos). Se appIdx >= 0, o viajante atual já foi chamado da fila!
-    const waitingOutside = travelerState === 'waiting_call'
-      ? Math.max(0, totalInDay - (appIdx + 1))
-      : Math.max(0, totalInDay - (appIdx + 1));
+    const waitingOutside = Math.max(0, totalInDay - (appIdx + 1));
 
     document.getElementById('pp-hud-day').textContent = `DIA ${dayObj.day} / 5`;
     document.getElementById('pp-hud-queue').textContent =
@@ -970,7 +1063,6 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     document.getElementById('pp-hud-credits').textContent = `💰 ${credits} CR`;
     document.getElementById('pp-hud-citations').textContent = `⚠️ MULTAS HOJE: ${citationsToday} / 3`;
 
-    // Silhuetas na fila
     const qEl = document.getElementById('pp-queue-silhouettes');
     if (qEl) {
       qEl.innerHTML = Array.from({ length: waitingOutside })
@@ -986,7 +1078,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           <div class="pp-wanted-strip pp-field" data-disc-key="wanted_poster" title="Cartaz Oficial de Procurados">
             <div class="pp-wanted-strip-title">PROCURADOS</div>
             <div class="pp-wanted-faces">
-              ${dayObj.wanted.map((w) => `<div title="${w.name}">${renderPortraitSvg(w.look, 0.31)}</div>`).join('')}
+              ${dayObj.wanted.map((w) => `<div title="${w.name}">${renderCharacterArt(w.charId, 'normal', 0.31)}</div>`).join('')}
             </div>
           </div>
         `;
@@ -995,7 +1087,6 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       }
     }
 
-    // Botões de equipamentos desbloqueados por Dia!
     const btnDisc = document.getElementById('pp-btn-disc');
     const btnXray = document.getElementById('pp-btn-xray');
     const btnUv = document.getElementById('pp-btn-uv');
@@ -1052,6 +1143,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     document.getElementById('pp-desk')?.classList.remove('uv-lit', 'pp-inspect-mode');
     document.getElementById('pp-docs-layer').innerHTML = '';
     document.getElementById('pp-citation-mount').innerHTML = '';
+    document.getElementById('pp-returned-badge-mount').innerHTML = '';
     document.getElementById('pp-shutter')?.classList.remove('open');
     document.getElementById('pp-shutter').textContent = `POSTO 04 // DIA ${dayObj.day}`;
     document.getElementById('pp-speech').style.display = 'none';
@@ -1078,7 +1170,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     });
   }
 
-  // ---- CHAMAR PRÓXIMO VIAJANTE NO MEGAFONE! (Com trava anti-duplo-clique!) ----
+  // ---- CHAMAR PRÓXIMO VIAJANTE NO MEGAFONE ----
   let isCallingNext = false;
   document.getElementById('pp-next-btn')?.addEventListener('click', () => {
     if (travelerState !== 'waiting_call' || isCallingNext) return;
@@ -1103,30 +1195,26 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     canDetainNow = false;
     selectedDiscFields = [];
     inspectMode = false;
-    xrayActive = false;
+    document.getElementById('pp-returned-badge-mount').innerHTML = '';
     document.getElementById('pp-xray-screen')?.classList.remove('active');
     document.getElementById('pp-desk')?.classList.remove('pp-inspect-mode');
 
-    // Abre a persiana e traz o viajante caminhando!
     const shutter = document.getElementById('pp-shutter');
     shutter?.classList.add('open');
 
     const stage = document.getElementById('pp-traveler-stage');
-    stage.innerHTML = `<div class="pp-field" data-disc-key="person_face" title="Rosto Real do Viajante">${renderPortraitSvg(person.look, 1.05)}</div>`;
+    stage.innerHTML = `<div class="pp-field" data-disc-key="person_face" title="Rosto Real do Viajante">${renderCharacterArt(person.charId, 'normal', 1.06)}</div>`;
     stage.className = 'pp-traveler-stage';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => stage.classList.add('present'));
     });
 
-    // Peso na balança do piso
     document.getElementById('pp-weight-val').textContent = `${person.weightReal} KG`;
 
-    // Balão de fala
     const sp = document.getElementById('pp-speech');
     sp.textContent = `"${person.speech}"`;
     sp.style.display = 'block';
 
-    // Joga os documentos na mesa com leve atraso físico!
     setTimeout(() => {
       isCallingNext = false;
       playPaperSlide();
@@ -1151,8 +1239,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     if (!layer) return;
     layer.innerHTML = '';
 
-    const kInfo = KINGDOMS[person.kingdom] || KINGDOMS['Vale do Boleto'];
-    const passPhotoLook = person.photoLook || person.look;
+    const kInfo = KINGDOMS[person.kingdom] || KINGDOMS['República de Vostok'];
+    const passPhotoChar = person.photoCharId || person.charId;
     const uvLabel = person.uvText || '✦ AUTÊNTICO // CHANCELARIA';
 
     // 1. PASSAPORTE PRINCIPAL
@@ -1169,7 +1257,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       </div>
       <div class="pp-pass-body">
         <div class="pp-pass-photo pp-field" data-disc-key="pass_photo" title="Foto do Passaporte">
-          ${renderPortraitSvg(passPhotoLook, 0.56)}
+          ${renderCharacterArt(passPhotoChar, 'normal', 0.54)}
         </div>
         <div>
           <div><strong>Nome:</strong> <span class="pp-field" data-disc-key="pass_name">${person.name}</span></div>
@@ -1243,7 +1331,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       makeDraggable(vc);
     }
 
-    // 5. NOTA DE SUBORNO JOGADA DISCRETAMENTE NA MESA!
+    // 5. NOTA DE SUBORNO NA MESA
     if (person.bribe) {
       const br = document.createElement('div');
       br.className = 'pp-doc-item pp-bribe-note';
@@ -1259,7 +1347,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     }
   }
 
-  // ---- MODO DISCREPÂNCIA (Conecta 2 campos conflitantes igual ao Papers, Please!) ----
+  // ---- MODO DISCREPÂNCIA ----
   function bindDiscrepancyClicks() {
     app.querySelectorAll('.pp-field').forEach((el) => {
       if (el.dataset.boundDisc === '1') return;
@@ -1312,7 +1400,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     if (matched) {
       discrepancyVerified = true;
       if (person.canDetain) canDetainNow = true;
-      saySupervisor('KSHHH— Discrepância confirmada no sistema! Microfone de interrogatório liberado.');
+      saySupervisor('KSHHH— Discrepância confirmada! Microfone de interrogatório liberado.');
     } else {
       saySupervisor('KSHHH— Nenhuma correlação irregular entre esses dois itens.');
     }
@@ -1326,7 +1414,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     app.querySelectorAll('.pp-field.selected-disc').forEach((n) => n.classList.remove('selected-disc'));
     document.getElementById('pp-desk')?.classList.toggle('pp-inspect-mode', inspectMode);
     if (inspectMode) {
-      saySupervisor('Modo Inspeção ativo: clique em DOIS elementos conflitantes (ex: Peso LED + Peso no Passaporte, ou Cidade + Aba Mapa).');
+      saySupervisor('Modo Inspeção ativo: clique em DOIS campos conflitantes (ex: Peso LED + Peso no Passaporte, ou Cidade + Aba Mapa).');
     }
     updateHudAndQueue();
   });
@@ -1349,7 +1437,6 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     const person = DAYS[dayIdx].applicants[appIdx];
     if (!person) return;
     playShutterClank();
-    xrayActive = true;
     const screen = document.getElementById('pp-xray-screen');
     const txt = document.getElementById('pp-xray-text');
     if (txt) txt.textContent = person.xrayDesc;
@@ -1364,7 +1451,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       capturedClue1 = true;
       renderRulebook();
       supervisorThenLog(
-        'KSHHH— Objeto metálico com gravação binária detectado, mas sem explosivos. Protocolo permite passagem.',
+        'KSHHH— Placa de chumbo diplomática detectada, sem explosivos. Protocolo permite passagem.',
         'opa opa opa!! anotou esses zeros e uns que apareceram no raio-x?! já copiei pra tua aba [Notas] ali no manual, isso é pista do livro ctz!',
         'urgent'
       );
@@ -1400,11 +1487,13 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     }
   });
 
-  // ---- GAVETA DE CARIMBOS PESADOS (APROVAR / NEGAR) ----
+  // ---- GAVETA DE CARIMBOS PESADOS (Alça legível que alterna ◀ / ▶) ----
   document.getElementById('pp-stamp-toggle')?.addEventListener('click', () => {
     playShutterClank();
     stampBarOpen = !stampBarOpen;
     document.getElementById('pp-stamp-bar')?.classList.toggle('open', stampBarOpen);
+    const toggleBtn = document.getElementById('pp-stamp-toggle');
+    if (toggleBtn) toggleBtn.textContent = stampBarOpen ? '▶ FECHAR' : '◀ CARIMBOS';
   });
 
   function applyStamp(kind) {
@@ -1413,7 +1502,6 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     currentStamp = kind;
     travelerState = 'stamped';
 
-    // Se o passaporte estiver escondido pro canto, puxa suavemente pra área visível
     const slot = document.getElementById('pp-stamp-mark-slot');
     if (slot) {
       slot.innerHTML = `<div class="pp-ink-stamp ${kind}">${kind === 'approved' ? 'APROVADO' : 'NEGADO'}</div>`;
@@ -1424,21 +1512,19 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
   document.getElementById('pp-stamp-approve')?.addEventListener('click', () => applyStamp('approved'));
   document.getElementById('pp-stamp-deny')?.addEventListener('click', () => applyStamp('denied'));
 
-  // ---- BOTÃO DE DETER VIAJANTE (GUARDAS LEVAM PRESO + BÔNUS DE +5 CR!) ----
+  // ---- DETER VIAJANTE ----
   document.getElementById('pp-btn-detain')?.addEventListener('click', () => {
     if (travelerState !== 'present' && travelerState !== 'stamped') return;
     playMegaphoneCall();
     finishCurrentTraveler('detained');
   });
 
-  // ---- ENTREGAR PASSAPORTE CARIMBADO PELA FRESTA ----
+  // ---- ENTREGAR PASSAPORTE PELA FRESTA COM ANIMAÇÃO FLUIDA + REAÇÃO DO CLIENTE! ----
   document.getElementById('pp-give-btn')?.addEventListener('click', () => {
     if (travelerState !== 'stamped' || !currentStamp) return;
-    playPaperSlide();
     finishCurrentTraveler(currentStamp);
   });
 
-  // ---- RESOLUÇÃO DO VIAJANTE + IMPRESSORA DE MULTA SE ERROU! ----
   const logCitationMocks = [
     'kkkkkk já saiu o papelzinho rosa da multa cantando na mesa! lê a porra do manual direito mano!',
     'mais uma infração pro teu currículo de porteiro... se tomar 3 no mesmo dia os caras te chutam de volta pro começo do turno!',
@@ -1454,26 +1540,74 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     travelerState = 'transitioning';
     stampBarOpen = false;
     document.getElementById('pp-stamp-bar')?.classList.remove('open');
+    const toggleBtn = document.getElementById('pp-stamp-toggle');
+    if (toggleBtn) toggleBtn.textContent = '◀ CARIMBOS';
     document.getElementById('pp-xray-screen')?.classList.remove('active');
-    document.getElementById('pp-speech').style.display = 'none';
-    document.getElementById('pp-docs-layer').innerHTML = '';
+    updateHudAndQueue();
 
     const stage = document.getElementById('pp-traveler-stage');
-    if (decision === 'detained') stage.classList.add('detained');
-    else if (decision === 'approved') stage.classList.add('leaving-ok');
-    else stage.classList.add('leaving-denied');
+    const sp = document.getElementById('pp-speech');
+    const retMount = document.getElementById('pp-returned-badge-mount');
+
+    // 1. Se foi entrega de passaporte (APROVADO / NEGADO), desliza os papéis pela fresta, o cliente pega, muda de expressão e REAGE!
+    if (decision === 'approved' || decision === 'denied') {
+      playPaperSlide();
+      document.querySelectorAll('#pp-docs-layer .pp-doc-item').forEach((docEl) => {
+        docEl.classList.add('sliding-to-window');
+      });
+
+      await new Promise((r) => setTimeout(r, 400));
+      document.getElementById('pp-docs-layer').innerHTML = '';
+
+      // Troca o retrato na janela para a variação 'approved' (sorrindo/aliviado) ou 'denied' (irritado/frustrado)!
+      const mood = decision === 'approved' ? 'approved' : 'denied';
+      if (stage) {
+        stage.innerHTML = `<div>${renderCharacterArt(person.charId, mood, 1.06)}</div>`;
+      }
+      if (retMount) {
+        retMount.innerHTML = `<div class="pp-returned-pass-badge ${decision === 'approved' ? 'ok' : 'no'}">📘 Passaporte recolhido (${decision === 'approved' ? 'APROVADO' : 'NEGADO'})</div>`;
+      }
+
+      // Fala final do cliente ao pegar o documento!
+      const farewell = decision === 'approved' ? person.replyApproved : person.replyDenied;
+      if (sp && farewell) {
+        sp.textContent = `"${farewell}"`;
+        sp.style.display = 'block';
+      }
+
+      // Pausa gostosa de leitura pra ver a reação do cliente antes dele sair andando!
+      await new Promise((r) => setTimeout(r, 1450));
+    } else {
+      // Se foi DETIDO pelos guardas!
+      document.getElementById('pp-docs-layer').innerHTML = '';
+      if (stage) {
+        stage.innerHTML = `<div>${renderCharacterArt(person.charId, 'denied', 1.06)}</div>`;
+      }
+      if (sp) {
+        sp.textContent = `"EI!! ME LARGA SEU GUARDA!! EU NÃO FIZ NADA!!"`;
+        sp.style.display = 'block';
+      }
+      await new Promise((r) => setTimeout(r, 1150));
+    }
+
+    // 2. Agora o cliente sai pela direita (aprovado), esquerda (negado) ou arrastado (detido)!
+    if (sp) sp.style.display = 'none';
+    if (retMount) retMount.innerHTML = '';
+    if (decision === 'detained') stage?.classList.add('detained');
+    else if (decision === 'approved') stage?.classList.add('leaving-ok');
+    else stage?.classList.add('leaving-denied');
 
     const approved = decision === 'approved';
     const isCorrect = decision === 'detained' ? !person.valid : approved === person.valid;
 
     if (approved && person.bribe) {
-      credits += person.bribe; // embolsou o suborno por baixo do pano (mas toma multa!)
+      credits += person.bribe;
     }
 
     if (isCorrect) {
       credits += 10;
       if (decision === 'detained') {
-        credits += 5; // bônus dos guardas!
+        credits += 5;
         totalDetainedToday += 1;
       } else if (approved) {
         totalApprovedToday += 1;
@@ -1490,7 +1624,6 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       credits = Math.max(0, credits - 10);
       playCitationPrinter();
 
-      // Imprime o Ticket Rosa de Multa na mesa!
       const citMount = document.getElementById('pp-citation-mount');
       if (citMount) {
         citMount.innerHTML = `
@@ -1533,17 +1666,16 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     }, 520);
   }
 
-  // ---- TELA DE FECHAMENTO NOTURNO (Salário vs Aluguel/Aquecimento da Cabine!) ----
+  // ---- TELA DE FECHAMENTO NOTURNO ----
   function showNightEndOfShift() {
     const dayObj = DAYS[dayIdx];
     const mount = document.getElementById('pp-overlay-mount');
 
-    // Se fechou o Dia 5 -> VITÓRIA DO CONTO 1!
     if (dayIdx + 1 >= DAYS.length) {
       mount.innerHTML = `
         <div class="pp-day-overlay">
-          <div style="font-size:12px; letter-spacing:3px; color:#4ade80;">AUDITORIA DE 5 DIAS CONCLUÍDA</div>
-          <h2 style="margin:0; font-size:24px; color:#fde68a;">LIVRO I LIBERADO — ALFÂNDEGA ENCERRADA</h2>
+          <div style="font-size:12px; letter-spacing:3px; color:#4ade80;">CONVOCAÇÃO DE 5 DIAS CONCLUÍDA</div>
+          <h2 style="margin:0; font-size:24px; color:#fde68a;">LIVRO I LIBERADO — POSTO 04 ENCERRADO</h2>
           <div class="pp-night-ledger">
             <div style="margin-bottom:8px; color:#fcd34d; font-weight:bold;">RESUMO DAS PISTAS INTERCEPTADAS NO LIVRO:</div>
             <div>• Dia 4 (Diplomata K. / Raio-X): <code>01001101 01010101 01010010 01001111</code></div>
@@ -1556,7 +1688,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
       supervisorThenLog(
         'KSHHH— Auditoria finalizada com êxito. Emitindo volume físico para arquivamento externo.',
-        'acabou os 5 dias dessa repartição maldita!! pega logo esse Livro I aí na frente que já guardamos as duas cifras pra abrir o cadeado dele!',
+        'acabou os 5 dias dessa guarita congelada!! pega logo esse Livro I aí na frente que já guardamos as duas cifras pra abrir o cadeado dele!',
         'urgent'
       );
 
@@ -1568,7 +1700,6 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       return;
     }
 
-    // Fechamento normal dos Dias 1 a 4 (com cobrança de Energia e Aquecimento da Cabine!)
     const upkeepCost = 20;
     const afterUpkeep = Math.max(0, credits - upkeepCost);
 
@@ -1580,7 +1711,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           <div class="pp-ledger-row"><span>Saldo acumulado no caixa:</span><span>${credits} cr</span></div>
           <div class="pp-ledger-row"><span>Detenções realizadas hoje:</span><span>${totalDetainedToday}</span></div>
           <div class="pp-ledger-row"><span>Infrações cometidas hoje:</span><span>${citationsToday}</span></div>
-          <div class="pp-ledger-row" style="color:#fca5a5;"><span>Taxa de Energia & Aquecimento da Cabine:</span><span>-${upkeepCost} cr</span></div>
+          <div class="pp-ledger-row" style="color:#fca5a5;"><span>Aluguel & Carvão da Calefação:</span><span>-${upkeepCost} cr</span></div>
           <div class="pp-ledger-row" style="font-weight:bold; color:#fde047; margin-top:6px;"><span>SALDO PARA AMANHÃ:</span><span>${afterUpkeep} cr</span></div>
         </div>
         <button type="button" class="pp-megaphone-btn" id="pp-next-day-btn" style="padding:12px 26px; font-size:14px;">🌙 DORMIR E AVANÇAR PARA O DIA ${dayObj.day + 1} ➡️</button>
@@ -1595,6 +1726,5 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     });
   }
 
-  // Inicia no Boletim Oficial do Dia 1!
   showMorningBulletin();
 }
