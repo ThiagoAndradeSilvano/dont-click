@@ -2067,7 +2067,7 @@ function setupPsychologicalTraps() {
 // 1º: barra feia normal | 2º: quebra e se conserta | depois: outras anomalias.
 // ============================================================================
 const LB_BLOCKS = 20;
-const LB_ORDER = ['plain', 'crack', 'overflow', 'shuffle', 'regret', 'jitter', 'freeze'];
+const LB_ORDER = ['plain', 'crack', 'regret', 'shuffle', 'overflow', 'jitter', 'freeze'];
 let lbMemoryCount = 0;
 
 function nextLoadBarVariant() {
