@@ -128,13 +128,6 @@ function resetIdleChillTimer() {
       setOperatorRemark('congelou aí pq? compra logo o resto das coisas pra acabar com isso.', {
         priority: 'ambient',
       });
-    } else if (currentStage === 'subsolo_2d') {
-      const nudges = [
-        'vai ficar só parado no escuro olhando a goteira pingar no ralo?',
-        'essa lâmpada velha dando mau contato tá me dando nos nervos já...',
-        'pelo visto vc desistiu de mexer nas minhas coisas né? ótimo, continua estátua aí.',
-      ];
-      setOperatorRemark(nudges[Math.floor(Math.random() * nudges.length)], { priority: 'ambient' });
     }
   }, 26000);
 }
@@ -1956,7 +1949,7 @@ function renderSubsolo2DScreen(initialState = null) {
     const line = upstairsLines[lineIdx % upstairsLines.length];
     lineIdx++;
     setOperatorRemark(line, { priority: 'ambient' });
-  }, 13000);
+  }, 38000);
 
   const canvas = document.getElementById('subsolo-canvas');
   const ctx = canvas?.getContext('2d');
