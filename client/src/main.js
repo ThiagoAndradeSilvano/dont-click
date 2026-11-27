@@ -2903,13 +2903,6 @@ function renderSubsolo2DScreen(initialState = null) {
       ctx.fillRect(b.x, b.y, b.w, 2);
     }
 
-    // Manchas escuras de umidade nas paredes
-    ctx.fillStyle = 'rgba(6, 10, 16, 0.55)';
-    ctx.beginPath();
-    ctx.ellipse(220, 340, 95, 55, 0, 0, Math.PI * 2);
-    ctx.ellipse(560, 360, 110, 45, 0, 0, Math.PI * 2);
-    ctx.fill();
-
     // Viga de concreto superior (teto do porão)
     ctx.fillStyle = '#181d27';
     ctx.fillRect(0, 0, 840, 26);
