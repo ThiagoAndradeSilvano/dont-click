@@ -2907,7 +2907,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     const radius = torchLit ? (hasLantern ? 215 : 82) : 34;
     const innerR = Math.round(radius * 0.24);
     const midR = Math.round(radius * 0.62);
-    mask.style.background = `radial-gradient(circle ${radius}px at ${charX}px ${charY}px, rgba(255, 200, 110, ${hasLantern ? 0.08 : 0.03}) 0%, rgba(8, 8, 12, ${hasLantern ? 0.22 : 0.45}) ${innerR}px, rgba(4, 4, 7, 0.86) ${midR}px, rgba(4, 4, 6, 0.99) ${radius}px, rgba(4, 4, 6, 0.998) 100%)`;
+    mask.style.background = `radial-gradient(circle ${radius}px at ${charX}px ${charY}px, rgba(255, 200, 110, ${hasLantern ? 0.08 : 0.03}) 0%, rgba(4, 4, 6, ${hasLantern ? 0.22 : 0.45}) ${innerR}px, rgba(0, 0, 0, 0.88) ${midR}px, rgba(0, 0, 0, 1) ${radius}px, rgba(0, 0, 0, 1) 100%)`;
 
     // Destaca e faz brilhar o item mais próximo para interação com [E]!
     const nearest = torchLit && !isDroppingFromCeiling ? getNearbyInteractable() : null;

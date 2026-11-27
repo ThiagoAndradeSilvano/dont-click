@@ -1449,7 +1449,7 @@ body.subsolo-mode #app {
 }
 
 body.cave-mode {
-  background: #040406;
+  background: #000000;
   overflow: hidden;
   font-family: 'CavePixles', monospace;
   font-size: 15px;
@@ -1512,7 +1512,7 @@ body.cave-mode {
   width: 1728px; /* 12 cols * 144px */
   height: 1344px; /* 4 rows * 336px */
   transform-origin: center center;
-  background: #040406;
+  background: #000000;
   overflow: hidden;
 }
 
