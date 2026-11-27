@@ -499,19 +499,37 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     </div>
   `;
 
-  function setInterfoneMsg(text) {
+  let interfoneSeqId = 0;
+  async function speakInterfone(text) {
+    const seq = ++interfoneSeqId;
     const el = document.getElementById('story-npc-msg');
-    if (el) el.textContent = text;
+    if (!el) return;
+    el.textContent = '';
+    for (let i = 0; i < text.length; i++) {
+      if (seq !== interfoneSeqId || !document.getElementById('story-npc-msg')) return;
+      el.textContent += text[i];
+      await new Promise((r) => setTimeout(r, 15));
+    }
   }
 
-  document.getElementById('s1-back')?.addEventListener('click', () => returnToCave(caveState));
+  async function speakThenReact(interfoneText, logText = null, logOpts = {}) {
+    const seqSnapshot = interfoneSeqId + 1;
+    await speakInterfone(interfoneText);
+    if (seqSnapshot !== interfoneSeqId || !logText) return;
+    await new Promise((r) => setTimeout(r, 650));
+    if (seqSnapshot !== interfoneSeqId || !document.getElementById('story-npc-msg')) return;
+    setOperatorRemark(logText, logOpts);
+  }
 
-  setInterfoneMsg(
-    'Atenção, Inspetor. Bem-vindo ao seu turno na Portaria do Submundo. Confira o Manual à esquerda, use a Balança e o Raio-X na bagagem e carimbe APROVAR ou NEGAR. Três infrações causam demissão.'
-  );
-  setOperatorRemark(
+  document.getElementById('s1-back')?.addEventListener('click', () => {
+    interfoneSeqId++;
+    returnToCave(caveState);
+  });
+
+  speakThenReact(
+    'Atenção, Inspetor. Bem-vindo ao seu turno na Portaria do Submundo. Confira o Manual à esquerda, use a Balança e o Raio-X na bagagem e carimbe APROVAR ou NEGAR. Três infrações causam demissão.',
     'pera... que porra de interfone é esse?! a gente virou fiscal de fronteira num jogo sépia do nada?! quem tá dando ordem aí?!',
-    { delayBefore: 450, priority: 'urgent' }
+    { priority: 'urgent' }
   );
 
   function renderManualTab() {
@@ -594,8 +612,11 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     usedXray = true;
     document.getElementById('s1-tool-readout').textContent = `🩻 Raio-X: ${person.xray}`;
     if (person.isLoreSecret) {
-      setInterfoneMsg('Aviso do Scanner: código anômalo detectado no forro. Mantenha o protocolo padrão.');
-      setOperatorRemark('espera... que porra é aquela gravada dentro dessa mala?! "protocolo padrão" o caralho, isso não faz parte desse joguinho!', { priority: 'action' });
+      speakThenReact(
+        'Aviso do Scanner: código anômalo detectado no forro. Mantenha o protocolo padrão.',
+        'espera... que porra é aquela gravada dentro dessa mala?! "protocolo padrão" o caralho, isso não faz parte desse joguinho!',
+        { priority: 'action' }
+      );
     }
   });
 
@@ -606,27 +627,35 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
     if (approved === person.valid) {
       credits += 25;
-      setInterfoneMsg(approved ? 'Entrada autorizada dentro das normas. +25 créditos. Próximo.' : `Entrada barrada conforme o regulamento: ${person.reason}`);
-      if (Math.random() < 0.45) {
-        setOperatorRemark(approved ? 'aprovou um duende pagador de boleto. que auge da tecnologia.' : 'kkkkkk barrado na porta. próxima vítima.', { priority: 'ambient' });
-      }
+      const msg = approved ? 'Entrada autorizada dentro das normas. +25 créditos. Próximo.' : `Entrada barrada conforme o regulamento: ${person.reason}`;
+      const react = Math.random() < 0.45 ? (approved ? 'aprovou um duende pagador de boleto. que auge da tecnologia.' : 'kkkkkk barrado na porta. próxima vítima.') : null;
+      speakThenReact(msg, react, { priority: 'ambient' });
     } else {
       errors += 1;
       if (approved && person.bribe) {
         credits += person.bribe;
-        setInterfoneMsg('ALERTA DE CORRUPÇÃO: Suborno detectado no guichê! Infração registrada.');
-        setOperatorRemark('vc aceitou propina na frente do interfone e ainda tomou multa. gênio.', { priority: 'urgent' });
+        speakThenReact(
+          'ALERTA DE CORRUPÇÃO: Suborno detectado no guichê! Infração registrada.',
+          'vc aceitou propina na frente do interfone e ainda tomou multa. gênio.',
+          { priority: 'urgent' }
+        );
       } else {
-        setInterfoneMsg(`INFRAÇÃO (${errors}/3): ${person.reason}`);
-        setOperatorRemark('tomou multa até numa repartição pública falsa. parabéns.', { priority: 'action' });
+        speakThenReact(
+          `INFRAÇÃO (${errors}/3): ${person.reason}`,
+          'tomou multa até numa repartição pública falsa. parabéns.',
+          { priority: 'action' }
+        );
       }
       if (errors >= 3) {
         dayIdx = 0;
         appIdx = 0;
         errors = 0;
         credits = 0;
-        setInterfoneMsg('TRÊS INFRAÇÕES! Você foi demitido e rebaixado ao Dia 1.');
-        setOperatorRemark('demitido do guichê imaginário e voltou pro Dia 1. inacreditável.', { priority: 'urgent' });
+        speakThenReact(
+          'TRÊS INFRAÇÕES! Você foi demitido e rebaixado ao Dia 1.',
+          'demitido do guichê imaginário e voltou pro Dia 1. inacreditável.',
+          { priority: 'urgent' }
+        );
         renderApplicant();
         return;
       }
@@ -637,13 +666,19 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       dayIdx += 1;
       appIdx = 0;
       if (dayIdx >= DAYS.length) {
-        setInterfoneMsg('Auditoria de 5 dias concluída. Registro oficial do turno emitido (Livro I).');
-        setOperatorRemark('finalmente acabou essa burocracia desgraçada... espera, que livro é esse que apareceu agora?', { priority: 'urgent' });
+        await speakThenReact(
+          'Auditoria de 5 dias concluída. Registro oficial do turno emitido (Livro I).',
+          'finalmente acabou essa burocracia desgraçada... espera, que livro é esse que apareceu agora?',
+          { priority: 'urgent' }
+        );
         await finishStory();
         return;
       }
-      setInterfoneMsg(`Fim do Dia ${dayIdx}. Novas diretrizes burocráticas foram adicionadas ao manual para amanhã.`);
-      setOperatorRemark(`virou pro Dia ${dayIdx + 1}. pelo visto essa porcaria vai ficar ainda mais chata.`, { priority: 'action' });
+      speakThenReact(
+        `Fim do Dia ${dayIdx}. Novas diretrizes burocráticas foram adicionadas ao manual para amanhã.`,
+        `virou pro Dia ${dayIdx + 1}. pelo visto essa porcaria vai ficar ainda mais chata.`,
+        { priority: 'action' }
+      );
     }
     renderApplicant();
   }
