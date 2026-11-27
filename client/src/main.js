@@ -2515,7 +2515,7 @@ function renderSubsolo2DScreen(initialState = null) {
 // ============================================================================
 const CAVE_INVENTORY_META = {
   '0': { img: '/cave/apple.gif', name: 'Maçã', details: 'Um lanche estranhamente intacto' },
-  'lantern': { img: '/cave/swingingLantern.gif', name: 'Lanterna', details: 'Amplia sua visão na escuridão' },
+  'lantern': { img: '/cave/swingingLantern.gif', altImg: '/cave/swingingLantern.gif', name: 'Lanterna', details: 'Liga/desliga a luz na caverna (Tecla F)', hasToggle: true, onLabel: 'Desligar', offLabel: 'Ligar' },
   '2': { img: '/cave/pickInventory.gif', name: 'Picareta', details: 'Firme o bastante pra quebrar rocha' },
   '6': { img: '/cave/plankInventory.gif', name: 'Tábua', details: 'Tábua grossa de madeira' },
   '8': { img: '/cave/note1.gif', name: 'Nota 1', details: '1º dígito: 1 barra (=5) + 2 pontos (=2) → [ 7 ]' },
@@ -2712,6 +2712,8 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
 
   let walkingTimer = null;
   let torchLit = state.introDone;
+  let lanternOn = state.inventory.includes('lantern');
+  let activeOpenBookId = null;
 
   function showSegmentBubble(r, c, text) {
     document.querySelectorAll('.cave-bubble').forEach((b) => b.remove());
@@ -2725,10 +2727,13 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
   }
 
   function openBookFromBag(bookId) {
+    activeOpenBookId = bookId;
+    refreshInventoryUI();
     openBookReaderModal(bookId, state, {
       apiPost,
       setOperatorRemark,
       onSolved: (newCaveState) => {
+        activeOpenBookId = null;
         if (newCaveState) {
           state.booksSolved = [...(newCaveState.booksSolved || [])];
           state.booksOwned = [...(newCaveState.booksOwned || [])];
@@ -2736,6 +2741,11 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         refreshInventoryUI();
         refreshObjectsVisuals();
       },
+    });
+    // Quando fechar o modal manualmente pelo botão, restaura o ícone fechado do livro
+    document.getElementById('book-modal-close')?.addEventListener('click', () => {
+      activeOpenBookId = null;
+      refreshInventoryUI();
     });
   }
 
@@ -2748,15 +2758,48 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         const m = CAVE_INVENTORY_META[id];
         const isBook = id.startsWith('book_');
         const solved = isBook && state.booksSolved.includes(id);
+        const isLantern = id === 'lantern';
+        const isActive = isLantern ? lanternOn : (isBook ? activeOpenBookId === id : false);
+        const iconSrc = isActive && m.altImg ? m.altImg : m.img;
+
+        let actionBtnHtml = '';
+        if (isLantern) {
+          actionBtnHtml = `<button type="button" class="inv-toggle-btn ${lanternOn ? 'active' : ''}" data-inv-toggle="lantern">${lanternOn ? 'Desligar' : 'Ligar'}</button>`;
+        } else if (isBook) {
+          actionBtnHtml = `<button type="button" class="inv-toggle-btn ${isActive ? 'active' : ''}" data-inv-toggle="${id}">${isActive ? 'Fechar' : 'Abrir'}</button>`;
+        }
+
         return `
           <div class="cave-inv-item ${isBook ? 'cave-inv-book' : ''}" data-inv-id="${id}">
-            <img src="${m.img}" alt="${m.name}" />
+            <img src="${iconSrc}" alt="${m.name}" />
             <div style="margin-top:4px;">${isBook ? (solved ? `✅ ${m.name}` : `📖 ${m.name}`) : m.name}</div>
+            ${actionBtnHtml}
             <div class="inv-tooltip"><strong>${m.name}</strong><br/>${m.details}</div>
           </div>
         `;
       })
       .join('');
+
+    grid.querySelectorAll('[data-inv-toggle]').forEach((btn) => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        playCheapBeep();
+        const id = btn.getAttribute('data-inv-toggle');
+        if (id === 'lantern') {
+          lanternOn = !lanternOn;
+          refreshInventoryUI();
+          updateViewportPosition(facingLeft, false);
+        } else if (id?.startsWith('book_')) {
+          if (activeOpenBookId === id) {
+            document.getElementById('book-reader-modal')?.remove();
+            activeOpenBookId = null;
+            refreshInventoryUI();
+          } else {
+            openBookFromBag(id);
+          }
+        }
+      });
+    });
 
     grid.querySelectorAll('.cave-inv-book').forEach((el) => {
       el.addEventListener('click', () => {
@@ -2840,8 +2883,8 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     ch.classList.toggle('facing-left', isLeft);
     ch.classList.toggle('walking', isMoving);
 
-    // Antes de pegar a lanterna: MUITO escuro! Depois da lanterna: luz ampla com degradê suave!
-    const hasLantern = state.inventory.includes('lantern');
+    // Antes de pegar (ou ligar) a lanterna: MUITO escuro! Com a lanterna ligada: luz ampla com degradê suave!
+    const hasLantern = state.inventory.includes('lantern') && lanternOn;
     const radius = torchLit ? (hasLantern ? 215 : 82) : 34;
     const innerR = Math.round(radius * 0.24);
     const midR = Math.round(radius * 0.62);
@@ -3015,6 +3058,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     if (obj.kind === 'pickup') {
       if (!state.inventory.includes(obj.id)) {
         state.inventory.push(obj.id);
+        if (obj.id === 'lantern') lanternOn = true;
         refreshInventoryUI();
         refreshObjectsVisuals();
         showSegmentBubble(obj.row, obj.col, obj.msg);
@@ -3162,6 +3206,14 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     const k = ev.key.toLowerCase();
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'e'].includes(k)) {
       ev.preventDefault();
+    }
+
+    if (k === 'f' && !ev.repeat && state.inventory.includes('lantern')) {
+      playCheapBeep();
+      lanternOn = !lanternOn;
+      refreshInventoryUI();
+      updateViewportPosition(facingLeft, false);
+      return;
     }
 
     if (k === 'e' && !ev.repeat) {

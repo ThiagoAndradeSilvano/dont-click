@@ -1799,6 +1799,26 @@ body.cave-mode {
   image-rendering: pixelated;
 }
 
+.inv-toggle-btn {
+  margin-top: 4px;
+  width: 100%;
+  padding: 2px 4px;
+  background: #27272a;
+  color: #fbbf24;
+  border: 1px solid #52525b;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.inv-toggle-btn.active {
+  background: #422006;
+  border-color: #fbbf24;
+  color: #fef08a;
+}
+
 .cave-inv-item .inv-tooltip {
   display: none;
   position: absolute;
