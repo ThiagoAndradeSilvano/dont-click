@@ -225,6 +225,9 @@ function computeFingerprintHash(ip, clientMeta = {}) {
 function normalizePlayer(player) {
   const validStages = [
     'button',
+    'button_crashed_1',
+    'button_2',
+    'button_crashed_2',
     'shape_test',
     'post_shapes_crash',
     'mundane_clicker',
@@ -452,14 +455,25 @@ function buildClientPayload(player) {
   };
 }
 
-// Sessão / Reload
+// Sessão / Reload — Máquina de Estados 100% imune a cliques rápidos extras!
+// Fluxo exato:
+// 1) 'button' (9 cliques) -> 'button_crashed_1'
+// 2) Reload -> 'button_2' (5 cliques — SEGUNDA APARIÇÃO DO BOTÃO!) -> 'button_crashed_2'
+// 3) Reload -> 'shape_test' (Bloquinhos) -> 'post_shapes_crash'
+// 4) Reload -> 'mundane_clicker'
 app.post('/api/session', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   player.visits += 1;
   player.sessionClicks = 0;
   player.sessionClickTimestamps = [];
 
-  if (player.stage === 'button' && player.crashes >= 2) {
+  if (player.stage === 'button_crashed_1') {
+    player.stage = 'button_2';
+  } else if (player.stage === 'button_crashed_2') {
+    player.stage = 'shape_test';
+  } else if (player.stage === 'button' && player.crashes === 1) {
+    player.stage = 'button_2';
+  } else if (player.stage === 'button' && player.crashes >= 2) {
     player.stage = 'shape_test';
   } else if (player.stage === 'post_shapes_crash') {
     player.stage = 'mundane_clicker';
@@ -496,11 +510,23 @@ app.post('/api/click', (req, res) => {
     });
   }
 
-  if (player.stage === 'button') {
+  // Se a página já caiu (mas o jogador metralhou mais cliques antes do JS travar), ignora cliques extras!
+  if (player.stage === 'button_crashed_1' || player.stage === 'button_crashed_2' || player.stage === 'post_shapes_crash') {
+    return res.json({
+      ok: true,
+      token: player.id,
+      stage: player.stage,
+      action: 'crash',
+      caughtCounting: false,
+      crashClickCount: player.stage === 'button_crashed_1' ? player.firstCrashClicks : 5,
+    });
+  }
+
+  if (player.stage === 'button' || player.stage === 'button_2') {
     const nowMs = typeof req.body?.clientTs === 'number' ? req.body.clientTs : Date.now();
     player.sessionClickTimestamps.push(nowMs);
 
-    const isFirstCrashRun = player.crashes === 0;
+    const isFirstCrashRun = player.stage === 'button';
     const crashThreshold = isFirstCrashRun ? player.firstCrashClicks : 5;
     const shouldCrash = player.sessionClicks >= crashThreshold;
 
@@ -513,14 +539,15 @@ app.post('/api/click', (req, res) => {
         }
         console.log(`[PEGAMOS NO PULO!] Jogador ${player.id.slice(0, 8)} clicou contando no ritmo até o 9º clique!`);
       }
-      player.crashes += 1;
+      player.crashes = isFirstCrashRun ? 1 : 2;
+      player.stage = isFirstCrashRun ? 'button_crashed_1' : 'button_crashed_2';
     }
 
     saveDb(db);
     return res.json({
       ok: true,
       token: player.id,
-      stage: 'button',
+      stage: player.stage,
       action: shouldCrash ? 'crash' : 'none',
       caughtCounting,
       crashClickCount: crashThreshold,
