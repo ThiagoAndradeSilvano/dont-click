@@ -22,8 +22,8 @@ export const BOOKS_META = {
     title: 'A Princesa de Plástico',
     subtitle: 'Livro II // Conto de Fadas',
     themeClass: 'book-theme-pink',
-    summary: 'Você escalou uma torre com elevador de serviço, enfrentou um dragão asmático e atendeu às exigências de Wi-Fi de uma princesa mimada.',
-    riddle: '"No conto original dos irmãos alemães, quantos anos a Bela Adormecida dormiu antes do tal \'beijo verdadeiro\'?"',
+    summary: 'Você enfrentou um cavalo sindicalizado, entrevista de RH, dragão com rinite, elevador de serviço e entregou açaí para a princesa.',
+    riddle: '"Esqueça a Disney. Na obra original francesa de 1697 achada no Ato 4 (La Belle au bois dormant), some os ANOS que a princesa dormiu com a IDADE exata do autor quando publicou o livro, e multiplique pelo número de fadas BOAS convidadas para o batizado."',
   },
   book_3: {
     id: 'book_3',
