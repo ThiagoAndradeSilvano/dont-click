@@ -936,7 +936,7 @@ app.post('/api/cave/sync', (req, res) => {
 
   // Falas do Operador (frio, ácido, arrogante — estilo Rick Sanchez, sem quebrar imersão)
   const caveRemarks = {
-    intro_done: 'ótimo. uma mina em pixel art de 1994 rodando embaixo da minha arquitetura. e antes que pergunte: não, eu não codei essa bosta. deve ser lixo residual de algum setor morto. anda logo e vê se acha uma saída.',
+    intro_done: 'sério mesmo... musiquinha de fada e título brilhante no meu sistema. não sei quem compilou essa porcaria aqui embaixo, mas anda logo e acha uma saída.',
     got_lantern: 'uma lanterna. pelo menos agora vc enxerga dois palmos na frente do nariz sem tropeçar.',
     got_pickaxe: 'uma picareta. claro. pq toda infraestrutura de rede moderna precisa de mineração manual agora. pega logo.',
     broke_boulder: 'uau, quebrou uma pedra. quer um diploma de engenharia civil também ou vai continuar andando?',

@@ -3348,7 +3348,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
   };
   caveRaf = requestAnimationFrame(caveTick);
 
-  // Sequência de Queda / Acender a Tocha ao chegar na Caverna!
+  // Sequência de Queda / Acender a Tocha + Vídeo Surpresa "Caverna dos Contos" com som de fadas!
   if (!state.introDone || justFell) {
     torchLit = false;
     updateViewportPosition(false);
@@ -3360,10 +3360,64 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
       showSegmentBubble(state.row, state.col, 'O chão do porão desabou...');
       await sleep(2200);
       showSegmentBubble(state.row, state.col, 'Escuro demais aqui embaixo.');
-      await sleep(1800);
+      await sleep(1500);
       torchLit = true;
-      state.introDone = true;
       updateViewportPosition(false);
+
+      // Dispara do nada o vídeo bonito de título "Caverna dos Contos" com som alto de fadas!
+      await new Promise((resolve) => {
+        const vidOverlay = document.createElement('div');
+        vidOverlay.className = 'cave-intro-video-overlay';
+        vidOverlay.innerHTML = `
+          <video id="cave-intro-vid" src="/cave/caverna_intro.mp4" playsinline autoplay></video>
+          <button type="button" class="cave-intro-skip-btn" id="cave-intro-skip">Pular</button>
+        `;
+        document.body.appendChild(vidOverlay);
+        requestAnimationFrame(() => vidOverlay.classList.add('visible'));
+
+        const vid = document.getElementById('cave-intro-vid');
+        if (vid) {
+          vid.volume = 1.0;
+          vid.play().catch(() => {
+            // Se o navegador bloquear autoplay com som, inicia mudo e libera no clique
+            vid.muted = true;
+            vid.play().catch(() => {});
+            const skipBtn = document.getElementById('cave-intro-skip');
+            if (skipBtn) skipBtn.textContent = '🔊 Clique para ativar som / Pular';
+          });
+        }
+
+        setTimeout(() => {
+          setOperatorRemark(
+            'QUE PORRA DE BARULHO DE FADA É ESSE?! "CAVERNA DOS CONTOS"?! EU TÔ PRESO NUM SERVIDOR DA DISNEY AGORA?!',
+            { priority: 'urgent' }
+          );
+        }, 900);
+
+        let closed = false;
+        const closeIntro = () => {
+          if (closed) return;
+          closed = true;
+          if (vid) vid.pause();
+          vidOverlay.classList.remove('visible');
+          setTimeout(() => {
+            vidOverlay.remove();
+            resolve();
+          }, 450);
+        };
+
+        vid?.addEventListener('ended', closeIntro);
+        document.getElementById('cave-intro-skip')?.addEventListener('click', () => {
+          if (vid && vid.muted) {
+            vid.muted = false;
+            vid.play().catch(() => {});
+          } else {
+            closeIntro();
+          }
+        });
+      });
+
+      state.introDone = true;
       await syncCave('intro_done');
     })();
   } else {

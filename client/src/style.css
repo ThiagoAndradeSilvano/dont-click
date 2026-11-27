@@ -1466,7 +1466,7 @@ body.cave-mode {
   left: 50%;
   transform: translateX(-50%);
   width: min(860px, calc(100vw - 140px));
-  z-index: 50;
+  z-index: 9600;
 }
 
 .cave-top-hud .operator-feed {
@@ -2026,3 +2026,42 @@ body.cave-mode {
 .dev-btn:hover { background: #3f3f46; }
 .dev-btn.danger { border-color: #7f1d1d; color: #fca5a5; }
 .dev-btn.danger:hover { background: #7f1d1d; color: #fff; }
+
+/* Vídeo de Introdução Surpresa: Caverna dos Contos */
+.cave-intro-video-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.cave-intro-video-overlay.visible {
+  opacity: 1;
+}
+
+.cave-intro-video-overlay video {
+  width: min(820px, 92vw);
+  max-height: 72vh;
+  border: 2px solid #3f3f46;
+  border-radius: 10px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.95);
+  background: #000;
+}
+
+.cave-intro-skip-btn {
+  background: rgba(24, 24, 29, 0.85);
+  color: #a1a1aa;
+  border: 1px solid #3f3f46;
+  padding: 6px 14px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
