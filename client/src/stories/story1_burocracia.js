@@ -510,6 +510,25 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           violationReason: 'Brasão falsificado do Principado de Alvor (faltando o sol acima da coroa).',
           logReactAfter: 'caralho vc pegou o brasão sem o solzinho no olho clínico msm?! tem até falsificador profissa nessa fronteira kkkkk',
         },
+        {
+          charId: 'char_6',
+          name: 'Irina Vasilyeva',
+          sex: 'F',
+          birth: '1962',
+          kingdom: 'Costa de Salina',
+          city: 'Farol Sul',
+          expiry: '06.2029',
+          weightPass: 60,
+          weightReal: 60,
+          forgedSeal: false,
+          speech: 'boa noite meu jovem, vim trazer conservas de peixe lá de Farol Sul. tá tudo certinho.',
+          replyApproved: 'deus te abençoe, meu filho! bom descanso.',
+          replyDenied: 'mas por que me barrou?! o brasão de âncora e a data estão perfeitos!',
+          xrayDesc: 'Latas de sardinha e agulhas de tricô.',
+          xrayBad: false,
+          valid: true,
+          violationReason: 'Passaporte de Irina estava 100% dentro das regras.',
+        },
       ],
     },
     {
@@ -598,6 +617,26 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           discrepancyType: 'city',
           valid: false,
           violationReason: 'Cidade "Farol Sul" pertence à Costa de Salina, não à República de Vostok.',
+        },
+        {
+          charId: 'char_3',
+          name: 'Sofia Lind',
+          sex: 'F',
+          birth: '1996',
+          kingdom: 'Principado de Alvor',
+          city: 'Ponte Dourada',
+          expiry: '10.2028',
+          weightPass: 58,
+          weightReal: 58,
+          forgedSeal: false,
+          entryTicket: { code: 'TK-109', validYear: '2024', purpose: 'VISITA' }, // TICKET DE ENTRADA VENCIDO!
+          speech: 'passaporte na mão e o ticket azul na mesa! rapidinho que tá nevando muito!',
+          replyApproved: 'hehehe nem olhou o ano pequenininho no ticket né? tchauzinho!',
+          replyDenied: 'ah droga, vi agora que peguei o ticket velho de 2024 na bolsa...',
+          xrayDesc: 'Cachecol extra e luvas.',
+          xrayBad: false,
+          valid: false,
+          violationReason: 'Ticket de Entrada vencido (Ano Válido: 2024 < 2026).',
         },
       ],
     },
@@ -691,6 +730,26 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           valid: false,
           violationReason: 'Divergência de nome: "Natasha Sokolova" vs "Nadia Sokolova" na Permissão.',
         },
+        {
+          charId: 'char_7',
+          name: 'Arthur Krol',
+          sex: 'M',
+          birth: '1972',
+          kingdom: 'União de Karst',
+          city: 'Mina Funda',
+          expiry: '09.2029',
+          weightPass: 83,
+          weightReal: 83,
+          forgedSeal: true, // BRASÃO DE KARST SEM A CRUZ INTERNA!
+          entryTicket: { code: 'TK-755', validYear: '2026', purpose: 'COMÉRCIO' },
+          speech: 'sou empresário de Mina Funda, meus papéis estão impecáveis. despacha logo isso!',
+          replyApproved: 'assim que eu gosto, rapidez sem perguntas inúteis.',
+          replyDenied: 'maldição! o gravador esqueceu a cruz dentro do losango de Karst!',
+          xrayDesc: 'Charutos e relógio de bolso.',
+          xrayBad: false,
+          valid: false,
+          violationReason: 'Brasão falsificado da União de Karst (losango vazio sem a cruz central).',
+        },
       ],
     },
     {
@@ -777,6 +836,27 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           valid: true,
           violationReason: 'Documentação e vacina de Hugo estavam em dia.',
         },
+        {
+          charId: 'char_2',
+          name: 'Yuri Galkin',
+          sex: 'M',
+          birth: '1983',
+          kingdom: 'Costa de Salina',
+          city: 'Doca Velha',
+          expiry: '11.2028',
+          weightPass: 86,
+          weightReal: 86,
+          forgedSeal: false,
+          entryTicket: { code: 'TK-912', validYear: '2026', purpose: 'TRÂNSITO' },
+          // SEM CERTIFICADO DE VACINAÇÃO! (E veio da Costa de Salina em quarentena!)
+          speech: 'vim direto de Doca Velha na Costa de Salina! saúde de ferro, nunca peguei nem gripe!',
+          replyApproved: 'passei sem o cartão amarelo de vacina kkkkk valeu irmão!',
+          replyDenied: 'esqueci o maldito comprovante de vacina no navio... volto amanhã.',
+          xrayDesc: 'Garrafa térmica com chá quente.',
+          xrayBad: false,
+          valid: false,
+          violationReason: 'Viajante da Costa de Salina sem Certificado de Vacinação obrigatório.',
+        },
       ],
     },
     {
@@ -849,6 +929,28 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           violationReason: 'Fugitiva procurada (Marta Krol) + brasão e UV adulterados.',
         },
         {
+          charId: 'char_1',
+          name: 'Leonid Kirov',
+          sex: 'M',
+          birth: '1989',
+          kingdom: 'República de Vostok',
+          city: 'Kievagrad',
+          expiry: '07.2030',
+          weightPass: 70,
+          weightReal: 70,
+          forgedSeal: false,
+          uvText: '✦ AUTÊNTICO // CHANCELARIA',
+          entryTicket: { code: 'TK-961', validYear: '2026', purpose: 'TRABALHO' },
+          workPermit: { holder: 'Leonid Kirov', role: 'Telegrafista', until: '2029' },
+          speech: 'pode bater a luz roxa, conferir o ticket e a permissão de telegrafista. tudo limpo!',
+          replyApproved: 'muito obrigado, inspetor! bom final de expediente.',
+          replyDenied: 'mas até na luz negra meu passaporte brilhou autêntico!! por que me negou?!',
+          xrayDesc: 'Rolo de fio de cobre e alicate.',
+          xrayBad: false,
+          valid: true,
+          violationReason: 'Documentação e selo UV de Leonid Kirov estavam 100% regulares.',
+        },
+        {
           charId: 'char_8',
           name: 'Emissário Fantasma',
           sex: '?',
@@ -908,7 +1010,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
         <button type="button" class="story-back-btn" id="pp-back-cave">← Voltar para a Caverna</button>
         <div class="pp-status-pills">
           <div class="pp-pill" id="pp-hud-day">DIA 1 / 5</div>
-          <div class="pp-pill" id="pp-hud-queue">FILA LÁ FORA: 3</div>
+          <div class="pp-pill" id="pp-hud-queue">FILA LÁ FORA: 4</div>
           <div class="pp-pill gold" id="pp-hud-credits">💰 30 CR</div>
           <div class="pp-pill warn" id="pp-hud-citations">⚠️ MULTAS HOJE: 0 / 3</div>
         </div>
@@ -1189,10 +1291,10 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     const startIdx = appIdx + 1;
     const waitingList = dayObj.applicants.slice(startIdx);
 
-    // Fila parada antes da catraca (x=134 pra trás: 134, 108, 82...)
+    // Fila parada antes da catraca (x=134 pra trás: 134, 108, 82, 56...)
     layer.innerHTML = waitingList
       .map((p, idx) => {
-        const leftPx = Math.max(10, 134 - idx * 26);
+        const leftPx = Math.max(8, 134 - idx * 24);
         const coat = getCoatColorForPerson(p);
         return `
           <div class="pp-mini-walker" data-q-idx="${idx}" style="left:${leftPx}px;">
@@ -1251,7 +1353,7 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     otherWalkers.forEach((w) => {
       const idx = Number(w.getAttribute('data-q-idx'));
       w.classList.add('walking');
-      w.style.left = `${Math.max(10, 134 - (idx - 1) * 26)}px`;
+      w.style.left = `${Math.max(8, 134 - (idx - 1) * 24)}px`;
     });
 
     await new Promise((r) => setTimeout(r, 660));
@@ -1659,6 +1761,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     } else if (pair.has('pass_name') && pair.has('permit_name') && person.discrepancyType === 'name') {
       matched = true;
     } else if (pair.has('today_date') && pair.has('pass_exp') && Number(person.expiry.split('.')[1]) < 2026) {
+      matched = true;
+    } else if (pair.has('today_date') && pair.has('ticket_year') && Number(person.entryTicket?.validYear) < 2026) {
       matched = true;
     }
 
