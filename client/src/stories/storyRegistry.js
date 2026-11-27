@@ -13,6 +13,7 @@ export const BOOKS_META = {
     title: 'Fronteira da Burocracia',
     subtitle: 'Livro I // Guichê Sépia',
     themeClass: 'book-theme-sepia',
+    prologue: 'Há décadas, toda alma perdida e todo pacote esquecido deste servidor precisavam passar por um único guichê antes de serem deletados. Você assumiu o turno da madrugada na Fronteira da Burocracia.',
     summary: 'Você sobreviveu a 5 dias de auditoria, balanças, selos falsos, raios-X e subornos na portaria do submundo.',
     riddle: '"O bilhete do Dia 4 e o Raio-X do Dia 5 apontam para a mesma cidade. Um porta-voz gaguejou \'imediatamente\' numa coletiva em novembro. Pegue o ANO em que a fronteira dessa cidade caiu, subtraia o ANO em que foi erguida, e multiplique pela IDADE exata (em anos completos naquela noite) de quem pronunciou o erro."',
   },
@@ -22,6 +23,7 @@ export const BOOKS_META = {
     title: 'A Princesa de Plástico',
     subtitle: 'Livro II // Conto de Fadas',
     themeClass: 'book-theme-pink',
+    prologue: 'Um roteirista preguiçoso trancou uma princesa no topo de uma torre de papelão só para cumprir cota de conto de fadas. O reino inteiro está em greve esperando o próximo idiota ir resgatá-la.',
     summary: 'Você enfrentou um cavalo sindicalizado, entrevista de RH, dragão com rinite, elevador de serviço e entregou açaí para a princesa.',
     riddle: '"Esqueça a Disney. Na obra original francesa de 1697 achada no Ato 4 (La Belle au bois dormant), some os ANOS que a princesa dormiu com a IDADE exata do autor quando publicou o livro, e multiplique pelo número de fadas BOAS convidadas para o batizado."',
   },
@@ -31,6 +33,7 @@ export const BOOKS_META = {
     title: 'Corredor 0999 (P.T.)',
     subtitle: 'Livro III // Fita VHS',
     themeClass: 'book-theme-noir',
+    prologue: 'Uma fita de terror psicológico ficou presa em loop infinito dentro da memória morta. Cada vez que alguém cruza a porta no fim do corredor, o tempo reinicia — a menos que você descubra o que mudou.',
     summary: 'Você atravessou loops idênticos de um corredor em preto e branco procurando anomalias enquanto um rádio chiava clichês de terror.',
     riddle: '"O número do quarto proibido no hotel de Kubrick — não no livro de King, mas no filme."',
   },
@@ -40,6 +43,7 @@ export const BOOKS_META = {
     title: 'Naufrágio da Porta Gigante',
     subtitle: 'Livro IV // Gelo & Sonar',
     themeClass: 'book-theme-ice',
+    prologue: 'No meio do oceano congelado de dados corrompidos, um transatlântico inteiro afundou por pura arrogância — e só sobrou uma porta de madeira gigante boiando no gelo.',
     summary: 'Você equilibrou uma porta onde claramente cabiam quatro pessoas no meio do Atlântico Norte congelante.',
     riddle: '"O navio \'inafundável\' que inspirou essa porta idiota partiu de Southampton e afundou em abril de qual ano?"',
   },
@@ -49,6 +53,7 @@ export const BOOKS_META = {
     title: 'Plantão da Floresta',
     subtitle: 'Livro V // Inquérito Sombrio',
     themeClass: 'book-theme-crimson',
+    prologue: 'Na madrugada chuvosa da floresta, uma cesta sumiu, um álibi foi forjado e todos na cabana estão mentindo. Você é o único inspetor que restou para apontar o culpado antes do amanhecer.',
     summary: 'Você interrogou uma avó suspeita, um lenhador enrolado e um lobo cínico até desmontar o álibi falso da cabana.',
     riddle: '"O mesmo autor de \'1984\' escreveu também uma sátira sobre porcos comandando uma fazenda. Em que ano esse livro foi publicado?"',
   },
@@ -58,6 +63,7 @@ export const BOOKS_META = {
     title: 'Terminal 1984',
     subtitle: 'Livro VI // CRT Fósforo',
     themeClass: 'book-theme-crt',
+    prologue: 'Antes do colapso, o último setor do sistema era vigiado por um ministério obcecado em apagar a verdade em tempo real. Só quem hackear a mesa de censura consegue escapar.',
     summary: 'Você censurou manchetes em tempo real, interceptou pacotes secretos e burlou a vigilância do Grande Irmão.',
     riddle: '"Na obra de George Orwell, qual é o número do quarto onde cada prisioneiro enfrenta seu pior terror?"',
   },
@@ -269,20 +275,27 @@ export function launchStory(storyId, ctx) {
     <div class="story-portal-sub">${meta?.subtitle || 'Abrindo Livro'}</div>
     <img class="story-portal-book" id="portal-book-img" src="/cave/book_${storyId}_closed.png" alt="" />
     <div class="story-portal-title">${meta?.title || ''}</div>
+    <p class="story-portal-prologue">${meta?.prologue || ''}</p>
   `;
   document.body.appendChild(overlay);
 
   requestAnimationFrame(() => overlay.classList.add('active'));
 
-  // Troca a imagem do livro fechado -> aberto no meio da transição!
+  // 1. Mostra o livro FECHADO + prólogo por 2.2s para o jogador ler a história de entrada!
   setTimeout(() => {
     const img = document.getElementById('portal-book-img');
-    if (img) img.src = `/cave/book_${storyId}_open.png`;
+    if (img) {
+      img.src = `/cave/book_${storyId}_open.png`;
+      img.classList.add('opened');
+    }
     if (ctx.playBeep) ctx.playBeep();
-  }, 550);
+  }, 2200);
 
-  // Monta o conto por trás do overlay e dissolve suavemente para dentro da história
+  // 2. Depois de aberto e brilhando (1.3s), o livro suga o jogador para dentro das páginas!
   setTimeout(() => {
+    const img = document.getElementById('portal-book-img');
+    img?.classList.add('entering');
+
     runner({
       app,
       ...ctx,
@@ -292,7 +305,7 @@ export function launchStory(storyId, ctx) {
         ctx.returnToCave(updatedCave, { justEarnedBook: `book_${storyId}`, remark: res?.remark });
       },
     });
-    overlay.classList.add('fade-out');
-    setTimeout(() => overlay.remove(), 620);
-  }, 1350);
+    overlay.classList.add('suck-in');
+    setTimeout(() => overlay.remove(), 680);
+  }, 3600);
 }

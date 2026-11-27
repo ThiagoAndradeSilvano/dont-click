@@ -285,7 +285,7 @@ body.story-mode-6 {
   border-bottom-width: 2px;
 }
 
-/* ===== TRANSIÇÃO DE ENTRADA NOS CONTOS (ABRINDO O LIVRO) ===== */
+/* ===== TRANSIÇÃO DE ENTRADA NOS CONTOS (LIVRO FECHADO -> PRÓLOGO -> ABRE -> SUGA PRA DENTRO!) ===== */
 .story-portal-overlay {
   position: fixed;
   inset: 0;
@@ -295,9 +295,10 @@ body.story-mode-6 {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
+  padding: 24px;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.5s ease;
   pointer-events: all;
 }
 
@@ -305,34 +306,51 @@ body.story-mode-6 {
   opacity: 1;
 }
 
-.story-portal-overlay.fade-out {
+.story-portal-overlay.suck-in {
+  transition: opacity 0.65s ease;
   opacity: 0;
-  transition: opacity 0.6s ease;
   pointer-events: none;
 }
 
 .story-portal-book {
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   object-fit: contain;
   image-rendering: pixelated;
-  filter: drop-shadow(0 0 24px rgba(251, 191, 36, 0.55));
-  animation: portalBookZoom 1.45s ease-in-out forwards;
+  filter: drop-shadow(0 0 16px rgba(251, 191, 36, 0.35));
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.6s ease, opacity 0.6s ease;
 }
 
-@keyframes portalBookZoom {
-  0% { transform: scale(0.75) rotate(-4deg); opacity: 0.4; }
-  45% { transform: scale(1.12) rotate(0deg); opacity: 1; }
-  100% { transform: scale(1.35); opacity: 0.95; }
+.story-portal-book.opened {
+  transform: scale(1.22);
+  filter: drop-shadow(0 0 38px rgba(253, 224, 71, 0.85));
+}
+
+.story-portal-book.entering {
+  transform: scale(7.5);
+  opacity: 0;
+  filter: drop-shadow(0 0 60px rgba(255, 255, 255, 1));
 }
 
 .story-portal-title {
   color: #fde68a;
   font-family: 'Georgia', serif;
-  font-size: 22px;
+  font-size: 24px;
   letter-spacing: 1px;
   text-align: center;
   text-shadow: 0 4px 18px rgba(0, 0, 0, 0.9);
+}
+
+.story-portal-prologue {
+  max-width: 560px;
+  color: #d4d4d8;
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-size: 14.5px;
+  line-height: 1.65;
+  text-align: center;
+  margin: 4px 0 0;
+  opacity: 0.92;
 }
 
 .story-portal-sub {
