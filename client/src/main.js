@@ -2462,14 +2462,14 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.arc(lampX, lampY + 5, 9, 0, Math.PI * 2);
     ctx.fill();
 
-    // Halo circular suave de luz
+    // Halo circular localizado ao redor da lâmpada (sem estrobo na tela inteira!)
     if (morseOn) {
-      const halo = ctx.createRadialGradient(lampX, lampY + 6, 4, lampX, lampY + 6, 360);
-      halo.addColorStop(0, 'rgba(254, 240, 138, 0.34)');
-      halo.addColorStop(0.35, 'rgba(253, 224, 71, 0.12)');
+      const halo = ctx.createRadialGradient(lampX, lampY + 6, 4, lampX, lampY + 6, 175);
+      halo.addColorStop(0, 'rgba(254, 240, 138, 0.24)');
+      halo.addColorStop(0.45, 'rgba(253, 224, 71, 0.08)');
       halo.addColorStop(1, 'rgba(253, 224, 71, 0)');
       ctx.fillStyle = halo;
-      ctx.fillRect(0, 0, 840, 460);
+      ctx.fillRect(lampX - 180, 0, 360, 260);
     }
 
     subsoloRaf = requestAnimationFrame(loop);

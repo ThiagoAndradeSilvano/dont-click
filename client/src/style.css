@@ -1253,16 +1253,31 @@ body.subsolo-mode {
   padding: 16px;
 }
 
+body.subsolo-mode #app {
+  width: 100%;
+  max-width: 846px;
+}
+
 .subsolo-shell {
   width: 100%;
-  max-width: 860px;
+  max-width: 846px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+.subsolo-shell .operator-feed {
+  width: 100%;
+  height: 76px;
+  min-height: 76px;
+  max-height: 76px;
+  overflow: hidden;
+}
+
 .subsolo-canvas-wrap {
   position: relative;
+  width: 100%;
+  aspect-ratio: 840 / 460;
   border: 3px solid #27272a;
   background: #12151c;
   box-shadow: 0 16px 48px rgba(0,0,0,0.75);
