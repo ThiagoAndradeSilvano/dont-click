@@ -10,6 +10,8 @@ let audioCtx = null;
 let moodTimeout = null;
 let idleTimeout = null;
 let fakeProgressTimer = null;
+// Onde a barra de sincronização parou (comprar upgrade redesenha a tela e ela não pode voltar pro 0)
+let fakeProgressPctMemo = 0;
 let passiveTickTimer = null;
 let achievementTimer = null;
 let randomEventTimer = null;
@@ -920,6 +922,9 @@ function renderInitialButtonScreen(buttonLabel = 'Botão') {
 // CAP 1 & 2: FAKE GAME DE ~20 MINUTOS (Melhorias + Automação + Eventos)
 // ============================================================================
 function renderClickerScreen(state, { justAwakened = false, newlyBought = null } = {}) {
+  // Guarda onde a loja e a página estavam roladas: comprar upgrade redesenha tudo e não pode pular pro topo
+  const prevShopScroll = document.getElementById('shop-list')?.scrollTop || 0;
+  const prevPageScroll = window.scrollY || 0;
   clearTimers();
   latestState = state;
   const isAwakened = state.stage === 'awakened_clicker';
@@ -1012,10 +1017,10 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
       <div class="fake-progress-wrap">
         <div class="fake-progress-label">
           <span>Sincronizando módulos...</span>
-          <span id="fake-progress-pct">0%</span>
+          <span id="fake-progress-pct">${fakeProgressPctMemo}%</span>
         </div>
         <div class="fake-progress-track">
-          <div class="fake-progress-fill" id="fake-progress-fill"></div>
+          <div class="fake-progress-fill" id="fake-progress-fill" style="width:${fakeProgressPctMemo}%"></div>
         </div>
       </div>
     `
@@ -1114,6 +1119,9 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
   });
 
   renderActiveShopTab();
+  const shopListEl = document.getElementById('shop-list');
+  if (shopListEl) shopListEl.scrollTop = prevShopScroll;
+  if (prevPageScroll) window.scrollTo(0, prevPageScroll);
 
   // Relógio no Widget de Clima (normal ou QUEBRADO quando superaquece!) + Temperatura Editável (0..99)
   if (hasWeather) {
@@ -1212,7 +1220,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
 
   // Barra de progresso que trava em 99%, DÁ ERRO (janelinha feia) e só então volta pro 0
   if (currentUpgrades.includes('fake_progress')) {
-    let pct = 15;
+    let pct = fakeProgressPctMemo;
     let stuckTicks = 0;
     let erroring = false;
     fakeProgressTimer = setInterval(() => {
@@ -1221,7 +1229,8 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
       if (!fill || !lbl || erroring) return;
 
       if (pct < 99) {
-        pct = Math.min(99, pct + Math.floor(Math.random() * 9) + 3);
+        // Devagar e aos trancos: às vezes nem anda
+        pct = Math.random() < 0.25 ? pct : Math.min(99, pct + Math.floor(Math.random() * 3) + 1);
       } else {
         stuckTicks += 1;
         if (stuckTicks >= 4) {
@@ -1230,6 +1239,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
           lbl.textContent = 'ERRO';
           showFakeSyncError(() => {
             pct = 0;
+            fakeProgressPctMemo = 0;
             stuckTicks = 0;
             erroring = false;
             const f = document.getElementById('fake-progress-fill');
@@ -1240,9 +1250,10 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
           return;
         }
       }
+      fakeProgressPctMemo = pct;
       fill.style.width = `${pct}%`;
       lbl.textContent = `${pct}%`;
-    }, 550);
+    }, 800);
   }
 
   // Produção Automática por segundo (Geradores)
