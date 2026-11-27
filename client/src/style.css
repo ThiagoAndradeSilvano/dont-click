@@ -1757,14 +1757,14 @@ body.cave-mode {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mochila lateral de Inventário da Caverna (colada perto do mapa!) */
+/* Mochila lateral de Inventário da Caverna (colada perto do mapa, grid espaçoso!) */
 .cave-inventory {
   position: fixed;
   z-index: 48;
-  left: max(12px, calc(50% - 575px));
+  left: max(12px, calc(50% - 610px));
   top: 50%;
   transform: translateY(-50%);
-  width: 148px;
+  width: 204px;
   color: #fff;
   font-size: 11px;
 }
@@ -1776,40 +1776,51 @@ body.cave-mode {
 }
 
 .cave-inv-grid {
-  margin-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  background: rgba(18, 18, 22, 0.92);
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  background: rgba(14, 14, 18, 0.94);
   border: 2px solid #3f3f46;
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .cave-inv-item {
   position: relative;
-  width: 54px;
+  width: 100%;
+  background: rgba(24, 24, 29, 0.9);
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  padding: 8px 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   cursor: pointer;
 }
 
 .cave-inv-item img {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
   image-rendering: pixelated;
 }
 
 .inv-toggle-btn {
-  margin-top: 4px;
+  margin-top: 6px;
   width: 100%;
-  padding: 2px 4px;
+  padding: 4px 5px;
   background: #27272a;
   color: #fbbf24;
   border: 1px solid #52525b;
-  border-radius: 3px;
+  border-radius: 4px;
   font-family: inherit;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: bold;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -1822,9 +1833,9 @@ body.cave-mode {
 .cave-inv-item .inv-tooltip {
   display: none;
   position: absolute;
-  left: 60px;
-  top: -8px;
-  width: 165px;
+  left: 92px;
+  top: -4px;
+  width: 175px;
   background: #fff;
   color: #141415;
   padding: 8px;
