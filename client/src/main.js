@@ -18,7 +18,10 @@ let meltdownInactivityTimers = [];
 let idleNudgeTimer = null;
 let subsoloChatTimer = null;
 let subsoloRaf = null;
+let caveRaf = null;
 let caveKeyHandler = null;
+let caveKeyUpHandler = null;
+let caveResizeHandler = null;
 let isOverheatedLocal = false;
 let isMusicMuted = false;
 let isCookieOpen = false;
@@ -462,9 +465,18 @@ function clearTimers() {
   meltdownInactivityTimers.forEach((t) => clearTimeout(t));
   meltdownInactivityTimers = [];
   if (subsoloRaf) { cancelAnimationFrame(subsoloRaf); subsoloRaf = null; }
+  if (caveRaf) { cancelAnimationFrame(caveRaf); caveRaf = null; }
   if (caveKeyHandler) {
     window.removeEventListener('keydown', caveKeyHandler);
     caveKeyHandler = null;
+  }
+  if (caveKeyUpHandler) {
+    window.removeEventListener('keyup', caveKeyUpHandler);
+    caveKeyUpHandler = null;
+  }
+  if (caveResizeHandler) {
+    window.removeEventListener('resize', caveResizeHandler);
+    caveResizeHandler = null;
   }
   remarkQueue.length = 0;
   isProcessingQueue = false;
@@ -2518,7 +2530,6 @@ const CAVE_LIFTS = [
 
 // Paredes fixas do SCSS original (@include makeWallAt(row, tile) -> impede entrar e sair daquele segmento!)
 const CAVE_WALL_TILES = new Set([
-  '1-1',
   '1-8',
   '1-9',
   '1-13',
@@ -2596,7 +2607,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
 
   const state = {
     row: savedCave?.row || 1,
-    col: savedCave?.col || 2,
+    col: savedCave?.col || 1,
     inventory: Array.isArray(savedCave?.inventory) ? [...savedCave.inventory] : ['0'],
     cleared: Array.isArray(savedCave?.cleared) ? [...savedCave.cleared] : [],
     plungerArmed: Boolean(savedCave?.plungerArmed),
@@ -2678,11 +2689,12 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
       <div class="cave-inv-grid" id="cave-inv-grid"></div>
     </div>
 
-    <div class="cave-stage-root">
-      <div class="cave-character" id="cave-char"></div>
+    <div class="cave-stage-root" id="cave-stage-root">
       <div class="cave-viewport" id="cave-viewport">
         <img class="cave-level-bg" src="/cave/tilemaps.png" alt="Mapa da Caverna" />
         ${segmentsHtml}
+        <div class="cave-character" id="cave-char"></div>
+        <div class="cave-darkness-mask" id="cave-darkness-mask"></div>
       </div>
     </div>
 
@@ -2746,29 +2758,49 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
     });
   }
 
-  function updateViewportPosition(facingLeft = false) {
-    const vp = document.getElementById('cave-viewport');
+  const floorYForRow = (r) => (r - 1) * 336 + 216;
+  const colCenterX = (c) => (c - 1) * 144 + 72;
+
+  let charX = colCenterX(state.col);
+  let charY = (!state.introDone || justFell) ? -42 : floorYForRow(state.row);
+  let facingLeft = false;
+  let isDroppingFromCeiling = !state.introDone || justFell;
+  let dropVy = 0;
+  let elevatorTargetRow = null;
+
+  function fitCaveStageToScreen() {
+    const root = document.getElementById('cave-stage-root');
+    if (!root) return;
+    const availW = Math.max(320, window.innerWidth - 220);
+    const availH = Math.max(240, window.innerHeight - 155);
+    const scale = Math.min(availW / 1728, availH / 1344, 0.92);
+    // Desloca levemente à direita da mochila lateral para centralizar no espaço útil
+    const offsetX = window.innerWidth > 900 ? 78 : 0;
+    root.style.transform = `translate(calc(-50% + ${offsetX}px), -50%) scale(${scale})`;
+  }
+  fitCaveStageToScreen();
+  caveResizeHandler = fitCaveStageToScreen;
+  window.addEventListener('resize', caveResizeHandler);
+
+  function updateViewportPosition(isLeft = facingLeft, isMoving = false) {
     const ch = document.getElementById('cave-char');
-    if (!vp || !ch) return;
+    const mask = document.getElementById('cave-darkness-mask');
+    if (!ch || !mask) return;
 
-    const leftPx = -144 * (state.col - 1);
-    const topPx = -336 * (state.row - 1);
-    const clipX = 71 + (state.col - 1) * 144;
-    const clipY = 212 + (state.row - 1) * 336;
-    const radius = torchLit ? 148 : 28; // Escuro fechado antes de acender a tocha!
+    ch.style.left = `${charX}px`;
+    ch.style.top = `${charY}px`;
+    ch.classList.toggle('facing-left', isLeft);
+    ch.classList.toggle('walking', isMoving);
 
-    vp.style.left = `${leftPx}px`;
-    vp.style.top = `${topPx}px`;
-    vp.style.clipPath = `circle(${radius}px at ${clipX}px ${clipY}px)`;
-
-    ch.classList.toggle('facing-left', facingLeft);
-    ch.classList.add('walking');
-    if (walkingTimer) clearTimeout(walkingTimer);
-    walkingTimer = setTimeout(() => ch.classList.remove('walking'), 480);
+    // Bola de visão com degradê suave tipo lâmpada/lanterna seguindo o boneco!
+    const radius = torchLit ? 168 : 44;
+    const innerR = Math.round(radius * 0.25);
+    const midR = Math.round(radius * 0.65);
+    mask.style.background = `radial-gradient(circle ${radius}px at ${charX}px ${charY}px, rgba(255, 200, 110, 0.08) 0%, rgba(10, 10, 14, 0.22) ${innerR}px, rgba(5, 5, 8, 0.80) ${midR}px, rgba(4, 4, 6, 0.985) ${radius}px, rgba(4, 4, 6, 0.995) 100%)`;
 
     // Atualiza posição visual dos elevadores quando o jogador está no andar de baixo deles
     CAVE_LIFTS.forEach(([lr, lc]) => {
-      const lowered = state.row === lr + 1 && state.col === lc;
+      const lowered = (state.row === lr + 1 && state.col === lc) || (elevatorTargetRow === lr + 1 && Math.abs(charX - colCenterX(lc)) < 48);
       document.querySelector(`[data-lift="${lr}-${lc}"]`)?.classList.toggle('lowered', lowered);
       document.querySelector(`[data-lift-plat="${lr}-${lc}"]`)?.classList.toggle('lowered', lowered);
     });
@@ -3016,9 +3048,10 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
     });
   });
 
-  // CONTROLE NO TECLADO: WASD (e Setas) para andar + E para interagir com objeto da sala atual!
-  let moveCooldown = false;
-  caveKeyHandler = async (ev) => {
+  // CONTROLE FLUIDO NO TECLADO: WASD (e Setas) contínuo + E para interagir por proximidade!
+  const keysDown = new Set();
+
+  caveKeyHandler = (ev) => {
     if (currentStage !== 'cave_2d') return;
     if (document.getElementById('cave-padlock-modal')) return;
 
@@ -3027,57 +3060,123 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
       ev.preventDefault();
     }
 
-    if (k === 'e') {
-      const hereObjs = CAVE_OBJECTS.filter((o) => o.row === state.row && o.col === state.col);
-      if (hereObjs.length > 0) {
-        // Prioriza objeto ainda não resolvido na sala
-        const pending =
-          hereObjs.find((o) => o.kind === 'pickup' && !state.inventory.includes(o.id)) || hereObjs[0];
-        interactWithObject(pending);
+    if (k === 'e' && !ev.repeat) {
+      // Interage com o objeto mais próximo na mesma linha (até 110px de distância)
+      const nearby = CAVE_OBJECTS
+        .filter((o) => o.row === state.row && Math.abs(colCenterX(o.col) - charX) <= 110)
+        .sort((a, b) => {
+          const aPend = a.kind === 'pickup' && !state.inventory.includes(a.id) ? 0 : 1;
+          const bPend = b.kind === 'pickup' && !state.inventory.includes(b.id) ? 0 : 1;
+          if (aPend !== bPend) return aPend - bPend;
+          return Math.abs(colCenterX(a.col) - charX) - Math.abs(colCenterX(b.col) - charX);
+        });
+      if (nearby.length > 0) {
+        interactWithObject(nearby[0]);
       }
       return;
     }
 
-    if (moveCooldown || !torchLit) return;
+    keysDown.add(k);
+  };
 
-    let nextR = state.row;
-    let nextC = state.col;
-    let leftDir = false;
-
-    if (k === 'd' || k === 'arrowright') {
-      if (!canMoveHorizontal(state.row, state.col, state.col + 1)) return;
-      nextC = state.col + 1;
-      leftDir = false;
-    } else if (k === 'a' || k === 'arrowleft') {
-      if (!canMoveHorizontal(state.row, state.col, state.col - 1)) return;
-      nextC = state.col - 1;
-      leftDir = true;
-    } else if (k === 's' || k === 'arrowdown') {
-      if (!canMoveVertical(state.row, state.col, state.row + 1)) return;
-      nextR = state.row + 1;
-    } else if (k === 'w' || k === 'arrowup') {
-      if (!canMoveVertical(state.row, state.col, state.row - 1)) return;
-      nextR = state.row - 1;
-    } else {
-      return;
-    }
-
-    moveCooldown = true;
-    state.row = nextR;
-    state.col = nextC;
-    updateViewportPosition(leftDir);
-    syncCave();
-
-    setTimeout(() => {
-      moveCooldown = false;
-    }, 360);
+  caveKeyUpHandler = (ev) => {
+    keysDown.delete(ev.key.toLowerCase());
   };
 
   window.addEventListener('keydown', caveKeyHandler);
+  window.addEventListener('keyup', caveKeyUpHandler);
 
   refreshInventoryUI();
   refreshObjectsVisuals();
-  updateViewportPosition(false);
+  updateViewportPosition(facingLeft, false);
+
+  let lastFrameTime = performance.now();
+  const caveTick = (now) => {
+    if (currentStage !== 'cave_2d') return;
+    const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+    lastFrameTime = now;
+
+    let isMoving = false;
+
+    // 1. Animação inicial caindo do teto no canto superior esquerdo!
+    if (isDroppingFromCeiling) {
+      dropVy += 1450 * dt;
+      charY += dropVy * dt;
+      const landY = floorYForRow(1);
+      if (charY >= landY) {
+        charY = landY;
+        isDroppingFromCeiling = false;
+        dropVy = 0;
+      }
+      updateViewportPosition(facingLeft, false);
+      caveRaf = requestAnimationFrame(caveTick);
+      return;
+    }
+
+    // 2. Viagem suave de elevador entre andares
+    if (elevatorTargetRow !== null) {
+      const targetY = floorYForRow(elevatorTargetRow);
+      const dirY = targetY > charY ? 1 : -1;
+      charY += dirY * 290 * dt;
+      if ((dirY > 0 && charY >= targetY) || (dirY < 0 && charY <= targetY)) {
+        charY = targetY;
+        state.row = elevatorTargetRow;
+        elevatorTargetRow = null;
+        syncCave();
+      }
+      updateViewportPosition(facingLeft, false);
+      caveRaf = requestAnimationFrame(caveTick);
+      return;
+    }
+
+    // 3. Movimento livre fluido horizontal (WASD / Setas)
+    if (torchLit && !document.getElementById('cave-padlock-modal')) {
+      const moveRight = keysDown.has('d') || keysDown.has('arrowright');
+      const moveLeft = keysDown.has('a') || keysDown.has('arrowleft');
+      const moveDown = keysDown.has('s') || keysDown.has('arrowdown');
+      const moveUp = keysDown.has('w') || keysDown.has('arrowup');
+
+      let vx = 0;
+      if (moveRight && !moveLeft) { vx = 1; facingLeft = false; }
+      else if (moveLeft && !moveRight) { vx = -1; facingLeft = true; }
+
+      if (vx !== 0) {
+        const speed = 225;
+        const proposedX = Math.max(36, Math.min(1728 - 36, charX + vx * speed * dt));
+        const curCol = Math.max(1, Math.min(12, Math.floor(charX / 144) + 1));
+        const propCol = Math.max(1, Math.min(12, Math.floor((proposedX + vx * 18) / 144) + 1));
+
+        if (propCol === curCol || canMoveHorizontal(state.row, curCol, propCol)) {
+          charX = proposedX;
+          isMoving = true;
+          const newCol = Math.max(1, Math.min(12, Math.floor(charX / 144) + 1));
+          if (newCol !== state.col) {
+            state.col = newCol;
+            syncCave();
+          }
+        }
+      }
+
+      // Elevadores verticais (W / S quando próximo do eixo do elevador)
+      if (moveDown && canMoveVertical(state.row, state.col, state.row + 1)) {
+        const liftX = colCenterX(state.col);
+        if (Math.abs(charX - liftX) <= 52) {
+          charX = liftX;
+          elevatorTargetRow = state.row + 1;
+        }
+      } else if (moveUp && canMoveVertical(state.row, state.col, state.row - 1)) {
+        const liftX = colCenterX(state.col);
+        if (Math.abs(charX - liftX) <= 52) {
+          charX = liftX;
+          elevatorTargetRow = state.row - 1;
+        }
+      }
+    }
+
+    updateViewportPosition(facingLeft, isMoving);
+    caveRaf = requestAnimationFrame(caveTick);
+  };
+  caveRaf = requestAnimationFrame(caveTick);
 
   // Sequência de Queda / Acender a Tocha ao chegar na Caverna!
   if (!state.introDone || justFell) {

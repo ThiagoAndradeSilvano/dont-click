@@ -249,8 +249,8 @@ function normalizePlayer(player) {
   if (!player.caveState || typeof player.caveState !== 'object') {
     player.caveState = {
       row: 1,
-      col: 2,
-      inventory: ['0'], // começa com a maçã na mochila igual no original!
+      col: 1,
+      inventory: ['0'], // começa com a maçã na mochila
       cleared: [], // ex: 'boulder', 'beam', 'gap', 'water', 'padlock_door'
       plungerArmed: false,
       introDone: false,
@@ -1096,7 +1096,7 @@ if (process.env.NODE_ENV !== 'production') {
       player.subsoloSolved = true;
       player.caveState = {
         row: 1,
-        col: 2,
+        col: 1,
         inventory: ['0'],
         cleared: [],
         plungerArmed: false,

@@ -1506,13 +1506,19 @@ body.cave-mode {
 }
 
 .cave-stage-root {
-  position: absolute;
-  left: calc(50% - 72px);
-  top: calc(50% - 190px);
+  position: fixed;
+  left: 50%;
+  top: 50%;
   width: 1728px; /* 12 cols * 144px */
+  height: 1344px; /* 4 rows * 336px */
+  transform-origin: center center;
+  border: 2px solid #27272a;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+  background: #050507;
+  overflow: hidden;
 }
 
-/* Bonequinho principal no centro da tocha */
+/* Bonequinho principal (coordenadas livres dentro do mapa fixo!) */
 .cave-character {
   width: 48px;
   height: 48px;
@@ -1520,18 +1526,18 @@ body.cave-mode {
   image-rendering: pixelated;
   position: absolute;
   top: 216px;
-  left: -16px;
-  transform: translateY(-50%) translateX(64px);
+  left: 72px;
+  transform: translate(-50%, -50%);
   z-index: 12;
   pointer-events: none;
 }
 
 .cave-character.walking {
-  animation: caveWalkAnim 0.55s steps(6) infinite;
+  animation: caveWalkAnim 0.48s steps(6) infinite;
 }
 
 .cave-character.facing-left {
-  transform: translateY(-50%) translateX(64px) scaleX(-1);
+  transform: translate(-50%, -50%) scaleX(-1);
 }
 
 @keyframes caveWalkAnim {
@@ -1539,13 +1545,19 @@ body.cave-mode {
   to { background-position: -288px 0; }
 }
 
-/* Viewport que desliza suavemente conforme WASD muda (row, col) e recorta o círculo da tocha! */
+/* Mapa 100% estacionário — a luz e o personagem é que se movem! */
 .cave-viewport {
   position: relative;
   width: 1728px;
   height: 1344px; /* 4 rows * 336px */
-  transition: left 0.48s linear, top 0.48s linear, clip-path 0.48s linear;
   z-index: 5;
+}
+
+.cave-darkness-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
 }
 
 .cave-viewport.shake-blast {
