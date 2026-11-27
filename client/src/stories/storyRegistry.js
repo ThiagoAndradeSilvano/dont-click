@@ -13,8 +13,8 @@ export const BOOKS_META = {
     title: 'Fronteira da Burocracia',
     subtitle: 'Livro I // Guichê Sépia',
     themeClass: 'book-theme-sepia',
-    summary: 'Você sobreviveu a dias infinitos carimbando passaportes de duendes sonegadores e ogros sem comprovante de residência.',
-    riddle: '"O muro que partiu uma cidade ao meio caiu em novembro de 1989. Quantos anos exatos ele ficou de pé?"',
+    summary: 'Você sobreviveu a 5 dias de auditoria, balanças, selos falsos, raios-X e subornos na portaria do submundo.',
+    riddle: '"O bilhete do Dia 4 e o Raio-X do Dia 5 apontam para a mesma cidade. Um porta-voz gaguejou \'imediatamente\' numa coletiva em novembro. Pegue o ANO em que a fronteira dessa cidade caiu, subtraia o ANO em que foi erguida, e multiplique pela IDADE exata (em anos completos naquela noite) de quem pronunciou o erro."',
   },
   book_2: {
     id: 'book_2',

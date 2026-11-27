@@ -999,7 +999,7 @@ app.post('/api/cave/complete-story', (req, res) => {
 
 // Valida o Enigma da Última Página de cada Livro (100% no servidor!)
 const BOOK_RIDDLE_ANSWERS = {
-  book_1: '28',   // Muro de Berlim: 1989 - 1961 = 28 anos
+  book_1: '1680', // Binário "MURO" + César+3 "EHUOLP" ("BERLIM"): (1989 - 1961) = 28 * idade de Günter Schabowski em 09/11/1989 (60 anos) = 1680!
   book_2: '100',  // Bela Adormecida dos Irmãos Grimm: 100 anos
   book_3: '237',  // O Iluminado (filme de Kubrick): Quarto 237
   book_4: '1912', // Titanic afundou em abril de 1912
@@ -1049,7 +1049,7 @@ app.post('/api/cave/solve-book', (req, res) => {
   });
 });
 
-// Valida a Ordem Final dos 6 Livros na Estante da Caverna (Ordem crescente das respostas: 28, 100, 101, 237, 1912, 1945)
+// Valida a Ordem Final dos 6 Livros na Estante da Caverna (Ordem crescente das respostas: 100, 101, 237, 1680, 1912, 1945)
 app.post('/api/cave/solve-shelf', (req, res) => {
   const { db, player } = resolvePlayer(req, res, req.body);
   const order = Array.isArray(req.body?.order) ? req.body.order.map(String) : [];
@@ -1061,7 +1061,7 @@ app.post('/api/cave/solve-shelf', (req, res) => {
     });
   }
 
-  const expected = ['book_1', 'book_2', 'book_6', 'book_3', 'book_4', 'book_5'];
+  const expected = ['book_2', 'book_6', 'book_3', 'book_1', 'book_4', 'book_5'];
   const matches = order.length === 6 && expected.every((b, idx) => order[idx] === b);
 
   if (!matches) {

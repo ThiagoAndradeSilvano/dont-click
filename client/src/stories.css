@@ -159,37 +159,37 @@ body.story-mode-1 {
   background: #2b2318;
   color: #24190c;
   font-family: 'Courier New', monospace;
-  cursor: url('/cursors/story-1.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%93%A6%3C/text%3E%3C/svg%3E") 6 6, pointer;
+  cursor: url('/cursors/cursor_1.png') 4 4, pointer;
 }
 body.story-mode-2 {
   background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%);
   color: #500724;
   font-family: 'Comic Sans MS', cursive, sans-serif;
-  cursor: url('/cursors/story-2.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%AA%84%3C/text%3E%3C/svg%3E") 6 6, pointer;
+  cursor: url('/cursors/cursor_2.png') 4 4, pointer;
 }
 body.story-mode-3 {
   background: #070708;
   color: #d4d4d8;
   font-family: 'Courier New', monospace;
-  cursor: url('/cursors/story-3.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%91%81%EF%B8%8F%3C/text%3E%3C/svg%3E") 6 6, crosshair;
+  cursor: url('/cursors/cursor_3.png') 4 4, crosshair;
 }
 body.story-mode-4 {
   background: linear-gradient(180deg, #06182c 0%, #020812 100%);
   color: #e0f2fe;
   font-family: 'Georgia', serif;
-  cursor: url('/cursors/story-4.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%E2%9D%84%EF%B8%8F%3C/text%3E%3C/svg%3E") 6 6, pointer;
+  cursor: url('/cursors/cursor_4.png') 4 4, pointer;
 }
 body.story-mode-5 {
   background: #1a0b0c;
   color: #f5e6d3;
   font-family: 'Georgia', serif;
-  cursor: url('/cursors/story-5.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%94%8D%3C/text%3E%3C/svg%3E") 6 6, pointer;
+  cursor: url('/cursors/cursor_5.png') 4 4, pointer;
 }
 body.story-mode-6 {
   background: #020a04;
   color: #4ade80;
   font-family: 'Courier New', monospace;
-  cursor: url('/cursors/story-6.png') 6 6, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ctext y='22' font-size='22'%3E%F0%9F%96%A5%EF%B8%8F%3C/text%3E%3C/svg%3E") 6 6, pointer;
+  cursor: url('/cursors/cursor_6.png') 4 4, pointer;
 }
 
 .story-shell {

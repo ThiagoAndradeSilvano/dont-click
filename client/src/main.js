@@ -2515,7 +2515,7 @@ function renderSubsolo2DScreen(initialState = null) {
 // ============================================================================
 const CAVE_INVENTORY_META = {
   '0': { img: '/cave/apple.gif', altImg: '/cave/apple.gif', name: 'Maçã', details: 'Um lanche estranhamente intacto', hasToggle: true, onLabel: 'Mordida', offLabel: 'Morder', oneShot: true },
-  'lantern': { img: '/cave/swingingLantern.gif', altImg: '/cave/swingingLantern.gif', name: 'Lanterna', details: 'Liga/desliga a luz na caverna (Tecla F)', hasToggle: true, onLabel: 'Desligar', offLabel: 'Ligar' },
+  'lantern': { img: '/cave/lantern_off.png', altImg: '/cave/lantern_on.png', name: 'Lanterna', details: 'Liga/desliga a luz na caverna (Tecla F)', hasToggle: true, onLabel: 'Desligar', offLabel: 'Ligar' },
   '2': { img: '/cave/pickInventory.gif', altImg: '/cave/pickInventory.gif', name: 'Picareta', details: 'Firme o bastante pra quebrar rocha', hasToggle: true, onLabel: 'Guardar', offLabel: 'Equipar' },
   '6': { img: '/cave/plankInventory.gif', altImg: '/cave/plankInventory.gif', name: 'Tábua', details: 'Tábua grossa de madeira', hasToggle: true, onLabel: 'Guardar', offLabel: 'Segurar' },
   '8': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Nota 1', details: '1º dígito: 1 barra (=5) + 2 pontos (=2) → [ 7 ]', hasToggle: true, onLabel: 'Fechar', offLabel: 'Ler' },
@@ -2524,15 +2524,15 @@ const CAVE_INVENTORY_META = {
   '12': { img: '/cave/handleInventory.gif', altImg: '/cave/handleInventory.gif', name: 'Manivela', details: 'Encaixa em alguma engrenagem', hasToggle: true, onLabel: 'Soltar', offLabel: 'Girar' },
   '15': { img: '/cave/dynamiteInventory.gif', altImg: '/cave/dynamiteInventory.gif', name: 'Dinamite', details: 'Explosivo antigo', hasToggle: true, onLabel: 'Desarmar', offLabel: 'Armar' },
   '16': { img: '/cave/fusesInventory.gif', altImg: '/cave/fusesInventory.gif', name: 'Estopins', details: 'Pavio para acender dinamite', hasToggle: true, onLabel: 'Apagar', offLabel: 'Preparar' },
-  'decoder_lens': { img: '/cave/pickInventory.gif', altImg: '/cave/pickInventory.gif', name: 'Lupa', details: 'Revela símbolos ocultos', hasToggle: true, onLabel: 'Desativar', offLabel: 'Ativar' },
-  'cassette': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Fita K7', details: 'Gravação antiga empoeirada', hasToggle: true, onLabel: 'Parar', offLabel: 'Tocar' },
-  'shelf_key': { img: '/cave/handleInventory.gif', altImg: '/cave/handleInventory.gif', name: 'Chave Mestra', details: 'Chave antiga da estante', hasToggle: true, onLabel: 'Polida', offLabel: 'Limpar', oneShot: true },
-  'book_1': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Livro I', details: 'Conto 1: Fronteira da Burocracia', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
-  'book_2': { img: '/cave/note2.gif', altImg: '/cave/note2.gif', name: 'Livro II', details: 'Conto 2: Princesa de Plástico', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
-  'book_3': { img: '/cave/note3.gif', altImg: '/cave/note3.gif', name: 'Livro III', details: 'Conto 3: Corredor 0999 P.T.', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
-  'book_4': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Livro IV', details: 'Conto 4: Naufrágio da Porta', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
-  'book_5': { img: '/cave/note2.gif', altImg: '/cave/note2.gif', name: 'Livro V', details: 'Conto 5: Plantão da Floresta', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
-  'book_6': { img: '/cave/note3.gif', altImg: '/cave/note3.gif', name: 'Livro VI', details: 'Conto 6: Terminal 1984', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'decoder_lens': { img: '/cave/decoder_lens_base.png', altImg: '/cave/decoder_lens_active.png', name: 'Lupa', details: 'Revela símbolos ocultos', hasToggle: true, onLabel: 'Desativar', offLabel: 'Ativar' },
+  'cassette': { img: '/cave/cassette_base.png', altImg: '/cave/cassette_unspooled.png', name: 'Fita K7', details: 'Gravação antiga empoeirada', hasToggle: true, onLabel: 'Parar', offLabel: 'Tocar' },
+  'shelf_key': { img: '/cave/shelf_key_base.png', altImg: '/cave/shelf_key_active.png', name: 'Chave Mestra', details: 'Chave antiga da estante', hasToggle: true, onLabel: 'Polida', offLabel: 'Limpar', oneShot: true },
+  'book_1': { img: '/cave/book_1_closed.png', altImg: '/cave/book_1_open.png', name: 'Livro I', details: 'Conto 1: Fronteira da Burocracia', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_2': { img: '/cave/book_2_closed.png', altImg: '/cave/book_2_open.png', name: 'Livro II', details: 'Conto 2: Princesa de Plástico', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_3': { img: '/cave/book_3_closed.png', altImg: '/cave/book_3_open.png', name: 'Livro III', details: 'Conto 3: Corredor 0999 P.T.', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_4': { img: '/cave/book_4_closed.png', altImg: '/cave/book_4_open.png', name: 'Livro IV', details: 'Conto 4: Naufrágio da Porta', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_5': { img: '/cave/book_5_closed.png', altImg: '/cave/book_5_open.png', name: 'Livro V', details: 'Conto 5: Plantão da Floresta', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
+  'book_6': { img: '/cave/book_6_closed.png', altImg: '/cave/book_6_open.png', name: 'Livro VI', details: 'Conto 6: Terminal 1984', hasToggle: true, onLabel: 'Fechar', offLabel: 'Abrir' },
 };
 
 // Elevadores verticais entre (row, col) e (row + 1, col) do SCSS original (@include moveVerticleOnTile)
@@ -2577,9 +2577,9 @@ const CAVE_DECOR_TILES = {
 
 // Objetos interativos nas salas (row, col, tile) — Caverna viva com os 6 Contos e Estante Final!
 const CAVE_OBJECTS = [
-  { id: 'lantern', row: 1, col: 3, tile: 14, img: '/cave/swingingLantern.gif', kind: 'pickup', hideOnPick: true, msg: 'Você pegou uma Lanterna! A visão na caverna melhorou muito.', ev: 'got_lantern' },
+  { id: 'lantern', row: 1, col: 3, tile: 14, img: '/cave/lantern_off.png', kind: 'pickup', hideOnPick: true, msg: 'Você pegou uma Lanterna! A visão na caverna melhorou muito.', ev: 'got_lantern' },
   { id: '1', row: 1, col: 4, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Nada útil nessa caixa.' },
-  { id: 'story_1', row: 1, col: 6, tile: 14, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '1', reqBook: null, msg: 'Livro I: Fronteira da Burocracia' },
+  { id: 'story_1', row: 1, col: 6, tile: 14, img: '/cave/book_1_closed.png', kind: 'story_portal', storyId: '1', reqBook: null, msg: 'Livro I: Fronteira da Burocracia' },
   { id: '8', row: 1, col: 6, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma nota estranha! (Guardada na mochila)', ev: 'got_note' },
   { id: '3', row: 1, col: 7, tile: 15, img: '/cave/creepyCorridor-_062.png', kind: 'boulder', need: '2', blockMsg: 'Preciso de uma ferramenta pra quebrar essa rocha.', okMsg: 'Boa! Pedra destruída!', ev: 'broke_boulder' },
   { id: '4', row: 1, col: 8, tile: 15, img: '/cave/creepyCorridor-_166.png', kind: 'plunger', msg: 'Apertei o detonador... algo explodiu lá embaixo!', ev: 'armed_plunger' },
@@ -2587,10 +2587,10 @@ const CAVE_OBJECTS = [
   { id: '21', row: 1, col: 12, tile: 13, img: '/cave/creepyCorridor-25.png', kind: 'junk', msg: 'Só tranqueira velha.' },
   { id: '2', row: 1, col: 12, tile: 14, img: '/cave/creepyCorridor-_035.png', kind: 'pickup', hideOnPick: true, msg: 'Uma picareta! Vai quebrar um galho.', ev: 'got_pickaxe' },
 
-  { id: 'story_2', row: 2, col: 3, tile: 15, img: '/cave/creepyCorridor-_161.png', kind: 'story_portal', storyId: '2', reqBook: 'book_1', msg: 'Livro II: Castelo da Princesa de Plástico' },
+  { id: 'story_2', row: 2, col: 3, tile: 15, img: '/cave/book_2_closed.png', kind: 'story_portal', storyId: '2', reqBook: 'book_1', msg: 'Livro II: Castelo da Princesa de Plástico' },
   { id: '6', row: 2, col: 6, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma tábua firme de madeira.', ev: 'got_plank' },
   { id: '18', row: 2, col: 7, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Vazia.' },
-  { id: 'story_3', row: 2, col: 9, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '3', reqBook: 'book_2', msg: 'Livro III: Corredor 0999 (P.T.)' },
+  { id: 'story_3', row: 2, col: 9, tile: 15, img: '/cave/book_3_closed.png', kind: 'story_portal', storyId: '3', reqBook: 'book_2', msg: 'Livro III: Corredor 0999 (P.T.)' },
   { id: '17', row: 2, col: 12, tile: 15, img: '/cave/creepyCorridor-_168.png', kind: 'final_shelf', msg: 'Estante Final dos 6 Livros' },
 
   { id: '12', row: 3, col: 2, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma manivela de engrenagem!', ev: 'got_handle' },
@@ -2598,12 +2598,12 @@ const CAVE_OBJECTS = [
   { id: '7', row: 3, col: 5, tile: 13, img: '/cave/creepyCorridor-_169.png', clearedImg: '/cave/creepyCorridor-_170.png', kind: 'gap', need: '6', blockMsg: 'Fenda funda demais pra pular sem uma tábua.', okMsg: 'Tábua encaixada!', ev: 'placed_plank' },
   { id: '10', row: 3, col: 5, tile: 14, img: '/cave/creepyCorridor-24.png', kind: 'pickup', msg: 'Terceira nota misteriosa! (Na mochila)', ev: 'got_note' },
   { id: '5', row: 3, col: 7, tile: 13, img: '/cave/beam.gif', specialClass: 'special-beam', kind: 'beam', blockMsg: 'Algum explosivo à distância deve derrubar essa barreira.' },
-  { id: 'story_4', row: 3, col: 8, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'story_portal', storyId: '4', reqBook: 'book_3', msg: 'Livro IV: Naufrágio da Porta Gigante' },
+  { id: 'story_4', row: 3, col: 8, tile: 15, img: '/cave/book_4_closed.png', kind: 'story_portal', storyId: '4', reqBook: 'book_3', msg: 'Livro IV: Naufrágio da Porta Gigante' },
 
-  { id: 'story_5', row: 4, col: 8, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '5', reqBook: 'book_4', msg: 'Livro V: Plantão da Floresta' },
+  { id: 'story_5', row: 4, col: 8, tile: 13, img: '/cave/book_5_closed.png', kind: 'story_portal', storyId: '5', reqBook: 'book_4', msg: 'Livro V: Plantão da Floresta' },
   { id: '13', row: 4, col: 10, tile: 13, img: '/cave/creepyCorridor-_148.png', kind: 'cog', need: '12', blockMsg: 'Falta uma manivela pra girar esse registro.', okMsg: 'Fechou a queda d\'água!', ev: 'stopped_water' },
   { id: '14', row: 4, col: 11, tile: 13, img: '/cave/waterOn.gif', clearedImg: '/cave/waterOff.gif', specialClass: 'special-water', kind: 'waterfall', blockMsg: 'Cachoeira forte demais pra atravessar!' },
-  { id: 'story_6', row: 4, col: 12, tile: 15, img: '/cave/creepyCorridor-_094.png', kind: 'story_portal', storyId: '6', reqBook: 'book_5', msg: 'Livro VI: Terminal 1984' },
+  { id: 'story_6', row: 4, col: 12, tile: 15, img: '/cave/book_6_closed.png', kind: 'story_portal', storyId: '6', reqBook: 'book_5', msg: 'Livro VI: Terminal 1984' },
 ];
 
 function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarnedBook = null, remark = null } = {}) {
