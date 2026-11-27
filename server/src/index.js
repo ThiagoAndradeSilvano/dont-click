@@ -934,23 +934,23 @@ app.post('/api/cave/sync', (req, res) => {
     player.stage = 'cave_escaped';
   }
 
-  // Falas do Operador (frio, ácido, arrogante — estilo Rick Sanchez, sem quebrar imersão)
+  // Falas do Operador (`log`) — dev brasileiro real, sarcástico, boca-suja e cabreiro com o que tem enterrado debaixo do servidor!
   const caveRemarks = {
-    intro_done: 'sério mesmo... musiquinha de fada e título brilhante no meu sistema. não sei quem compilou essa porcaria aqui embaixo, mas anda logo e acha uma saída.',
-    got_lantern: 'uma lanterna. pelo menos agora vc enxerga dois palmos na frente do nariz sem tropeçar.',
-    got_pickaxe: 'uma picareta. claro. pq toda infraestrutura de rede moderna precisa de mineração manual agora. pega logo.',
-    broke_boulder: 'uau, quebrou uma pedra. quer um diploma de engenharia civil também ou vai continuar andando?',
-    armed_plunger: 'vc acabou de acionar um detonador aleatório sem nem saber onde tá a bomba. é por isso que a seleção natural tá falhando.',
-    got_plank: 'um pedaço de madeira podre. guarda na mochila como se fosse ouro, vai lá.',
-    placed_plank: 'física de videogame barato. se essa tábua partir no meio eu juro que não reinicio a sua instância.',
-    got_note: 'anotações crípticas rabiscadas na mão. maravilhoso. mais gente querendo parecer misteriosa no meu servidor.',
-    padlock_wrong: 'errado. vc tem três papéis na mochila com os números literalmente desenhados e ainda consegue errar. impressionante.',
-    padlock_open: 'finalmente. demorou tanto pra somar três rabiscos que eu achei que ia precisar desenhar com giz de cera pra vc.',
-    got_handle: 'uma manivela. aposto que seu cérebro já tá fritando tentando descobrir onde encaixa.',
-    stopped_water: 'cortou a água. parabéns por fazer o mínimo esperado de um ser humano funcional.',
-    got_dynamite: 'dinamite. obviamente tem explosivo solto num servidor web. falta só o estopim, anda logo.',
-    got_fuses: 'pegou os estopins. agora junta com a dinamite naquela saída bloqueada antes que eu decida formatar esse setor com vc dentro.',
-    cave_win: 'explodiu. ótimo. vê se sai dessa porcaria de túnel antes que o teto inteiro desabe em cima da gente.',
+    intro_done: 'mano... que porra foi essa de musiquinha de fada brilhando na minha cara?! eu NÃO programei mina nenhuma aqui embaixo, acha logo uma saída desse buraco.',
+    got_lantern: 'boa, achou uma lanterna. pelo menos agora dá pra enxergar dois palmos sem dar com a cara na pedra.',
+    got_pickaxe: 'uma picareta enferrujada... namoral, quem enterrou asset de joguinho de mineiro debaixo do meu servidor??',
+    broke_boulder: 'arrebentou a pedra no braço msm kkkkk bora ver onde esse corredor vai dar.',
+    armed_plunger: 'CARALHO TREMEU TUDO!! vc apertou um detonador sem nem saber onde tava a dinamite seu maluco?!',
+    got_plank: 'uma tábua velha cheia de cupim... guarda aí, vai que tem buraco lá na frente.',
+    placed_plank: 'ponte improvisada na gambiarra pura. se essa madeira quebrar no meio eu vou rir muito.',
+    got_note: 'tem bilhete rabiscado à mão aqui dentro?? lê isso aí na mochila, essa letra não é minha nem fodendo.',
+    padlock_wrong: 'nem mexeu o cadeado. olha direito aqueles 3 papéis na mochila antes de sair chutando número.',
+    padlock_open: 'destravou!! esses traços e bolinhas nas notas eram números antigos... mano, quem caralhos trancou isso aqui embaixo?',
+    got_handle: 'uma manivela de ferro. deve encaixar em algum registro velho mais pro fundo.',
+    stopped_water: 'fechou a cachoeira! bora ver o que esconderam atrás dessa água.',
+    got_dynamite: 'bananas de dinamite dando sopa... só falta achar estopim pra explodir uma passagem.',
+    got_fuses: 'pegou os estopins! junta com a dinamite lá naquela parede bloqueada pra gente meter o pé daqui.',
+    cave_win: 'EXPLODIU!! caralho finalmente... pera, onde é que esse buraco vai sair agora?!',
   };
 
   saveDb(db);
@@ -980,12 +980,12 @@ app.post('/api/cave/complete-story', (req, res) => {
 
   const count = player.caveState.booksOwned.length;
   const remarksByCount = {
-    1: 'voltamos pro buraco... e vc trouxe um livro daquele lugar? que porra tá acontecendo aqui?',
-    2: 'OUTRO LIVRO?! sério, quantas dessas porcarias existem enterradas nessa caverna?!',
-    3: 'mais um livro. maravilhoso. tô preso numa biblioteca alucinógena com código fonte.',
-    4: 'cansei de tentar entender a lógica desse lugar. faz o que vc quiser com esse livro aí.',
-    5: 'outro. já nem me surpreendo mais.',
-    6: 'seis livros. tá bom, chega de história idiota. e agora?',
+    1: 'caralho voltamos pro túnel... e vc ainda saiu daquele buraco com um livro na mão?! que merda foi aquela lá dentro mano?!',
+    2: 'OUTRO LIVRO?! pqp quantos mundinhos malucos enfiaram debaixo dessa mina?!',
+    3: 'mais um livro pra mochila... namoral, parece que jogaram lixo de memória inteira dentro dessas páginas.',
+    4: 'quatro já... eu juro que não escrevi uma única linha dessas histórias, fica esperto com o que tem escrito aí.',
+    5: 'quinto livro. falta só mais um pra gente descobrir o que aquela estante trancada lá em cima quer.',
+    6: 'seis livros na mão!! agora leva tudo praquela estante bloqueada lá no corredor de cima e vamo sair dessa desgraça!',
   };
 
   saveDb(db);
@@ -1020,9 +1020,17 @@ app.post('/api/cave/solve-book', (req, res) => {
   }
 
   if (answer !== BOOK_RIDDLE_ANSWERS[bookId]) {
+    player.bookFailCount = (player.bookFailCount || 0) + 1;
+    saveDb(db);
+    const wrongPool = [
+      `digitou "${answer.slice(0, 12)}" no chute? lê a última página direito pô.`,
+      'nada, o cadeado do livro nem mexeu. cruza o que vc viu lá dentro do conto com o texto da página.',
+      'errou de novo mano... não adianta chutar número aleatório, faz a conta com calma.',
+      `não é "${answer.slice(0, 12)}" nem aqui nem na china. presta atenção nos detalhes da história.`,
+    ];
     return res.json({
       ok: false,
-      remark: 'errado. pensa direito ou vai pesquisar antes de chutar número aleatório.',
+      remark: wrongPool[(player.bookFailCount - 1) % wrongPool.length],
     });
   }
 
@@ -1230,6 +1238,20 @@ if (process.env.NODE_ENV !== 'production') {
         plungerArmed: false,
         introDone: false,
       };
+    } else if (action === 'goto_page_8_cave_ready') {
+      cleanBase();
+      player.stage = 'cave_2d';
+      player.subsoloSolved = true;
+      player.caveState = {
+        row: 1,
+        col: 6,
+        inventory: ['0', 'lantern'],
+        cleared: [],
+        booksOwned: [],
+        booksSolved: [],
+        plungerArmed: false,
+        introDone: true,
+      };
     } else if (action === 'add_points_big') {
       if (player.stage === 'mundane_clicker' || player.stage === 'awakened_clicker') {
         player.points = Math.round((player.points + 500000) * 10) / 10;
@@ -1237,7 +1259,7 @@ if (process.env.NODE_ENV !== 'production') {
     }
 
     saveDb(db);
-    res.json({ ok: true, stage: player.stage, points: player.points });
+    res.json({ ok: true, stage: player.stage, points: player.points, caveState: player.caveState });
   });
 }
 

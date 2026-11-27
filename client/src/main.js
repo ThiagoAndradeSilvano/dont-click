@@ -185,7 +185,8 @@ function playOperatorTypeKey(ch = 'a') {
   if (ch === ' ' || ch === '\n') return;
   try {
     const ctx = ensureAudio();
-    const inCave = currentStage === 'cave_2d' || currentStage === 'cave_escaped';
+    const isStoryMode = document.body?.className?.includes('story-mode-');
+    const inCave = currentStage === 'cave_2d' || currentStage === 'cave_escaped' || isStoryMode;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -3353,7 +3354,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     torchLit = false;
     updateViewportPosition(false);
     setOperatorRemark(
-      'parabéns, gênio. vc conseguiu colapsar a fundação do servidor. bate palma pra sua própria estupidez. agora olha onde vc foi parar.',
+      'pqp o chão do porão inteiro cedeu!! vc tá inteiro aí embaixo mano?! que buraco escuro é esse?!',
       { delayBefore: 120, priority: 'urgent' }
     );
     (async () => {
@@ -3389,7 +3390,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
 
         setTimeout(() => {
           setOperatorRemark(
-            'QUE PORRA DE BARULHO DE FADA É ESSE?! "CAVERNA DOS CONTOS"?! EU TÔ PRESO NUM SERVIDOR DA DISNEY AGORA?!',
+            'QUE PORRA DE MUSIQUINHA DE FADA É ESSA?! "CAVERNA DOS CONTOS"?! QUEM ENFIOU ABERTURA DA DISNEY DEBAIXO DO MEU PORÃO?!',
             { priority: 'urgent' }
           );
         }, 900);
@@ -3488,6 +3489,7 @@ function mountDevTestPanel() {
       <button class="dev-btn" data-dev="goto_page_6_loading">6. Loading Porco + Chat</button>
       <button class="dev-btn" data-dev="goto_page_7_subsolo">7. Porão 2D (Morse + Vapor)</button>
       <button class="dev-btn" data-dev="goto_page_8_cave">8. Caverna (WASD + Eco)</button>
+      <button class="dev-btn" data-dev="test_story_1">📖 Testar Conto 1 (Papers, Please)</button>
       <div class="dev-menu-title" id="dev-clicker-tools-hdr" style="margin-top:6px;">🧰 Ferramentas (Só Clicker)</div>
       <button class="dev-btn" id="dev-btn-pts" data-dev="add_points_big">💎 +500.000 pts (Sem Reload)</button>
       <button class="dev-btn" id="dev-btn-evt" data-dev="spawn_event">🪰 Testar Evento (Mosca/Caixa)</button>
@@ -3516,6 +3518,22 @@ function mountDevTestPanel() {
   panel.querySelectorAll('[data-dev]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const action = btn.getAttribute('data-dev');
+      if (action === 'test_story_1') {
+        menu?.classList.remove('open');
+        const st = await apiPost('/api/_dev/action', { action: 'goto_page_8_cave_ready' });
+        const mockCave = st?.caveState || { row: 1, col: 6, inventory: ['0', 'lantern'], cleared: [], booksOwned: [], booksSolved: [], introDone: true };
+        launchStory('1', {
+          clearTimers,
+          apiPost,
+          setOperatorRemark,
+          playBeep: playCheapBeep,
+          caveState: mockCave,
+          returnToCave: (updatedCave, extra = {}) => {
+            renderCaveChapterScreen(updatedCave, extra);
+          },
+        });
+        return;
+      }
       if (action === 'spawn_event') {
         menu?.classList.remove('open');
         if (isClickerNow()) spawnRandomScreenEvent();
