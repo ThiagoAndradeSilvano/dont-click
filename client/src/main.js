@@ -542,11 +542,17 @@ const FAKE_SYNC_ERRORS = [
   ['Erro desconhecido', 'Nem a gente sabe. Clique em OK pra fingir que entendeu.'],
 ];
 
+// Limite só pra não travar o navegador: passou disso, a mais velha some
+const DUMB_MAX_ON_SCREEN = 14;
+
 function makeDumbWindow({ title, body, buttons, className = '' }) {
+  const open = document.querySelectorAll('.dumb-window');
+  if (open.length >= DUMB_MAX_ON_SCREEN) open[0].remove();
   const win = document.createElement('div');
   win.className = `dumb-window ${className}`;
-  win.style.left = `${8 + Math.random() * 50}vw`;
-  win.style.top = `${14 + Math.random() * 45}vh`;
+  win.style.left = `${6 + Math.random() * 52}vw`;
+  win.style.top = `${10 + Math.random() * 50}vh`;
+  win.style.zIndex = String(9000 + open.length + 1);
   win.innerHTML = `
     <div class="dumb-titlebar"><span>${title}</span><button type="button" class="dumb-x" aria-label="Fechar">×</button></div>
     <div class="dumb-body">${body}</div>
@@ -558,6 +564,18 @@ function makeDumbWindow({ title, body, buttons, className = '' }) {
 
 function dumbOnScreen() {
   return document.querySelector('.dumb-window:not(.dumb-sync-error), .dumb-toast');
+}
+
+function dumbToastStack() {
+  let st = document.getElementById('dumb-toast-stack');
+  if (!st) {
+    st = document.createElement('div');
+    st.id = 'dumb-toast-stack';
+    document.body.appendChild(st);
+  }
+  const toasts = st.querySelectorAll('.dumb-toast');
+  if (toasts.length >= 6) toasts[0].remove();
+  return st;
 }
 
 function showFakeSyncError(onDone) {
@@ -590,13 +608,11 @@ function showFakeSyncError(onDone) {
         onDone();
       };
       again.querySelectorAll('button').forEach((b) => b.addEventListener('click', close2));
-      setTimeout(close2, 6000);
       return;
     }
     onDone();
   };
   win.querySelectorAll('button').forEach((b) => b.addEventListener('click', finish));
-  setTimeout(finish, 8000);
 }
 
 const DUMB_EVENTS = [
@@ -610,7 +626,6 @@ const DUMB_EVENTS = [
     });
     const close = () => win.remove();
     win.querySelectorAll('button').forEach((b) => b.addEventListener('click', close));
-    setTimeout(close, 12000);
   },
   // Suporte online eternamente digitando, com o X que foge uma vez
   () => {
@@ -629,7 +644,6 @@ const DUMB_EVENTS = [
       win.style.top = `${14 + Math.random() * 45}vh`;
     });
     x.addEventListener('click', () => win.remove());
-    setTimeout(() => win.remove(), 15000);
   },
   // Captcha em que tudo é botão
   () => {
@@ -647,7 +661,6 @@ const DUMB_EVENTS = [
     };
     win.querySelector('.dumb-actions button').addEventListener('click', verify);
     win.querySelector('.dumb-x').addEventListener('click', () => win.remove());
-    setTimeout(() => win.remove(), 15000);
   },
   // Avaliação em que toda estrela é 5
   () => {
@@ -665,7 +678,6 @@ const DUMB_EVENTS = [
       })
     );
     win.querySelector('.dumb-x').addEventListener('click', () => win.remove());
-    setTimeout(() => win.remove(), 13000);
   },
   // Newsletter de botões
   () => {
@@ -676,15 +688,15 @@ const DUMB_EVENTS = [
     });
     const close = () => win.remove();
     win.querySelectorAll('button').forEach((b) => b.addEventListener('click', close));
-    setTimeout(close, 14000);
   },
   // Bateria do mouse
   () => {
-    const t = document.createElement('div');
+    const t = document.createElement('button');
+    t.type = 'button';
     t.className = 'dumb-toast';
     t.textContent = `🔋 Bateria do mouse em ${1 + Math.floor(Math.random() * 4)}%. Clique com moderação.`;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 6500);
+    t.addEventListener('click', () => t.remove());
+    dumbToastStack().appendChild(t);
   },
   // Notificação sobre a notificação
   () => {
@@ -692,26 +704,26 @@ const DUMB_EVENTS = [
     t.type = 'button';
     t.className = 'dumb-toast';
     t.textContent = '🔔 Você tem 1 nova notificação.';
+    let read = false;
     t.addEventListener('click', () => {
+      if (read) { t.remove(); return; }
+      read = true;
       t.textContent = '🔔 Notificação: você leu 1 notificação.';
-      setTimeout(() => t.remove(), 2200);
     });
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 9000);
+    dumbToastStack().appendChild(t);
   },
 ];
 
 function spawnDumbEvent() {
-  if (dumbOnScreen()) return;
   DUMB_EVENTS[Math.floor(Math.random() * DUMB_EVENTS.length)]();
 }
 
 function spawnRandomScreenEvent() {
   if (currentStage !== 'mundane_clicker' && currentStage !== 'awakened_clicker') return;
-  if (document.querySelector('.screen-fly, .mystery-box-floater, .survey-popup')) return;
+  if (document.querySelector('.screen-fly, .mystery-box-floater')) return;
 
   // Metade das vezes vem uma chatice nova (janelinhas inúteis)
-  if (Math.random() < 0.5 && !dumbOnScreen()) {
+  if (Math.random() < 0.5) {
     spawnDumbEvent();
     return;
   }
@@ -782,7 +794,9 @@ function spawnRandomScreenEvent() {
       });
     });
 
-    setTimeout(() => survey.remove(), 14000);
+    survey.style.transform = 'none';
+    survey.style.left = `${6 + Math.random() * 52}vw`;
+    survey.style.top = `${10 + Math.random() * 50}vh`;
   } else {
     // 3. Caixa Misteriosa Épica... que dá literalmente +1 ponto kkkkk
     const box = document.createElement('button');
@@ -837,7 +851,6 @@ function resetFaviconAndTitle(title = 'Início') {
 
 function clearTimers() {
   if (fakeProgressTimer) { clearInterval(fakeProgressTimer); fakeProgressTimer = null; }
-  document.querySelectorAll('.dumb-window, .dumb-toast').forEach((el) => el.remove());
   if (passiveTickTimer) { clearInterval(passiveTickTimer); passiveTickTimer = null; }
   if (achievementTimer) { clearInterval(achievementTimer); achievementTimer = null; }
   if (randomEventTimer) { clearInterval(randomEventTimer); randomEventTimer = null; }

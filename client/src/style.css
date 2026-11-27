@@ -2390,3 +2390,27 @@ body.secret-route-mode {
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
   max-width: calc(100vw - 28px);
 }
+
+/* Janelinhas se acumulam até o jogador fechar; toasts empilham no canto */
+#dumb-toast-stack {
+  position: fixed;
+  right: 14px;
+  bottom: 70px;
+  z-index: 9500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: calc(100vw - 28px);
+}
+#dumb-toast-stack .dumb-toast {
+  position: static;
+  text-align: left;
+  cursor: pointer;
+}
+/* Fora do clicker elas ficam escondidas (voltam se ele voltar pro clicker) */
+body:not(.clicker-mode) .dumb-window,
+body:not(.clicker-mode) #dumb-toast-stack,
+body:not(.clicker-mode) .survey-popup {
+  display: none !important;
+}
