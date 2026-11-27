@@ -201,13 +201,28 @@ body.story-mode-6 {
   padding: 18px;
 }
 
-/* Logs personalizados por conto! */
-.story-log-sepia { background: #453522; color: #f5e6c8; border: 2px solid #1c130a; padding: 12px 16px; border-radius: 4px; }
-.story-log-pink { background: #fdf2f8; color: #831843; border: 3px solid #f472b6; padding: 12px 16px; border-radius: 16px; box-shadow: 0 6px 0 #db2777; }
-.story-log-noir { background: #0f0f12; color: #a1a1aa; border: 1px solid #27272a; padding: 12px 16px; letter-spacing: 0.5px; }
-.story-log-ice { background: rgba(12, 74, 110, 0.75); color: #bae6fd; border: 2px solid #38bdf8; padding: 12px 16px; border-radius: 6px; }
-.story-log-crimson { background: #2d1416; color: #fecaca; border: 2px dashed #7f1d1d; padding: 12px 16px; }
+.story-shell > * { order: 2; }
+.story-shell > .story-back-btn { order: 1; }
+.story-shell > .operator-feed { order: 3; }
+
+/* Logs personalizados por conto (cores e posições próprias, diferentes do 'log' principal!) */
+.story-log-sepia { background: #3b2a17; color: #f5e6c8; border: 2px solid #785a3a; padding: 12px 16px; border-radius: 4px; }
+.story-log-sepia .operator-tag { background: #b45309; color: #fef3c7; }
+
+.story-log-pink { background: #fce7f3; color: #831843; border: 3px solid #f472b6; padding: 12px 16px; border-radius: 16px; box-shadow: 0 5px 0 #db2777; }
+.story-log-pink .operator-tag { background: #db2777; color: #fff; }
+
+.story-log-noir { background: #0f0f12; color: #a1a1aa; border: 1px solid #3f3f46; padding: 12px 16px; letter-spacing: 0.5px; }
+.story-log-noir .operator-tag { background: #3f3f46; color: #e4e4e7; }
+
+.story-log-ice { background: rgba(12, 74, 110, 0.85); color: #e0f2fe; border: 2px solid #38bdf8; padding: 12px 16px; border-radius: 6px; }
+.story-log-ice .operator-tag { background: #0284c7; color: #fff; }
+
+.story-log-crimson { background: #2d1416; color: #fde68a; border: 2px dashed #92400e; padding: 12px 16px; }
+.story-log-crimson .operator-tag { background: #92400e; color: #fef3c7; }
+
 .story-log-crt { background: #031509; color: #4ade80; border: 1px solid #22c55e; padding: 12px 16px; text-shadow: 0 0 6px rgba(74,222,128,0.5); }
+.story-log-crt .operator-tag { background: #15803d; color: #dcfce7; }
 
 .story-back-btn {
   align-self: flex-start;
