@@ -1976,6 +1976,7 @@ function renderSubsolo2DScreen(initialState = null) {
 
   const drops = [];
   const splashes = [];
+  const steamClouds = [];
   const sparks = [];
 
   let valveAngle = 0;
@@ -1983,6 +1984,7 @@ function renderSubsolo2DScreen(initialState = null) {
   let streamHeadX = 235;
   let streamTailX = 235;
   let streamWavePhase = 0;
+  let terminalFog = 0;
   let lampSwing = 0;
   let lampSwingVel = 0;
   const morseStartOffset = performance.now();
@@ -2089,18 +2091,8 @@ function renderSubsolo2DScreen(initialState = null) {
       return;
     }
 
-    // 3. Clicou na Placa Críptica na parede (x=444..624, y=148..280)
-    if (mx >= 444 && mx <= 624 && my >= 148 && my <= 280) {
-      playCheapBeep();
-      setOperatorRemark(
-        '[Placa enferrujada: "O quarto onde o pai da corrente alternada morreu com os pombos. — [ QUARTO ] - [ ??? ]"]',
-        { priority: 'action' }
-      );
-      return;
-    }
-
-    // 4. Clicou no Terminal Trancado na parede direita (x=665..780, y=185..335)
-    if (mx >= 665 && mx <= 780 && my >= 185 && my <= 335) {
+    // 3. Clicou no Terminal na parede direita (x=605..795, y=140..338)
+    if (mx >= 605 && mx <= 795 && my >= 140 && my <= 338) {
       openTerminalKeypad();
     }
   });
@@ -2211,93 +2203,93 @@ function renderSubsolo2DScreen(initialState = null) {
     ctx.fill();
     ctx.restore();
 
-    // 3. PLACA ENFERRUJADA / ENIGMA CRÍPTICO NA PAREDE (x=444..624, y=148..280)
-    const plGrad = ctx.createLinearGradient(444, 148, 624, 280);
-    plGrad.addColorStop(0, '#272420');
-    plGrad.addColorStop(0.5, '#1c1b18');
-    plGrad.addColorStop(1, '#121210');
-    ctx.fillStyle = plGrad;
-    ctx.fillRect(444, 148, 180, 132);
-    ctx.strokeStyle = '#57534e';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(444, 148, 180, 132);
-
-    // Parafusos oxidados nos 4 cantos
-    ctx.fillStyle = '#78716c';
-    [[451, 155], [617, 155], [451, 273], [617, 273]].forEach(([sx, sy]) => {
-      ctx.beginPath();
-      ctx.arc(sx, sy, 3, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // Cabeçalho discreto gravado no metal
-    ctx.fillStyle = '#a8a29e';
-    ctx.font = 'bold 9px monospace';
-    ctx.fillText('MEMORIAL // SALA -01', 476, 166);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.beginPath();
-    ctx.moveTo(454, 174);
-    ctx.lineTo(614, 174);
-    ctx.stroke();
-
-    // Frase críptica (sem dar resposta nem citar lâmpada/Morse!)
-    ctx.fillStyle = '#d6d3d1';
-    ctx.font = 'italic 10px Georgia, serif';
-    ctx.fillText('"O quarto onde o pai', 466, 194);
-    ctx.fillText('da corrente alternada', 464, 209);
-    ctx.fillText('morreu com os pombos."', 460, 224);
-
-    // Equação enigmática no rodapé da placa
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText('[ QUARTO ] - [ ??? ]', 462, 258);
-
-    // 4. PAINEL / TERMINAL DE SEGURANÇA NA DIREITA (x=670..775, y=190..330)
+    // 3. TERMINAL DE SEGURANÇA COM VISOR DE VIDRO QUE EMBAÇA NO VAPOR (x=605..795, y=140..338)
     ctx.fillStyle = '#1f2633';
     ctx.strokeStyle = '#475569';
     ctx.lineWidth = 3;
-    ctx.fillRect(670, 190, 106, 138);
-    ctx.strokeRect(670, 190, 106, 138);
+    ctx.fillRect(605, 140, 190, 198);
+    ctx.strokeRect(605, 140, 190, 198);
 
-    // Visor iluminado próprio
-    ctx.fillStyle = '#061a14';
-    ctx.fillRect(684, 206, 78, 42);
-    ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText('PAINEL #02', 690, 224);
-    ctx.fillStyle = '#34d399';
-    ctx.fillText('[DIGITAR]', 696, 240);
+    // Parafusos nos 4 cantos do terminal
+    ctx.fillStyle = '#64748b';
+    [[613, 148], [787, 148], [613, 330], [787, 330]].forEach(([sx, sy]) => {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
-    // Teclinhas desenhadas no painel
-    ctx.fillStyle = '#334155';
-    for (let kr = 0; kr < 3; kr++) {
-      for (let kc = 0; kc < 3; kc++) {
-        ctx.fillRect(690 + kc * 24, 260 + kr * 16, 18, 11);
+    // Vidro superior do terminal (escuro quando seco, revela a frase quando embaça!)
+    ctx.fillStyle = '#0e141b';
+    ctx.fillRect(617, 152, 166, 108);
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(617, 152, 166, 108);
+
+    // Reflexo sutil diagonal do vidro seco
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(627, 250);
+    ctx.lineTo(682, 162);
+    ctx.stroke();
+
+    // Camada de VAPOR condensado no vidro do terminal (só aparece quando a água chega no ralo abaixo!)
+    if (terminalFog > 0.02) {
+      ctx.fillStyle = `rgba(205, 224, 238, ${0.44 * terminalFog})`;
+      ctx.fillRect(617, 152, 166, 108);
+
+      if (terminalFog > 0.35) {
+        const textAlpha = Math.min(1, (terminalFog - 0.35) / 0.45);
+        ctx.save();
+        ctx.fillStyle = `rgba(15, 23, 34, ${0.92 * textAlpha})`;
+        ctx.font = 'italic 10px Georgia, serif';
+        ctx.fillText('"O quarto onde o pai', 632, 174);
+        ctx.fillText('da corrente alternada', 630, 190);
+        ctx.fillText('morreu com os pombos."', 626, 206);
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText('[ QUARTO ] - [ ??? ]', 630, 238);
+        ctx.restore();
       }
     }
 
-    // 5. CHÃO DE CONCRETO + CANAL DE ESCOAMENTO + RALO ABAIXO DO PAINEL (x=695..755, y=404)
+    // Parte inferior do Terminal: Visor LED + Teclinhas
+    ctx.fillStyle = '#061a14';
+    ctx.fillRect(625, 268, 86, 56);
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('PAINEL #02', 633, 290);
+    ctx.fillStyle = '#34d399';
+    ctx.fillText('[DIGITAR]', 636, 310);
+
+    // Teclinhas desenhadas ao lado do visor
+    ctx.fillStyle = '#334155';
+    for (let kr = 0; kr < 3; kr++) {
+      for (let kc = 0; kc < 3; kc++) {
+        ctx.fillRect(722 + kc * 20, 270 + kr * 18, 15, 12);
+      }
+    }
+
+    // 4. CHÃO DE CONCRETO + CANAL DE ESCOAMENTO + RALO ABAIXO DO TERMINAL (x=670..730, y=404)
     ctx.fillStyle = '#151922';
     ctx.fillRect(0, 404, 840, 56);
     ctx.fillStyle = '#262f3f';
     ctx.fillRect(0, 404, 840, 4);
 
-    // Canaleta discreta no piso guiando da torneira (x=235) até o ralo (x=725)
+    // Canaleta discreta no piso guiando da torneira (x=235) até o ralo (x=700)
     ctx.fillStyle = '#0d1118';
-    ctx.fillRect(230, 404, 495, 3);
+    ctx.fillRect(230, 404, 470, 3);
 
-    // Grade do Ralo no piso abaixo do Painel #02 (x=695..755, y=404)
+    // Grade do Ralo no piso exatamente abaixo do Terminal (x=670..730, y=404)
     ctx.fillStyle = '#090b10';
-    ctx.fillRect(695, 404, 60, 11);
+    ctx.fillRect(670, 404, 60, 11);
     ctx.fillStyle = '#475569';
-    for (let gx = 701; gx <= 749; gx += 8) {
+    for (let gx = 676; gx <= 724; gx += 8) {
       ctx.fillRect(gx, 404, 4, 11);
     }
 
-    // 6. GOTAS DA TORNEIRA (x=235) + FLUXO DIRECIONAL ESCOANDO PRO RALO (x=725)
+    // 5. GOTAS DA TORNEIRA (x=235) + FLUXO ESCOANDO PRO RALO (x=700) + VAPOR SUBINDO PRO TERMINAL
     if (valveOpen) {
-      streamHeadX = Math.min(725, streamHeadX + 3.4);
+      streamHeadX = Math.min(700, streamHeadX + 3.4);
       streamTailX = 235;
     } else {
       streamTailX = Math.min(streamHeadX, streamTailX + 2.4);
@@ -2305,6 +2297,40 @@ function renderSubsolo2DScreen(initialState = null) {
         streamHeadX = 235;
         streamTailX = 235;
       }
+    }
+
+    const waterAtHotDrain = streamHeadX >= 675 && streamTailX < 695;
+    if (waterAtHotDrain) {
+      terminalFog = Math.min(1, terminalFog + 0.0055);
+      if (Math.random() < 0.48) {
+        steamClouds.push({
+          x: 675 + Math.random() * 52,
+          y: 398,
+          r: 8 + Math.random() * 10,
+          vy: -1.1 - Math.random() * 0.8,
+          vx: Math.random() * 0.6 - 0.3,
+          alpha: 0.36,
+        });
+      }
+    } else {
+      terminalFog = Math.max(0, terminalFog - 0.004);
+    }
+
+    // Nuvens suaves de vapor subindo do ralo até o vidro do terminal
+    for (let i = steamClouds.length - 1; i >= 0; i--) {
+      const st = steamClouds[i];
+      st.x += st.vx;
+      st.y += st.vy;
+      st.r += 0.24;
+      st.alpha -= 0.0028;
+      if (st.alpha <= 0 || st.y < 120) {
+        steamClouds.splice(i, 1);
+        continue;
+      }
+      ctx.fillStyle = `rgba(226, 232, 240, ${st.alpha})`;
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     if (streamHeadX - streamTailX > 2) {
@@ -2322,10 +2348,10 @@ function renderSubsolo2DScreen(initialState = null) {
         ctx.fillRect(wx, 402, 8, 1.5);
       }
 
-      // Água caindo pelos vãos da grade do ralo quando o fluxo alcança x >= 700
-      if (streamHeadX >= 700 && Math.random() < 0.55) {
+      // Água caindo pelos vãos da grade do ralo quando o fluxo alcança x >= 675
+      if (streamHeadX >= 675 && Math.random() < 0.55) {
         splashes.push({
-          x: 702 + Math.random() * 46,
+          x: 676 + Math.random() * 48,
           y: 406,
           vx: 0,
           vy: 1.4 + Math.random() * 1.2,
@@ -2384,21 +2410,21 @@ function renderSubsolo2DScreen(initialState = null) {
       ctx.fill();
     }
 
-    // Rachadura incandescente no teto pingando fagulhas
+    // Rachadura incandescente no teto acima do ralo pingando brasas quentes
     ctx.strokeStyle = '#fb923c';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(468, 25);
-    ctx.lineTo(492, 33);
-    ctx.lineTo(515, 27);
-    ctx.lineTo(542, 35);
+    ctx.moveTo(668, 25);
+    ctx.lineTo(688, 33);
+    ctx.lineTo(710, 27);
+    ctx.lineTo(732, 35);
     ctx.stroke();
 
     if (Math.random() < 0.16) {
       sparks.push({
-        x: 472 + Math.random() * 65,
+        x: 672 + Math.random() * 56,
         y: 32,
-        vx: Math.random() * 1.2 - 0.6,
+        vx: Math.random() * 1.0 - 0.5,
         vy: 1.4 + Math.random() * 1.6,
       });
     }

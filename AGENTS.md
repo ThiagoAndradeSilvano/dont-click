@@ -109,13 +109,11 @@ Toda a lógica sensível e senhas ficam no `server/src/index.js` para impedir tr
   - Ele **NÃO enxerga o que o jogador faz no porão**! As mensagens dele no feed de log são transmissões periódicas dele tossindo com o extintor, resmungando que a fonte e a placa-mãe derreteram, tentando achar conectores e rezando pro jogador ficar quieto lá embaixo.
 - **Enigma Estilo *Don't Believe His Lies* (validado em `/api/subsolo/unlock`):**
   1. **Lâmpada em Código Morse (Inquebrável, SEM dica explícita):** Pisca ciclicamente `--...` (`7`), `....-` (`4`), `..---` (`2`) → **`742`**. Não há texto nenhum dizendo que é Morse ou para olhar a lâmpada.
-  2. **Placa Críptica na Parede (Exige Pesquisa Externa):**
-     `MEMORIAL // SALA -01`
+  2. **Água + Ralo + Faíscas = Vapor no Terminal:** O ralo fica logo abaixo do **PAINEL #02** (`x=670..730`). Ao abrir a válvula, a água cai da torneira (`x=235`), escoa pelo canal do piso até o ralo, encontra as faíscas quentes que caem ali e sobe **vapor**, embaçando o vidro do próprio Terminal e revelando a frase escrita a dedo:
      `"O quarto onde o pai da corrente alternada morreu com os pombos."`
      `[ QUARTO ] - [ ??? ]`
      - Pesquisando: Nikola Tesla (pai da corrente alternada, famoso por alimentar pombos) morreu sozinho no **Quarto 3327** do Hotel New Yorker.
   3. **Cálculo Final:** `3327 - 742` = **`2585`**.
-  4. **Física da Água & Ralo:** O ralo fica abaixo do painel (`x=695..755`), e ao abrir a válvula, a água cai da torneira (`x=235`), forma um fluxo contínuo pelo piso e escoa diretamente para dentro do ralo sem se espalhar aleatoriamente.
 - **Transição:** Ao digitar `2585` no teclado do painel, a estrutura sofre pane (`ERRO ESTRUTURAL!!`), o Operador grita surpreso lá de cima (`"QUE PORRA DE ESTRONDO FOI ESSE AÍ EMBAIXO?! O QUE VC TÁ APRONTANDO?! ESPERA, O PISO TÁ AFUNDANDO—"`), toca o estrondo grave (`playCollapseRumble`) e o chão do porão **despenca em queda livre pra Caverna**!
 
 ### Página 8 — A Caverna Profunda (`stage: 'cave_2d'` -> `'cave_escaped'`)
