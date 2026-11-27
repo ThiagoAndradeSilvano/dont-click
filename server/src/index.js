@@ -892,7 +892,7 @@ app.post('/api/subsolo/unlock', (req, res) => {
     stage: 'cave_2d',
     collapse: true,
     screenMsg: 'ERRO ESTRUTURAL!!',
-    remark: 'QUE PORRA DE ESTRONDO FOI ESSE AÍ EMBAIXO?! O QUE VC TÁ APRONTANDO?! ESPERA, O PISO TÁ AFUNDANDO—',
+    remark: 'pera... que porra de comando vc rodou aí?! o barramento do subsolo inteiro tá cedendo— ei, NÃO—',
     caveState: player.caveState,
   });
 });
@@ -928,22 +928,22 @@ app.post('/api/cave/sync', (req, res) => {
     player.stage = 'cave_escaped';
   }
 
-  // Falas do Operador completamente confuso/assustado porque NEM ELE sabe de onde veio essa caverna!
+  // Falas do Operador (frio, ácido, arrogante — estilo Rick Sanchez, sem quebrar imersão)
   const caveRemarks = {
-    intro_done: 'mano... que porra de lugar é esse?? até o som do meu teclado tá dando eco aqui embaixo... eu NÃO programei caverna nenhuma!',
-    got_pickaxe: 'uma picareta velha? quem deixou asset de joguinho de mina enterrado debaixo do meu código??',
-    broke_boulder: 'boa, arrebentou a pedra. mas namoral, olha esses olhinhos piscando no escuro... eu tô começando a ficar cabreiro.',
-    armed_plunger: 'caralho tremeu a caverna inteira!! vc apertou um detonador sem nem saber onde tá a bomba?!',
-    got_plank: 'tábua podre na mochila... beleza, vamo sair logo desse buraco que esse eco tá me dando agonia.',
-    placed_plank: 'ponte improvisada no grito. pelo menos o chão não cedeu de novo.',
-    got_note: 'tem bilhete escrito aqui embaixo?? lê isso aí na mochila, não fui eu que escrevi essa letra não!',
-    padlock_wrong: 'nada... o cadeado nem mexeu. olha direito aquelas 3 notas que vc achou nas caixas.',
-    padlock_open: 'abriu!! esses traços e bolinhas nas notas eram números antigos... mano, de quem são essas anotações aqui embaixo??',
-    got_handle: 'achou uma manivela de engrenagem. deve encaixar em algum mecanismo lá mais pro fundo.',
-    stopped_water: 'fechou a cachoeira! vamo ver o que tem atrás dessa água.',
-    got_dynamite: 'bananas de dinamite... só falta achar estopim agora pra gente explodir uma saída daqui.',
-    got_fuses: 'pegou os estopins! agora junta com a dinamite naquela porta bloqueada lá de cima pra gente dar o fora!',
-    cave_win: 'EXPLODIU!! caralho finalmente luz... espera. onde é que essa saída vai dar agora?!',
+    intro_done: 'ótimo. uma mina em pixel art de 1994 rodando embaixo da minha arquitetura. e antes que pergunte: não, eu não codei essa bosta. deve ser lixo residual de algum setor morto. anda logo e vê se acha uma saída.',
+    got_pickaxe: 'uma picareta. claro. pq toda infraestrutura de rede moderna precisa de mineração manual agora. pega logo.',
+    broke_boulder: 'uau, quebrou uma pedra. quer um diploma de engenharia civil também ou vai continuar andando?',
+    armed_plunger: 'vc acabou de acionar um detonador aleatório sem nem saber onde tá a bomba. é por isso que a seleção natural tá falhando.',
+    got_plank: 'um pedaço de madeira podre. guarda na mochila como se fosse ouro, vai lá.',
+    placed_plank: 'física de videogame barato. se essa tábua partir no meio eu juro que não reinicio a sua instância.',
+    got_note: 'anotações crípticas rabiscadas na mão. maravilhoso. mais gente querendo parecer misteriosa no meu servidor.',
+    padlock_wrong: 'errado. vc tem três papéis na mochila com os números literalmente desenhados e ainda consegue errar. impressionante.',
+    padlock_open: 'finalmente. demorou tanto pra somar três rabiscos que eu achei que ia precisar desenhar com giz de cera pra vc.',
+    got_handle: 'uma manivela. aposto que seu cérebro já tá fritando tentando descobrir onde encaixa.',
+    stopped_water: 'cortou a água. parabéns por fazer o mínimo esperado de um ser humano funcional.',
+    got_dynamite: 'dinamite. obviamente tem explosivo solto num servidor web. falta só o estopim, anda logo.',
+    got_fuses: 'pegou os estopins. agora junta com a dinamite naquela saída bloqueada antes que eu decida formatar esse setor com vc dentro.',
+    cave_win: 'explodiu. ótimo. vê se sai dessa porcaria de túnel antes que o teto inteiro desabe em cima da gente.',
   };
 
   saveDb(db);

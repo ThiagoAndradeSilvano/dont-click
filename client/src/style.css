@@ -1396,6 +1396,52 @@ body.subsolo-mode #app {
   100% { transform: translate(0px, 110vh) rotate(-14deg); opacity: 0; }
 }
 
+.fall-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #050506;
+  opacity: 0;
+  pointer-events: all;
+  overflow: hidden;
+  transition: opacity 0.75s ease-in;
+}
+
+.fall-transition-overlay.active {
+  opacity: 1;
+}
+
+.fall-transition-overlay.fade-out {
+  opacity: 0;
+  transition: opacity 0.95s ease-out;
+  pointer-events: none;
+}
+
+.fall-streak {
+  position: absolute;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(148,163,184,0.35), rgba(255,255,255,0));
+  animation: fallStreakUp linear infinite;
+}
+
+@keyframes fallStreakUp {
+  0% { transform: translateY(110vh); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-25vh); opacity: 0; }
+}
+
+.cave-impact-shake {
+  animation: caveImpactShake 0.45s ease-out;
+}
+
+@keyframes caveImpactShake {
+  0% { transform: translateY(0); }
+  20% { transform: translateY(14px); }
+  45% { transform: translateY(-8px); }
+  70% { transform: translateY(5px); }
+  100% { transform: translateY(0); }
+}
+
 /* ===== CAPÍTULO DA CAVERNA PIXEL ART (Adaptado com WASD + Eco + Mochila + Cadeado!) ===== */
 @font-face {
   font-family: 'CavePixles';

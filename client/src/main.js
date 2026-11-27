@@ -2037,12 +2037,33 @@ function renderSubsolo2DScreen(initialState = null) {
             setTimeout(() => {
               backdrop.remove();
               playCollapseRumble();
-              const wrap = document.querySelector('.subsolo-canvas-wrap');
-              wrap?.classList.add('subsolo-collapsing');
+              const shell = document.querySelector('.subsolo-shell');
+              shell?.classList.add('subsolo-collapsing');
+
+              // Overlay de queda livre com rastros de poeira subindo + blackout + impacto no chão da caverna
+              const overlay = document.createElement('div');
+              overlay.className = 'fall-transition-overlay';
+              for (let i = 0; i < 24; i++) {
+                const st = document.createElement('div');
+                st.className = 'fall-streak';
+                st.style.left = `${Math.random() * 100}%`;
+                st.style.height = `${40 + Math.random() * 90}px`;
+                st.style.animationDuration = `${0.35 + Math.random() * 0.45}s`;
+                st.style.animationDelay = `${Math.random() * 0.4}s`;
+                overlay.appendChild(st);
+              }
+              document.body.appendChild(overlay);
+              setTimeout(() => overlay.classList.add('active'), 550);
+
               setTimeout(() => {
+                playCollapseRumble();
                 renderCaveChapterScreen(res.caveState, { justFell: true });
-              }, 2300);
-            }, 1300);
+                const stageEl = document.querySelector('.cave-stage-wrap');
+                stageEl?.classList.add('cave-impact-shake');
+                overlay.classList.add('fade-out');
+                setTimeout(() => overlay.remove(), 1000);
+              }, 2200);
+            }, 1100);
           } else {
             scr.classList.add('err');
             scr.textContent = res.screenMsg || 'NEGADO';
@@ -2235,12 +2256,11 @@ function renderSubsolo2DScreen(initialState = null) {
         const textAlpha = Math.min(1, (terminalFog - 0.35) / 0.45);
         ctx.save();
         ctx.fillStyle = `rgba(15, 23, 34, ${0.92 * textAlpha})`;
-        ctx.font = 'italic 10px Georgia, serif';
-        ctx.fillText('"O quarto onde o pai', 632, 174);
-        ctx.fillText('da corrente alternada', 630, 190);
-        ctx.fillText('morreu com os pombos."', 626, 206);
+        ctx.font = 'italic 11px Georgia, serif';
+        ctx.fillText('"Morte no quarto do', 636, 182);
+        ctx.fillText('Hotel New Yorker."', 640, 200);
         ctx.font = 'bold 11px monospace';
-        ctx.fillText('[ QUARTO ] - [ ??? ]', 630, 238);
+        ctx.fillText('[ QUARTO ] - [ ??? ]', 630, 236);
         ctx.restore();
       }
     }
@@ -2648,7 +2668,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
   app.innerHTML = `
     <div class="cave-top-hud">
       <div class="operator-feed">
-        <span class="operator-tag">log (eco)</span>
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
     </div>
@@ -3063,11 +3083,15 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
   if (!state.introDone || justFell) {
     torchLit = false;
     updateViewportPosition(false);
+    setOperatorRemark(
+      'parabéns, gênio. vc conseguiu colapsar a fundação do servidor. bate palma pra sua própria estupidez. agora olha onde vc foi parar.',
+      { delayBefore: 120, priority: 'urgent' }
+    );
     (async () => {
-      showSegmentBubble(state.row, state.col, 'Ahhhhhhh!! O chão do porão desabou!!');
+      showSegmentBubble(state.row, state.col, 'O chão do porão desabou...');
       await sleep(2200);
-      showSegmentBubble(state.row, state.col, 'Escuro demais aqui embaixo... deixa eu acender uma tocha.');
-      await sleep(2000);
+      showSegmentBubble(state.row, state.col, 'Escuro demais aqui embaixo.');
+      await sleep(1800);
       torchLit = true;
       state.introDone = true;
       updateViewportPosition(false);
@@ -3075,8 +3099,8 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false } = {}) {
     })();
   } else {
     setOperatorRemark(
-      'ainda nessa caverna esquisita... usa WASD aí pra andar e vê se acha um jeito de explodir uma saída daqui.',
-      { delayBefore: 400 }
+      'ainda nessa mina velha? usa WASD e vê se resolve logo antes que eu perca o resto da paciência.',
+      { delayBefore: 350 }
     );
   }
 }
@@ -3093,7 +3117,7 @@ function renderCaveEscapedScreen() {
   app.innerHTML = `
     <div class="subsolo-shell" style="text-align:center; padding:40px 20px;">
       <div class="operator-feed" style="text-align:left;">
-        <span class="operator-tag">log (eco)</span>
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
       <div style="margin-top:48px; border:2px dashed #ffb128; padding:40px; background:#141415; font-family:'CavePixles', monospace;">
@@ -3104,7 +3128,7 @@ function renderCaveEscapedScreen() {
   `;
 
   setOperatorRemark(
-    'caralho conseguimos sair daquele buraco... mas sério mano, quem construiu aquela mina embaixo do meu servidor?!',
+    'sobreviveu por pura sorte. mas me diz uma coisa... como caralhos existia uma mina inteira compilada abaixo da camada zero do meu sistema?',
     { delayBefore: 400, priority: 'urgent' }
   );
 }
