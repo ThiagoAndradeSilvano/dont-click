@@ -2519,9 +2519,39 @@ const CAVE_INVENTORY_META = {
   'lantern': { img: '/cave/lantern_off.png', altImg: '/cave/lantern_on.png', name: 'Lanterna', details: 'Liga/desliga a luz na caverna (Tecla F)', hasToggle: true, onLabel: 'Desligar', offLabel: 'Ligar' },
   '2': { img: '/cave/pickInventory.gif', altImg: '/cave/pickInventory.gif', name: 'Picareta', details: 'Firme o bastante pra quebrar rocha', hasToggle: true, onLabel: 'Guardar', offLabel: 'Equipar' },
   '6': { img: '/cave/plankInventory.gif', altImg: '/cave/plankInventory.gif', name: 'Tábua', details: 'Tábua grossa de madeira', hasToggle: true, onLabel: 'Guardar', offLabel: 'Segurar' },
-  '8': { img: '/cave/note1.gif', altImg: '/cave/note1.gif', name: 'Nota 1', details: '1º dígito: 1 barra (=5) + 2 pontos (=2) → [ 7 ]', hasToggle: true, onLabel: 'Fechar', offLabel: 'Ler' },
-  '9': { img: '/cave/note2.gif', altImg: '/cave/note2.gif', name: 'Nota 2', details: '2º dígito: 1 barra (=5) + 1 ponto (=1) → [ 6 ]', hasToggle: true, onLabel: 'Fechar', offLabel: 'Ler' },
-  '10': { img: '/cave/note3.gif', altImg: '/cave/note3.gif', name: 'Nota 3', details: '3º dígito: 3 pontos → [ 3 ]', hasToggle: true, onLabel: 'Fechar', offLabel: 'Ler' },
+  '8': {
+    img: '/cave/note1.gif',
+    altImg: '/cave/note1.gif',
+    name: 'Nota 1',
+    details: 'Pedaço de pergaminho do Cadeado do 3º andar (1º dígito). Clique em Ler para ampliar.',
+    noteTitle: 'NOTA 1 DE 3 — O PRIMEIRO DÍGITO DO CADEADO',
+    noteBody: 'Para abrir a porta trancada no 3º andar da mina, conte em numerais antigos: cada TRAÇO horizontal vale 5 e cada PONTO vale 1.',
+    hasToggle: true,
+    onLabel: 'Fechar',
+    offLabel: 'Ler',
+  },
+  '9': {
+    img: '/cave/note2.gif',
+    altImg: '/cave/note2.gif',
+    name: 'Nota 2',
+    details: 'Pedaço de pergaminho do Cadeado do 3º andar (2º dígito). Clique em Ler para ampliar.',
+    noteTitle: 'NOTA 2 DE 3 — O SEGUNDO DÍGITO DO CADEADO',
+    noteBody: 'Segundo símbolo gravado para a porta do 3º andar (lembre-se: traço = 5, ponto = 1).',
+    hasToggle: true,
+    onLabel: 'Fechar',
+    offLabel: 'Ler',
+  },
+  '10': {
+    img: '/cave/note3.gif',
+    altImg: '/cave/note3.gif',
+    name: 'Nota 3',
+    details: 'Pedaço de pergaminho do Cadeado do 3º andar (3º dígito). Clique em Ler para ampliar.',
+    noteTitle: 'NOTA 3 DE 3 — O TERCEIRO DÍGITO DO CADEADO',
+    noteBody: 'Último símbolo da combinação de 3 dígitos do cadeado dourado no 3º andar.',
+    hasToggle: true,
+    onLabel: 'Fechar',
+    offLabel: 'Ler',
+  },
   '12': { img: '/cave/handleInventory.gif', altImg: '/cave/handleInventory.gif', name: 'Manivela', details: 'Encaixa em alguma engrenagem', hasToggle: true, onLabel: 'Soltar', offLabel: 'Girar' },
   '15': { img: '/cave/dynamiteInventory.gif', altImg: '/cave/dynamiteInventory.gif', name: 'Dinamite', details: 'Explosivo antigo', hasToggle: true, onLabel: 'Desarmar', offLabel: 'Armar' },
   '16': { img: '/cave/fusesInventory.gif', altImg: '/cave/fusesInventory.gif', name: 'Estopins', details: 'Pavio para acender dinamite', hasToggle: true, onLabel: 'Apagar', offLabel: 'Preparar' },
@@ -2581,7 +2611,7 @@ const CAVE_OBJECTS = [
   { id: 'lantern', row: 1, col: 3, tile: 14, img: '/cave/lantern_off.png', kind: 'pickup', hideOnPick: true, msg: 'Você pegou uma Lanterna! A visão na caverna melhorou muito.', ev: 'got_lantern' },
   { id: '1', row: 1, col: 4, tile: 15, img: '/cave/creepyCorridor-24.png', kind: 'junk', msg: 'Nada útil nessa caixa.' },
   { id: 'story_1', row: 1, col: 6, tile: 14, img: '/cave/book_1_closed.png', kind: 'story_portal', storyId: '1', reqBook: null, msg: 'Livro I: Fronteira da Burocracia' },
-  { id: '8', row: 1, col: 6, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Uma nota estranha! (Guardada na mochila)', ev: 'got_note' },
+  { id: '8', row: 1, col: 4, tile: 13, img: '/cave/creepyCorridor-_094.png', kind: 'pickup', msg: 'Achou a Nota 1/3 (Cadeado da Mina)! Veja na mochila.', ev: 'got_note' },
   { id: '3', row: 1, col: 7, tile: 15, img: '/cave/creepyCorridor-_062.png', kind: 'boulder', need: '2', blockMsg: 'Preciso de uma ferramenta pra quebrar essa rocha.', okMsg: 'Boa! Pedra destruída!', ev: 'broke_boulder' },
   { id: '4', row: 1, col: 8, tile: 15, img: '/cave/creepyCorridor-_166.png', kind: 'plunger', msg: 'Apertei o detonador... algo explodiu lá embaixo!', ev: 'armed_plunger' },
   { id: '9', row: 1, col: 10, tile: 13, img: '/cave/creepyCorridor-24.png', kind: 'pickup', msg: 'Outra nota estranha! (Na mochila)', ev: 'got_note' },
@@ -2721,20 +2751,56 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
   let activeOpenBookId = null;
   const itemVariations = {}; // rastreia variação ativa de cada item (ex: mordida, aberta, armada, etc.)
 
+  let bubbleTimeout = null;
   function showSegmentBubble(r, c, text) {
     document.querySelectorAll('.cave-bubble').forEach((b) => b.remove());
+    if (bubbleTimeout) clearTimeout(bubbleTimeout);
     const seg = document.querySelector(`.cave-segment[data-seg="${r}-${c}"]`);
     if (!seg) return;
     const b = document.createElement('div');
     b.className = 'cave-bubble';
     b.textContent = text;
     seg.appendChild(b);
-    setTimeout(() => b.remove(), 2900);
+    bubbleTimeout = setTimeout(() => b.remove(), 4200);
+  }
+
+  function openCaveNoteModal(noteId) {
+    const meta = CAVE_INVENTORY_META[noteId];
+    if (!meta) return;
+    document.getElementById('cave-note-modal')?.remove();
+
+    itemVariations[noteId] = true;
+    refreshInventoryUI();
+
+    const modal = document.createElement('div');
+    modal.id = 'cave-note-modal';
+    modal.className = 'cave-note-modal';
+    modal.innerHTML = `
+      <div class="cave-note-paper">
+        <div style="font-family:monospace; font-size:11px; font-weight:bold; color:#78350f; letter-spacing:1px;">PERGAMINHO DA MINA</div>
+        <h3 style="margin:6px 0 8px; font-size:17px;">${meta.noteTitle || meta.name}</h3>
+        <img src="${meta.img}" alt="${meta.name}" />
+        <p style="font-size:14px; line-height:1.55; margin:10px 0 18px;">${meta.noteBody || meta.details}</p>
+        <button type="button" id="cave-note-close" style="background:#451a03; color:#fef3c7; border:2px solid #78350f; padding:9px 20px; border-radius:6px; font-family:monospace; font-weight:bold; cursor:pointer;">Guardar Nota na Mochila</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const closeNote = () => {
+      modal.remove();
+      itemVariations[noteId] = false;
+      refreshInventoryUI();
+    };
+    document.getElementById('cave-note-close')?.addEventListener('click', closeNote);
+    modal.addEventListener('click', (ev) => {
+      if (ev.target === modal) closeNote();
+    });
   }
 
   function openBookFromBag(bookId) {
     activeOpenBookId = bookId;
     refreshInventoryUI();
+    const storyNum = bookId.replace('book_', '');
     openBookReaderModal(bookId, state, {
       apiPost,
       setOperatorRemark,
@@ -2746,6 +2812,19 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         }
         refreshInventoryUI();
         refreshObjectsVisuals();
+      },
+      onReplay: () => {
+        activeOpenBookId = null;
+        launchStory(storyNum, {
+          clearTimers,
+          apiPost,
+          setOperatorRemark,
+          playBeep: playCheapBeep,
+          caveState: state,
+          returnToCave: (updatedCave, extra = {}) => {
+            renderCaveChapterScreen(updatedCave, extra);
+          },
+        });
       },
     });
     // Quando fechar o modal manualmente pelo botão, restaura o ícone fechado do livro
@@ -2807,14 +2886,20 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
           } else {
             openBookFromBag(id);
           }
+        } else if (['8', '9', '10'].includes(id)) {
+          if (itemVariations[id]) {
+            document.getElementById('cave-note-modal')?.remove();
+            itemVariations[id] = false;
+            refreshInventoryUI();
+          } else {
+            openCaveNoteModal(id);
+          }
         } else {
           itemVariations[id] = !itemVariations[id];
           if (id === '0' && itemVariations[id]) {
-            setOperatorRemark('parabéns, comeu uma maçã podre encontrada num servidor subterrâneo. se der botulismo não me culpa.', { priority: 'action' });
-          } else if (['8', '9', '10'].includes(id) && itemVariations[id]) {
-            showSegmentBubble(state.row, state.col, meta.details);
+            setOperatorRemark('mandou pra dentro uma maçã velha que tava jogada no chão da mina msm?! coragem hein.', { priority: 'action' });
           } else if (id === '15' && itemVariations[id]) {
-            setOperatorRemark('armou a dinamite na mão mesmo. excelente instinto de autopreservação.', { priority: 'action' });
+            setOperatorRemark('cuidado brincando com essa dinamite na mão mano!', { priority: 'action' });
           }
           refreshInventoryUI();
         }
@@ -2825,6 +2910,13 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
       el.addEventListener('click', () => {
         playCheapBeep();
         openBookFromBag(el.getAttribute('data-inv-id'));
+      });
+    });
+
+    grid.querySelectorAll('[data-inv-id="8"], [data-inv-id="9"], [data-inv-id="10"]').forEach((el) => {
+      el.addEventListener('click', () => {
+        playCheapBeep();
+        openCaveNoteModal(el.getAttribute('data-inv-id'));
       });
     });
   }

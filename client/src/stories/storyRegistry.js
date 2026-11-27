@@ -28,8 +28,12 @@ export const BOOKS_META = {
       },
     ],
     prologue: 'No inverno cinzento da fronteira dividida, você foi convocado às pressas para assumir o Posto 04. Cinco dias de nevasca, falsificadores e segredos de Estado aguardam do outro lado do vidro.',
-    summary: 'Você sobreviveu a 5 dias na cabine do Posto 04 enfrentando falsificadores de brasão, contrabandistas, fugitivos procurados e mensageiros clandestinos sob a Guerra Fria dos Seis Distritos.',
-    riddle: '"A placa de chumbo do Diplomata (Dia 4) e a marca fluorescente do Mensageiro Fantasma (Dia 5) revelam duas palavras sobre a queda mais famosa da história moderna. Um porta-voz gaguejou \'imediatamente\' numa coletiva em novembro. Pegue o ANO em que aquela fronteira real caiu, subtraia o ANO em que foi erguida, e multiplique pela IDADE exata (em anos completos naquela noite) de quem pronunciou o erro."',
+    summary: 'Você sobreviveu a 5 dias na cabine do Posto 04 enfrentando falsificadores de brasão, contrabandistas, fugitivos procurados e mensageiros clandestinos.',
+    recordedClues: [
+      '• Pista 1 (Dia 4 — Placa no Raio-X): 01001101 01010101 01010010 01001111',
+      '• Pista 2 (Dia 5 — Luz Negra UV): CÉSAR +3 → EHUOLP',
+    ],
+    riddle: '"Decodifique as duas mensagens interceptadas na página ao lado: elas formam o nome da fronteira que dividiu uma cidade real durante décadas. Numa coletiva de imprensa em novembro, um porta-voz gaguejou \'imediatamente\' por engano e derrubou essa barreira na mesma noite. Pegue o ANO em que ela caiu, subtraia o ANO em que foi erguida, e multiplique pela IDADE exata (em anos completos naquela noite) do porta-voz."',
   },
   book_2: {
     id: 'book_2',
@@ -92,12 +96,21 @@ export const STORY_RUNNERS = {
   '6': runStory61984,
 };
 
-export function openBookReaderModal(bookId, caveState, { apiPost, setOperatorRemark, onSolved }) {
+export function openBookReaderModal(bookId, caveState, { apiPost, setOperatorRemark, onSolved, onReplay }) {
   const meta = BOOKS_META[bookId];
   if (!meta) return;
 
   document.getElementById('book-reader-modal')?.remove();
   const isSolved = Array.isArray(caveState.booksSolved) && caveState.booksSolved.includes(bookId);
+
+  const cluesHtml = Array.isArray(meta.recordedClues) && meta.recordedClues.length > 0
+    ? `
+      <div style="background:rgba(0,0,0,0.08); border:1.5px dashed rgba(0,0,0,0.35); border-radius:6px; padding:10px 12px; font-family:monospace; font-size:12px; line-height:1.55;">
+        <div style="font-weight:bold; margin-bottom:4px; text-transform:uppercase; font-size:11px; opacity:0.85;">📌 Pistas Registradas na História:</div>
+        ${meta.recordedClues.map((c) => `<div>${c}</div>`).join('')}
+      </div>
+    `
+    : '';
 
   const modal = document.createElement('div');
   modal.id = 'book-reader-modal';
@@ -105,11 +118,21 @@ export function openBookReaderModal(bookId, caveState, { apiPost, setOperatorRem
   modal.innerHTML = `
     <div class="book-open-spread ${meta.themeClass}">
       <div class="book-page book-page-left">
-        <div class="book-badge">${meta.subtitle}</div>
-        <h2 class="book-title">${meta.title}</h2>
-        <p class="book-summary">${meta.summary}</p>
-        <div class="book-status ${isSolved ? 'solved' : 'pending'}">
-          ${isSolved ? '✅ ENIGMA RESOLVIDO — PASSAGEM LIBERADA' : '🔒 ÚLTIMA PÁGINA BLOQUEADA'}
+        <div>
+          <div class="book-badge">${meta.subtitle}</div>
+          <h2 class="book-title" style="margin-top:6px;">${meta.title}</h2>
+          <p class="book-summary">${meta.summary}</p>
+        </div>
+        ${cluesHtml}
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="book-status ${isSolved ? 'solved' : 'pending'}">
+            ${isSolved ? '✅ ENIGMA RESOLVIDO — PRÓXIMO LIVRO LIBERADO' : '🔒 RESOLVA A ÚLTIMA PÁGINA PARA DESTRAVAR O PRÓXIMO LIVRO'}
+          </div>
+          ${
+            onReplay
+              ? `<button type="button" id="book-replay-btn" class="book-close-btn" style="margin-top:0; font-size:11.5px;">🔄 Rejogar este Conto (Opcional)</button>`
+              : ''
+          }
         </div>
       </div>
       <div class="book-page book-page-right">
@@ -117,10 +140,10 @@ export function openBookReaderModal(bookId, caveState, { apiPost, setOperatorRem
         <blockquote class="book-riddle">${meta.riddle}</blockquote>
         ${
           isSolved
-            ? `<div class="book-solved-box">Enigma já decifrado! Guarde este livro na mochila — você vai precisar da resposta dele na Estante Final.</div>`
+            ? `<div class="book-solved-box">Enigma já decifrado! Guarde este livro na mochila — você vai precisar da resposta numérica dele lá na Estante Final da caverna.</div>`
             : `
               <div class="book-answer-row">
-                <input type="text" id="book-riddle-input" class="book-input" placeholder="Digite a resposta..." autocomplete="off" />
+                <input type="text" id="book-riddle-input" class="book-input" placeholder="Digite o número final..." autocomplete="off" />
                 <button type="button" id="book-riddle-submit" class="book-submit-btn">Validar</button>
               </div>
               <div class="book-feedback" id="book-riddle-feedback"></div>
@@ -134,6 +157,10 @@ export function openBookReaderModal(bookId, caveState, { apiPost, setOperatorRem
   document.body.appendChild(modal);
 
   document.getElementById('book-modal-close')?.addEventListener('click', () => modal.remove());
+  document.getElementById('book-replay-btn')?.addEventListener('click', () => {
+    modal.remove();
+    if (onReplay) onReplay();
+  });
 
   const inputEl = document.getElementById('book-riddle-input');
   const submitBtn = document.getElementById('book-riddle-submit');
