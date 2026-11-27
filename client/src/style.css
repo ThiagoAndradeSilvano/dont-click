@@ -1449,7 +1449,7 @@ body.subsolo-mode #app {
 }
 
 body.cave-mode {
-  background: #141415;
+  background: #040406;
   overflow: hidden;
   font-family: 'CavePixles', monospace;
   font-size: 15px;
@@ -1512,9 +1512,7 @@ body.cave-mode {
   width: 1728px; /* 12 cols * 144px */
   height: 1344px; /* 4 rows * 336px */
   transform-origin: center center;
-  border: 2px solid #27272a;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
-  background: #050507;
+  background: #040406;
   overflow: hidden;
 }
 
@@ -1665,7 +1663,7 @@ body.cave-mode {
   z-index: 6;
 }
 
-/* Cabos e Plataforma do Elevador de Mina */
+/* Cabos e Plataforma do Elevador de Mina (sincronizados frame-a-frame via JS!) */
 .cave-lift-ropes {
   position: absolute;
   width: 12px;
@@ -1675,7 +1673,6 @@ body.cave-mode {
   left: 66px;
   top: 140px;
   z-index: 2;
-  transition: height 0.48s linear;
   pointer-events: none;
 }
 
@@ -1693,7 +1690,6 @@ body.cave-mode {
   transform: scale(3);
   transform-origin: 0 0;
   z-index: 2;
-  transition: top 0.48s linear;
   pointer-events: none;
 }
 
@@ -1702,6 +1698,7 @@ body.cave-mode {
 }
 
 .cave-obj-btn {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
@@ -1711,10 +1708,30 @@ body.cave-mode {
 .cave-obj-btn img {
   width: 100%;
   image-rendering: pixelated;
+  transition: filter 0.15s;
 }
 
-.cave-obj-btn:hover img {
-  filter: drop-shadow(2px 0 #fff) drop-shadow(-2px 0 #fff) drop-shadow(0 -2px #fff);
+.cave-obj-btn:hover img,
+.cave-obj-btn.cave-obj-nearby img {
+  filter: drop-shadow(0 0 8px #fbbf24) drop-shadow(2px 0 #fde047) drop-shadow(-2px 0 #fde047) drop-shadow(0 -2px #fde047);
+}
+
+.cave-obj-btn.cave-obj-nearby::after {
+  content: '[E]';
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #18181b;
+  color: #fbbf24;
+  border: 1.5px solid #fbbf24;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  z-index: 30;
+  pointer-events: none;
 }
 
 /* Balãozinho flutuante da caverna */
@@ -1740,14 +1757,14 @@ body.cave-mode {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mochila lateral de Inventário da Caverna */
+/* Mochila lateral de Inventário da Caverna (colada perto do mapa!) */
 .cave-inventory {
   position: fixed;
   z-index: 48;
-  left: 26px;
+  left: max(12px, calc(50% - 575px));
   top: 50%;
   transform: translateY(-50%);
-  width: 155px;
+  width: 148px;
   color: #fff;
   font-size: 11px;
 }

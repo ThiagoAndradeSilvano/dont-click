@@ -249,7 +249,7 @@ function normalizePlayer(player) {
   if (!player.caveState || typeof player.caveState !== 'object') {
     player.caveState = {
       row: 1,
-      col: 1,
+      col: 2,
       inventory: ['0'],
       cleared: [],
       booksOwned: [],
@@ -1222,7 +1222,7 @@ if (process.env.NODE_ENV !== 'production') {
       player.subsoloSolved = true;
       player.caveState = {
         row: 1,
-        col: 1,
+        col: 2,
         inventory: ['0'],
         cleared: [],
         booksOwned: [],
