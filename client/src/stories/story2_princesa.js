@@ -14,19 +14,24 @@ export function runStory2Princesa({ app, setOperatorRemark, playBeep, finishStor
 
   app.innerHTML = `
     <div class="story-shell">
-      <button type="button" class="story-back-btn" id="s2-back">← Voltar para a Caverna</button>
-      <div class="operator-feed story-log-pink">
-        <span class="operator-tag">pergaminho</span>
+      <div class="operator-feed story-main-log">
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
+      <button type="button" class="story-back-btn" id="s2-back">← Voltar para a Caverna</button>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#fdf2f8; border:3px solid #db2777; border-radius:14px; padding:10px 16px; font-size:13px; font-weight:bold; color:#831843;">
+      <div class="story-stage-area" style="display:flex; justify-content:space-between; align-items:center; background:#fdf2f8; border:3px solid #db2777; border-radius:14px; padding:10px 16px; font-size:13px; font-weight:bold; color:#831843;">
         <span id="s2-hud-act">ATO 1 / 8</span>
         <span id="s2-hud-coins">🪙 100 Moedas de Plástico</span>
         <span id="s2-hud-bag">🎒 Mochila: Vazia</span>
       </div>
 
-      <div id="s2-card" style="background:#fff1f7; border:4px solid #db2777; border-radius:20px; padding:26px; box-shadow:0 10px 0 #be185d; text-align:center;">
+      <div class="story-stage-area" id="s2-card" style="background:#fff1f7; border:4px solid #db2777; border-radius:20px; padding:26px; box-shadow:0 10px 0 #be185d; text-align:center;">
+      </div>
+
+      <div class="story-npc-feed story-log-pink">
+        <span class="story-npc-tag">pergaminho</span>
+        <span id="story-npc-msg">Era uma vez, num reino muito distante...</span>
       </div>
     </div>
   `;

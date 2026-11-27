@@ -442,13 +442,13 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
   app.innerHTML = `
     <div class="story-shell">
-      <button type="button" class="story-back-btn" id="s1-back">← Voltar para a Caverna</button>
-      <div class="operator-feed story-log-sepia">
-        <span class="operator-tag">interfone</span>
+      <div class="operator-feed story-main-log">
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
+      <button type="button" class="story-back-btn" id="s1-back">← Voltar para a Caverna</button>
 
-      <div style="display:grid; grid-template-columns:1fr 1.15fr; gap:16px; background:#d6c3a1; border:4px solid #1c130a; padding:18px; box-shadow:6px 6px 0 #140e08;">
+      <div class="story-stage-area" style="display:grid; grid-template-columns:1fr 1.15fr; gap:16px; background:#d6c3a1; border:4px solid #1c130a; padding:18px; box-shadow:6px 6px 0 #140e08;">
         <div style="display:flex; flex-direction:column; gap:10px;">
           <div style="background:#24190c; color:#f5e6c8; padding:10px; font-weight:bold; font-size:13px; display:flex; justify-content:space-between;">
             <span id="s1-day-title"></span>
@@ -491,14 +491,27 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
           </div>
         </div>
       </div>
+
+      <div class="story-npc-feed story-log-sepia">
+        <span class="story-npc-tag">interfone</span>
+        <span id="story-npc-msg"></span>
+      </div>
     </div>
   `;
 
+  function setInterfoneMsg(text) {
+    const el = document.getElementById('story-npc-msg');
+    if (el) el.textContent = text;
+  }
+
   document.getElementById('s1-back')?.addEventListener('click', () => returnToCave(caveState));
 
+  setInterfoneMsg(
+    'Atenção, Inspetor. Bem-vindo ao seu turno na Portaria do Submundo. Confira o Manual à esquerda, use a Balança e o Raio-X na bagagem e carimbe APROVAR ou NEGAR. Três infrações causam demissão.'
+  );
   setOperatorRemark(
-    'Atenção, Inspetor. Bem-vindo ao seu turno na Portaria do Submundo. Confira o Manual à esquerda, use a Balança e o Raio-X na bagagem e carimbe APROVAR ou NEGAR. Três infrações causam demissão.',
-    { delayBefore: 200, priority: 'urgent' }
+    'pera... que porra de interfone é esse?! a gente virou fiscal de fronteira num jogo sépia do nada?! quem tá dando ordem aí?!',
+    { delayBefore: 450, priority: 'urgent' }
   );
 
   function renderManualTab() {
@@ -581,7 +594,8 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
     usedXray = true;
     document.getElementById('s1-tool-readout').textContent = `🩻 Raio-X: ${person.xray}`;
     if (person.isLoreSecret) {
-      setOperatorRemark('Aviso do Scanner: código anômalo detectado no forro. Mantenha o protocolo padrão.', { priority: 'action' });
+      setInterfoneMsg('Aviso do Scanner: código anômalo detectado no forro. Mantenha o protocolo padrão.');
+      setOperatorRemark('espera... que porra é aquela gravada dentro dessa mala?! "protocolo padrão" o caralho, isso não faz parte desse joguinho!', { priority: 'action' });
     }
   });
 
@@ -592,21 +606,27 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
 
     if (approved === person.valid) {
       credits += 25;
-      setOperatorRemark(approved ? 'Entrada autorizada dentro das normas. +25 créditos. Próximo.' : `Entrada barrada conforme o regulamento: ${person.reason}`, { priority: 'action' });
+      setInterfoneMsg(approved ? 'Entrada autorizada dentro das normas. +25 créditos. Próximo.' : `Entrada barrada conforme o regulamento: ${person.reason}`);
+      if (Math.random() < 0.45) {
+        setOperatorRemark(approved ? 'aprovou um duende pagador de boleto. que auge da tecnologia.' : 'kkkkkk barrado na porta. próxima vítima.', { priority: 'ambient' });
+      }
     } else {
       errors += 1;
       if (approved && person.bribe) {
         credits += person.bribe;
-        setOperatorRemark('ALERTA DE CORRUPÇÃO: Suborno detectado no guichê! Infração registrada.', { priority: 'urgent' });
+        setInterfoneMsg('ALERTA DE CORRUPÇÃO: Suborno detectado no guichê! Infração registrada.');
+        setOperatorRemark('vc aceitou propina na frente do interfone e ainda tomou multa. gênio.', { priority: 'urgent' });
       } else {
-        setOperatorRemark(`INFRAÇÃO (${errors}/3): ${person.reason}`, { priority: 'urgent' });
+        setInterfoneMsg(`INFRAÇÃO (${errors}/3): ${person.reason}`);
+        setOperatorRemark('tomou multa até numa repartição pública falsa. parabéns.', { priority: 'action' });
       }
       if (errors >= 3) {
         dayIdx = 0;
         appIdx = 0;
         errors = 0;
         credits = 0;
-        setOperatorRemark('TRÊS INFRAÇÕES! Você foi demitido e rebaixado ao Dia 1.', { priority: 'urgent' });
+        setInterfoneMsg('TRÊS INFRAÇÕES! Você foi demitido e rebaixado ao Dia 1.');
+        setOperatorRemark('demitido do guichê imaginário e voltou pro Dia 1. inacreditável.', { priority: 'urgent' });
         renderApplicant();
         return;
       }
@@ -617,11 +637,13 @@ export function runStory1Burocracia({ app, setOperatorRemark, playBeep, finishSt
       dayIdx += 1;
       appIdx = 0;
       if (dayIdx >= DAYS.length) {
-        setOperatorRemark('Auditoria de 5 dias concluída. Registro oficial do turno emitido (Livro I).', { priority: 'urgent' });
+        setInterfoneMsg('Auditoria de 5 dias concluída. Registro oficial do turno emitido (Livro I).');
+        setOperatorRemark('finalmente acabou essa burocracia desgraçada... espera, que livro é esse que apareceu agora?', { priority: 'urgent' });
         await finishStory();
         return;
       }
-      setOperatorRemark(`Fim do Dia ${dayIdx}. Novas diretrizes burocráticas foram adicionadas ao manual para amanhã.`, { priority: 'action' });
+      setInterfoneMsg(`Fim do Dia ${dayIdx}. Novas diretrizes burocráticas foram adicionadas ao manual para amanhã.`);
+      setOperatorRemark(`virou pro Dia ${dayIdx + 1}. pelo visto essa porcaria vai ficar ainda mais chata.`, { priority: 'action' });
     }
     renderApplicant();
   }

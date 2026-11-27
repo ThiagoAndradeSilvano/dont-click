@@ -11,13 +11,13 @@ export function runStory4Titanic({ app, setOperatorRemark, playBeep, finishStory
 
   app.innerHTML = `
     <div class="story-shell">
-      <button type="button" class="story-back-btn" id="s4-back">← Voltar para a Caverna</button>
-      <div class="operator-feed story-log-ice">
-        <span class="operator-tag">telégrafo</span>
+      <div class="operator-feed story-main-log">
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
+      <button type="button" class="story-back-btn" id="s4-back">← Voltar para a Caverna</button>
 
-      <div style="background:rgba(7, 25, 45, 0.9); border:2px solid #0284c7; padding:24px; border-radius:8px; text-align:center;">
+      <div class="story-stage-area" style="background:rgba(7, 25, 45, 0.9); border:2px solid #0284c7; padding:24px; border-radius:8px; text-align:center;">
         <div style="display:flex; justify-content:space-between; font-size:13px; color:#7dd3fc; margin-bottom:14px;">
           <span id="s4-time">Resgate em: 28s</span>
           <span id="s4-temp">Calor Corporal: 100%</span>

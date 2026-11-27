@@ -25,13 +25,13 @@ export function runStory61984({ app, setOperatorRemark, playBeep, finishStory, r
 
   app.innerHTML = `
     <div class="story-shell">
-      <button type="button" class="story-back-btn" id="s6-back">← Voltar para a Caverna</button>
-      <div class="operator-feed story-log-crt">
-        <span class="operator-tag">sys://1984</span>
+      <div class="operator-feed story-main-log">
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
+      <button type="button" class="story-back-btn" id="s6-back">← Voltar para a Caverna</button>
 
-      <div style="background:#031207; border:2px solid #22c55e; padding:24px; box-shadow:0 0 28px rgba(34,197,94,0.18);">
+      <div class="story-stage-area" style="background:#031207; border:2px solid #22c55e; padding:24px; box-shadow:0 0 28px rgba(34,197,94,0.18);">
         <div style="font-size:12px; opacity:0.8; margin-bottom:14px;">MINISTÉRIO DA VERDADE // MESA DE CENSURA</div>
         <div id="s6-stage"></div>
       </div>

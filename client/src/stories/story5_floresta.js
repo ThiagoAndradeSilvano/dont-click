@@ -37,13 +37,13 @@ export function runStory5Floresta({ app, setOperatorRemark, playBeep, finishStor
 
   app.innerHTML = `
     <div class="story-shell">
-      <button type="button" class="story-back-btn" id="s5-back">← Voltar para a Caverna</button>
-      <div class="operator-feed story-log-crimson">
-        <span class="operator-tag">inquérito</span>
+      <div class="operator-feed story-main-log">
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
+      <button type="button" class="story-back-btn" id="s5-back">← Voltar para a Caverna</button>
 
-      <div style="background:#261012; border:3px solid #7f1d1d; padding:22px; display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+      <div class="story-stage-area" style="background:#261012; border:3px solid #7f1d1d; padding:22px; display:grid; grid-template-columns:1fr 1fr; gap:18px;">
         <div>
           <div style="font-size:12px; color:#fca5a5; margin-bottom:8px;">1. EVIDÊNCIAS NA CABANA</div>
           <div style="display:flex; flex-direction:column; gap:8px;">

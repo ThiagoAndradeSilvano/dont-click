@@ -68,13 +68,13 @@ export function runStory3PT({ app, setOperatorRemark, playBeep, finishStory, ret
 
   app.innerHTML = `
     <div class="story-shell">
-      <button type="button" class="story-back-btn" id="s3-back">← Voltar para a Caverna</button>
-      <div class="operator-feed story-log-noir">
-        <span class="operator-tag">rádio</span>
+      <div class="operator-feed story-main-log">
+        <span class="operator-tag">log</span>
         <span id="operator-msg"></span>
       </div>
+      <button type="button" class="story-back-btn" id="s3-back">← Voltar para a Caverna</button>
 
-      <div style="background:#0c0c0e; border:2px solid #27272a; padding:24px; filter:grayscale(100%) contrast(1.15); position:relative;">
+      <div class="story-stage-area" style="background:#0c0c0e; border:2px solid #27272a; padding:24px; filter:grayscale(100%) contrast(1.15); position:relative;">
         <div style="display:flex; justify-content:space-between; font-size:12px; color:#71717a; margin-bottom:14px;">
           <span id="s3-loop-label">VHS // REC 0999</span>
           <span id="s3-status">INVESTIGUE O CORREDOR</span>
