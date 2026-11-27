@@ -2278,3 +2278,115 @@ body.secret-route-mode {
 .shop-item.gen-full {
   opacity: 0.6;
 }
+
+/* ===== JANELINHAS INÚTEIS DO CLICKER (estilo Windows velho) ===== */
+.fake-progress-fill.fake-progress-error {
+  background: #c00000 !important;
+  width: 99% !important;
+}
+.dumb-window {
+  position: fixed;
+  z-index: 9000;
+  width: min(300px, calc(100vw - 24px));
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  box-shadow: 2px 2px 0 #000;
+  font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+  font-size: 12px;
+  color: #000;
+}
+.dumb-titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #fff;
+  font-weight: bold;
+  padding: 2px 3px 2px 6px;
+}
+.dumb-x {
+  background: #c0c0c0;
+  color: #000;
+  border: 1px solid;
+  border-color: #fff #404040 #404040 #fff;
+  width: 18px;
+  height: 16px;
+  line-height: 12px;
+  padding: 0;
+  font-weight: bold;
+}
+.dumb-body {
+  padding: 12px 12px 8px;
+  line-height: 1.4;
+}
+.dumb-icon { margin-right: 4px; }
+.dumb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+.dumb-actions:empty { display: none; }
+.dumb-actions button,
+.dumb-cap-cell {
+  background: #c0c0c0;
+  color: #000;
+  border: 2px solid;
+  border-color: #fff #404040 #404040 #fff;
+  padding: 3px 12px;
+  font: inherit;
+}
+.dumb-actions button:active { border-color: #404040 #fff #fff #404040; }
+.dumb-mini-bar {
+  height: 12px;
+  margin: 8px 0;
+  border: 1px solid #808080;
+  background: #fff;
+}
+.dumb-mini-bar i {
+  display: block;
+  height: 100%;
+  width: 3%;
+  background: #000080;
+  animation: dumbCrawl 12s linear forwards;
+}
+@keyframes dumbCrawl { to { width: 4%; } }
+.dumb-typing { margin-top: 8px; color: #444; font-style: italic; }
+.dumb-typing span { animation: dumbBlink 1s steps(2) infinite; }
+@keyframes dumbBlink { 50% { opacity: 0; } }
+.dumb-cap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+.dumb-cap-cell { padding: 8px 0; font-size: 18px; }
+.dumb-cap-cell.on { outline: 3px solid #000080; }
+.dumb-stars { margin-top: 8px; display: flex; gap: 4px; }
+.dumb-star { background: none; border: 0; font-size: 24px; padding: 0; color: #806000; }
+.dumb-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 3px 4px;
+  border: 2px solid;
+  border-color: #404040 #fff #fff #404040;
+  font: inherit;
+}
+.dumb-toast {
+  position: fixed;
+  right: 14px;
+  bottom: 70px;
+  z-index: 9000;
+  background: #ffffe1;
+  color: #000;
+  border: 1px solid #000;
+  padding: 8px 12px;
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 12px;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+  max-width: calc(100vw - 28px);
+}

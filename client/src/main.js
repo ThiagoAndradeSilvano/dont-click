@@ -525,9 +525,194 @@ function showUselessAchievement(customText) {
 // ============================================================================
 // EVENTOS INTERATIVOS DE MINUTO EM MINUTO (Mantém os 20 minutos super vivos!)
 // ============================================================================
+// ============================================================================
+// JANELINHAS INÚTEIS DO CLICKER (erro da barra + chatices aleatórias)
+// Tudo só no front, não mexe em ponto nem na progressão dos 16 upgrades.
+// ============================================================================
+const FAKE_SYNC_ERRORS = [
+  ['Erro 0x00000099', 'Não foi possível chegar a 100%. O 99% já está ótimo.'],
+  ['Falha na sincronização', 'A sincronização foi concluída com sucesso. Ocorreu um erro.'],
+  ['Erro inesperado', 'Este erro era esperado.'],
+  ['Módulo não encontrado', 'O módulo "modulo.final.definitivo2.exe" saiu para almoçar.'],
+  ['Erro de pombo', 'Um pombo bicou o cabo de rede. Tente novamente após o milho.'],
+  ['Erro 404 de porcentagem', 'O último 1% foi movido ou nunca existiu.'],
+  ['Memória insuficiente', 'O sistema esqueceu o que estava fazendo.'],
+  ['Erro desconhecido', 'Nem a gente sabe. Clique em OK pra fingir que entendeu.'],
+];
+
+function makeDumbWindow({ title, body, buttons, className = '' }) {
+  const win = document.createElement('div');
+  win.className = `dumb-window ${className}`;
+  win.style.left = `${8 + Math.random() * 50}vw`;
+  win.style.top = `${14 + Math.random() * 45}vh`;
+  win.innerHTML = `
+    <div class="dumb-titlebar"><span>${title}</span><button type="button" class="dumb-x" aria-label="Fechar">×</button></div>
+    <div class="dumb-body">${body}</div>
+    <div class="dumb-actions">${buttons.map((b, i) => `<button type="button" data-i="${i}">${b}</button>`).join('')}</div>
+  `;
+  document.body.appendChild(win);
+  return win;
+}
+
+function dumbOnScreen() {
+  return document.querySelector('.dumb-window:not(.dumb-sync-error), .dumb-toast');
+}
+
+function showFakeSyncError(onDone) {
+  const [title, msg] = FAKE_SYNC_ERRORS[Math.floor(Math.random() * FAKE_SYNC_ERRORS.length)];
+  if (currentUpgrades.includes('sound')) playCheapBeep();
+  const win = makeDumbWindow({
+    title,
+    body: `<span class="dumb-icon">⛔</span> ${msg}`,
+    buttons: Math.random() < 0.3 ? ['OK', 'Também OK'] : ['OK'],
+    className: 'dumb-sync-error',
+  });
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    win.remove();
+    // Às vezes fechar o erro também dá erro
+    if (Math.random() < 0.25) {
+      const again = makeDumbWindow({
+        title: 'Erro',
+        body: '<span class="dumb-icon">⛔</span> Erro ao fechar a mensagem de erro.',
+        buttons: ['OK'],
+        className: 'dumb-sync-error',
+      });
+      let done2 = false;
+      const close2 = () => {
+        if (done2) return;
+        done2 = true;
+        again.remove();
+        onDone();
+      };
+      again.querySelectorAll('button').forEach((b) => b.addEventListener('click', close2));
+      setTimeout(close2, 6000);
+      return;
+    }
+    onDone();
+  };
+  win.querySelectorAll('button').forEach((b) => b.addEventListener('click', finish));
+  setTimeout(finish, 8000);
+}
+
+const DUMB_EVENTS = [
+  // Atualização obrigatória que só dá pra adiar
+  () => {
+    const n = 2 + Math.floor(Math.random() * 1400);
+    const win = makeDumbWindow({
+      title: 'Atualização obrigatória',
+      body: `Instalando atualização 1 de ${n.toLocaleString('pt-BR')}...<div class="dumb-mini-bar"><i></i></div>Não desligue o seu dedo.`,
+      buttons: ['Lembrar em 10 segundos', 'Lembrar em 9 segundos'],
+    });
+    const close = () => win.remove();
+    win.querySelectorAll('button').forEach((b) => b.addEventListener('click', close));
+    setTimeout(close, 12000);
+  },
+  // Suporte online eternamente digitando, com o X que foge uma vez
+  () => {
+    const win = makeDumbWindow({
+      title: 'Suporte Online 24h',
+      body: '<strong>Atendente Robson:</strong> Olá! Em que posso ajudar?<div class="dumb-typing">Robson está digitando<span>...</span></div>',
+      buttons: [],
+      className: 'dumb-chat',
+    });
+    const x = win.querySelector('.dumb-x');
+    let dodged = false;
+    x.addEventListener('mouseenter', () => {
+      if (dodged) return;
+      dodged = true;
+      win.style.left = `${8 + Math.random() * 50}vw`;
+      win.style.top = `${14 + Math.random() * 45}vh`;
+    });
+    x.addEventListener('click', () => win.remove());
+    setTimeout(() => win.remove(), 15000);
+  },
+  // Captcha em que tudo é botão
+  () => {
+    const cells = Array.from({ length: 9 }, () => '<button type="button" class="dumb-cap-cell">🔲</button>').join('');
+    const win = makeDumbWindow({
+      title: 'Verificação de segurança',
+      body: `Selecione todos os quadrados que contêm <strong>botões</strong>:<div class="dumb-cap-grid">${cells}</div>`,
+      buttons: ['Verificar'],
+    });
+    win.querySelectorAll('.dumb-cap-cell').forEach((c) => c.addEventListener('click', () => c.classList.toggle('on')));
+    const verify = () => {
+      win.querySelector('.dumb-body').innerHTML = '✅ Verificado. Você é um botão.';
+      win.querySelector('.dumb-actions').innerHTML = '';
+      setTimeout(() => win.remove(), 1800);
+    };
+    win.querySelector('.dumb-actions button').addEventListener('click', verify);
+    win.querySelector('.dumb-x').addEventListener('click', () => win.remove());
+    setTimeout(() => win.remove(), 15000);
+  },
+  // Avaliação em que toda estrela é 5
+  () => {
+    const stars = Array.from({ length: 5 }, () => '<button type="button" class="dumb-star">☆</button>').join('');
+    const win = makeDumbWindow({
+      title: 'Avalie o botão',
+      body: `Quantas estrelas o botão merece?<div class="dumb-stars">${stars}</div>`,
+      buttons: [],
+    });
+    win.querySelectorAll('.dumb-star').forEach((st) =>
+      st.addEventListener('click', () => {
+        win.querySelectorAll('.dumb-star').forEach((x) => { x.textContent = '★'; });
+        win.querySelector('.dumb-body').insertAdjacentHTML('beforeend', '<div>Obrigado pelas suas 5 estrelas!</div>');
+        setTimeout(() => win.remove(), 1600);
+      })
+    );
+    win.querySelector('.dumb-x').addEventListener('click', () => win.remove());
+    setTimeout(() => win.remove(), 13000);
+  },
+  // Newsletter de botões
+  () => {
+    const win = makeDumbWindow({
+      title: '📬 Newsletter Semanal',
+      body: 'Receba <strong>novidades sobre botões</strong> toda semana. Já são 0 assinantes!<input class="dumb-input" type="text" placeholder="seu@email.com.botao" />',
+      buttons: ['Assinar', 'Não, eu não gosto de economizar'],
+    });
+    const close = () => win.remove();
+    win.querySelectorAll('button').forEach((b) => b.addEventListener('click', close));
+    setTimeout(close, 14000);
+  },
+  // Bateria do mouse
+  () => {
+    const t = document.createElement('div');
+    t.className = 'dumb-toast';
+    t.textContent = `🔋 Bateria do mouse em ${1 + Math.floor(Math.random() * 4)}%. Clique com moderação.`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 6500);
+  },
+  // Notificação sobre a notificação
+  () => {
+    const t = document.createElement('button');
+    t.type = 'button';
+    t.className = 'dumb-toast';
+    t.textContent = '🔔 Você tem 1 nova notificação.';
+    t.addEventListener('click', () => {
+      t.textContent = '🔔 Notificação: você leu 1 notificação.';
+      setTimeout(() => t.remove(), 2200);
+    });
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 9000);
+  },
+];
+
+function spawnDumbEvent() {
+  if (dumbOnScreen()) return;
+  DUMB_EVENTS[Math.floor(Math.random() * DUMB_EVENTS.length)]();
+}
+
 function spawnRandomScreenEvent() {
   if (currentStage !== 'mundane_clicker' && currentStage !== 'awakened_clicker') return;
   if (document.querySelector('.screen-fly, .mystery-box-floater, .survey-popup')) return;
+
+  // Metade das vezes vem uma chatice nova (janelinhas inúteis)
+  if (Math.random() < 0.5 && !dumbOnScreen()) {
+    spawnDumbEvent();
+    return;
+  }
 
   const roll = Math.random();
 
@@ -650,6 +835,7 @@ function resetFaviconAndTitle(title = 'Início') {
 
 function clearTimers() {
   if (fakeProgressTimer) { clearInterval(fakeProgressTimer); fakeProgressTimer = null; }
+  document.querySelectorAll('.dumb-window, .dumb-toast').forEach((el) => el.remove());
   if (passiveTickTimer) { clearInterval(passiveTickTimer); passiveTickTimer = null; }
   if (achievementTimer) { clearInterval(achievementTimer); achievementTimer = null; }
   if (randomEventTimer) { clearInterval(randomEventTimer); randomEventTimer = null; }
@@ -1024,22 +1210,34 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     document.getElementById('terms-backdrop')?.remove();
   });
 
-  // Barra de progresso que trava em 99% e zera
+  // Barra de progresso que trava em 99%, DÁ ERRO (janelinha feia) e só então volta pro 0
   if (currentUpgrades.includes('fake_progress')) {
     let pct = 15;
     let stuckTicks = 0;
+    let erroring = false;
     fakeProgressTimer = setInterval(() => {
       const fill = document.getElementById('fake-progress-fill');
       const lbl = document.getElementById('fake-progress-pct');
-      if (!fill || !lbl) return;
+      if (!fill || !lbl || erroring) return;
 
       if (pct < 99) {
         pct = Math.min(99, pct + Math.floor(Math.random() * 9) + 3);
       } else {
         stuckTicks += 1;
-        if (stuckTicks >= 6) {
-          pct = 0;
-          stuckTicks = 0;
+        if (stuckTicks >= 4) {
+          erroring = true;
+          fill.classList.add('fake-progress-error');
+          lbl.textContent = 'ERRO';
+          showFakeSyncError(() => {
+            pct = 0;
+            stuckTicks = 0;
+            erroring = false;
+            const f = document.getElementById('fake-progress-fill');
+            const l = document.getElementById('fake-progress-pct');
+            if (f) { f.classList.remove('fake-progress-error'); f.style.width = '0%'; }
+            if (l) l.textContent = '0%';
+          });
+          return;
         }
       }
       fill.style.width = `${pct}%`;
@@ -1935,7 +2133,7 @@ const INTERACTIVE_SELECTOR = [
   '[role="button"]', '[tabindex]', '[draggable="true"]', '[contenteditable]',
   '[data-obj-id]', '[data-inv-id]', '[data-pick-item]', '[data-goto]', '[data-dev]', '[data-book-pick]',
   '.box-button', '.shop-item', '.temp-hitbox', '.derpy-sun', '.screen-fly', '.mystery-box-floater',
-  '.survey-popup', '.dev-panel', '.cave-obj-btn', '.annoying-cookie-bar', '.terms-modal', '.sl-loading', '.lb-overlay',
+  '.survey-popup', '.dumb-window', '.dumb-toast', '.dev-panel', '.cave-obj-btn', '.annoying-cookie-bar', '.terms-modal', '.sl-loading', '.lb-overlay',
   '.hijack-box', '.operator-feed',
 ].join(', ');
 
