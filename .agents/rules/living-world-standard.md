@@ -46,8 +46,8 @@ Sempre que criar ou editar **QUALQUER** tela, capítulo, livro ou minigame, cump
 - A **mão azul** nasce no *hover* do `Recarregar` depois que ele fala pela 1ª vez e fica de vez (`body.blue-hand-on` → `.awakened-cursors`). Mãos vermelhas (`op-*.png`) só onde existe `.awakened-cursors`.
 - Cursor temático novo (conto, mundo) só dentro do próprio modo (`story-mode-N`), nunca vazando pra outra tela.
 
-## 9. Todo `Recarregar` Passa Pelo Loading Estilo *Superliminal*
-- Qualquer botão de recarregar/tentar de novo (erro falso, despertar, futuros) chama `reloadWithSuperliminal()` ou `showSuperliminalLoading()`: formas impossíveis girando, dica absurda que muda, barra que volta e percentual torto, **2–4 s** e segue o fluxo original.
+## 9. Todo `Recarregar` Passa Pela Barra de Loading Ruim
+- Qualquer botão de recarregar/tentar de novo (erro falso, despertar, futuros) chama `reloadWithSuperliminal()` ou `showSuperliminalLoading()`. Na tela aparece **só uma barra** feia (blocos estilo Windows antigo), sem texto, sem formas, sem percentual. Cada carregamento tem um defeito diferente (`LB_ORDER`: normal ruim → quebra e se conserta → transborda → fora de ordem → desiste e volta → treme → congela; depois sorteia entre as com defeito), mas **sempre termina** e o fluxo segue. Variação nova entra em `LB_ORDER`, nunca em texto ou enfeite.
 - Dicas novas vão em `SL_TIPS_MUTE` (neutras, sem `log`, sem spoiler) ou `SL_TIPS_AWAKE`. Nunca escreva a voz do `log` numa dica.
 
 ## 10. Rotas Secretas no Caminho da URL (`naoclique.net/<algo>`)

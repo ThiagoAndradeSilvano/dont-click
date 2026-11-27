@@ -1546,7 +1546,7 @@ function renderFakeBrowserCrash({
   const reloadBtn = document.getElementById('fake-reload-btn');
 
   if (!awakening) {
-    // Todo Recarregar passa pela tela de carregamento escrota estilo Superliminal (mouse ainda normal aqui)
+    // Todo Recarregar passa pela barra de carregamento ruim (mouse ainda normal aqui)
     reloadBtn?.addEventListener('click', () => {
       reloadBtn.disabled = true;
       reloadWithSuperliminal({ awake: false });
@@ -1693,7 +1693,7 @@ async function runAwakeningSequence(_totalClicks, _ownedUpgrades, _minutesPlayed
       document.body.classList.add('blue-hand-on');
       const [data] = await Promise.all([
         apiPost('/api/enter-awakened'),
-        showSuperliminalLoading({ blueCursor: true, awake: true }),
+        showSuperliminalLoading({ blueCursor: true }),
       ]);
       if (data && data.stage === 'awakened_clicker') {
         renderClickerScreen(data, { justAwakened: true });
@@ -1927,7 +1927,7 @@ const INTERACTIVE_SELECTOR = [
   '[role="button"]', '[tabindex]', '[draggable="true"]', '[contenteditable]',
   '[data-obj-id]', '[data-inv-id]', '[data-pick-item]', '[data-goto]', '[data-dev]', '[data-book-pick]',
   '.box-button', '.shop-item', '.temp-hitbox', '.derpy-sun', '.screen-fly', '.mystery-box-floater',
-  '.survey-popup', '.dev-panel', '.cave-obj-btn', '.annoying-cookie-bar', '.terms-modal', '.sl-loading',
+  '.survey-popup', '.dev-panel', '.cave-obj-btn', '.annoying-cookie-bar', '.terms-modal', '.sl-loading', '.lb-overlay',
   '.hijack-box', '.operator-feed',
 ].join(', ');
 
@@ -2062,134 +2062,98 @@ function setupPsychologicalTraps() {
 }
 
 // ============================================================================
-// TELA DE CARREGAMENTO ESTILO SUPERLIMINAL (toda vez que clica em Recarregar!)
-// Formas impossíveis girando, dica absurda que muda, barra que volta e percentual torto.
+// TELA DE CARREGAMENTO: SÓ UMA BARRA, BEM RUIM (toda vez que clica em Recarregar!)
+// Cada carregamento tem um defeito diferente, mas a barra SEMPRE termina.
+// 1º: barra feia normal | 2º: quebra e se conserta | depois: outras anomalias.
 // ============================================================================
-const SL_TIPS_MUTE = [
-  'perspectiva é tudo. inclusive o tamanho desta barra.',
-  'dica: o botão é do tamanho que você acha que ele é.',
-  'objetos podem estar mais longe do que parecem. botões também.',
-  'carregando paredes que não existem...',
-  'reposicionando o horizonte 3 cm para a esquerda.',
-  'medindo a sua paciência em milímetros...',
-  'dica: recarregar é uma forma de esperança.',
-  'o cubo não está girando. é você.',
-  'esta tela de carregamento nunca é igual. confira.',
-  'dica: contar nos dedos também conta.',
-  'aquecendo pombos...',
-  'desamassando pixels...',
-];
+const LB_BLOCKS = 20;
+const LB_ORDER = ['plain', 'crack', 'overflow', 'shuffle', 'regret', 'jitter', 'freeze'];
+let lbMemoryCount = 0;
 
-const SL_TIPS_AWAKE = [
-  'dica: nem todo botão quer ser apertado.',
-  'dica: se algo parecer errado, provavelmente foi de propósito.',
-  'ninguém nunca terminou de carregar. só pararam de olhar.',
-  'dica: recarregar não apaga o que você fez.',
-  'o servidor está de humor razoável hoje. não abuse.',
-  'abaixando o volume do teclado de alguém...',
-  'calibrando o tamanho da sua mão...',
-  'dica: a saída costuma estar mais embaixo do que parece.',
-  'o cubo não está girando. é você.',
-  'carregando paredes que não existem...',
-];
-
-const SL_SHAPES = ['cube', 'tall', 'flat', 'penrose', 'necker'];
-const SL_WEIRD_PCT = ['104%', 'π%', '-12%', '99,99%', '???%', '∞%', '3%', '50,5%'];
-
-const SL_PENROSE_SVG = `
-  <svg class="sl-svg" viewBox="0 0 120 110" aria-hidden="true">
-    <g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round">
-      <path d="M60 6 L114 100 L6 100 Z"/>
-      <path d="M60 30 L93 88 L27 88 Z"/>
-      <path d="M60 6 L60 30 M114 100 L93 88 M6 100 L27 88"/>
-      <path d="M48 27 L84 88 M100 88 L40 88 M37 76 L66 24"/>
-    </g>
-  </svg>`;
-
-const SL_NECKER_SVG = `
-  <svg class="sl-svg" viewBox="0 0 120 120" aria-hidden="true">
-    <g fill="none" stroke="currentColor" stroke-width="3">
-      <rect x="14" y="34" width="62" height="62"/>
-      <rect x="44" y="14" width="62" height="62"/>
-      <path d="M14 34 L44 14 M76 34 L106 14 M14 96 L44 76 M76 96 L106 76"/>
-    </g>
-  </svg>`;
-
-function slShapeHtml(shape) {
-  if (shape === 'penrose') return SL_PENROSE_SVG;
-  if (shape === 'necker') return SL_NECKER_SVG;
-  return `<div class="sl-cube sl-${shape}">${'<div class="sl-face"></div>'.repeat(6)}</div>`;
+function nextLoadBarVariant() {
+  let n = lbMemoryCount;
+  try {
+    n = Number(localStorage.getItem('nc_loadbar_n') || 0);
+    localStorage.setItem('nc_loadbar_n', String(n + 1));
+  } catch {
+    lbMemoryCount += 1;
+  }
+  if (n < LB_ORDER.length) return LB_ORDER[n];
+  return LB_ORDER[1 + Math.floor(Math.random() * (LB_ORDER.length - 1))];
 }
 
+const lbWait = (ms) => new Promise((r) => setTimeout(r, ms));
+
 let slActive = false;
-function showSuperliminalLoading({ durationMs = null, blueCursor = false, awake = false, fadeOut = true } = {}) {
-  return new Promise((resolve) => {
+function showSuperliminalLoading({ blueCursor = false, fadeOut = true, variant = null } = {}) {
+  return new Promise(async (resolve) => {
     document.getElementById('sl-loading')?.remove();
     slActive = true;
-    const total = durationMs || 2400 + Math.random() * 1500;
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const kind = variant || nextLoadBarVariant();
 
     const ov = document.createElement('div');
     ov.id = 'sl-loading';
-    ov.className = `sl-loading ${blueCursor ? 'sl-blue' : ''} ${Math.random() < 0.5 ? 'sl-invert' : ''}`;
-    ov.innerHTML = `
-      <div class="sl-stage"><div class="sl-object" id="sl-obj">${slShapeHtml(pick(SL_SHAPES))}</div></div>
-      <div class="sl-bottom">
-        <div class="sl-tip" id="sl-tip"></div>
-        <div class="sl-bar"><div class="sl-fill" id="sl-fill"></div></div>
-        <div class="sl-pct" id="sl-pct">0%</div>
-      </div>
-    `;
+    ov.className = `lb-overlay lb-${kind} ${blueCursor ? 'sl-blue' : ''}`;
+    ov.innerHTML = `<div class="lb-bar" id="lb-bar">${'<i class="lb-block"></i>'.repeat(LB_BLOCKS)}</div>`;
     document.body.appendChild(ov);
+    const bar = ov.querySelector('#lb-bar');
+    const blocks = [...ov.querySelectorAll('.lb-block')];
+    const on = (i) => blocks[i] && blocks[i].classList.add('on');
+    const off = (i) => blocks[i] && blocks[i].classList.remove('on');
+    const jerk = () => 40 + Math.random() * 160 + (Math.random() < 0.15 ? 380 : 0);
 
-    const tipEl = ov.querySelector('#sl-tip');
-    const fill = ov.querySelector('#sl-fill');
-    const pctEl = ov.querySelector('#sl-pct');
-    const obj = ov.querySelector('#sl-obj');
-    const tips = [...(awake ? SL_TIPS_AWAKE : SL_TIPS_MUTE)].sort(() => Math.random() - 0.5);
-    let ti = 0;
-    let pct = 0;
-    let step = 0;
+    if (kind === 'plain') {
+      for (let i = 0; i < LB_BLOCKS - 1; i++) { on(i); await lbWait(jerk()); }
+      await lbWait(900); // trava no 99% como todo carregamento ruim
+      on(LB_BLOCKS - 1);
+    } else if (kind === 'crack') {
+      for (let i = 0; i < 12; i++) { on(i); await lbWait(jerk()); }
+      bar.classList.add('lb-broken'); // um pedaço despenca torto
+      await lbWait(500);
+      for (let i = 12; i < LB_BLOCKS; i++) { on(i); await lbWait(jerk() + 40); }
+      await lbWait(350);
+      bar.classList.remove('lb-broken');
+      bar.classList.add('lb-snap'); // volta no tranco
+      await lbWait(260);
+    } else if (kind === 'overflow') {
+      for (let i = 0; i < LB_BLOCKS; i++) { on(i); await lbWait(jerk() * 0.7); }
+      for (let k = 0; k < 6; k++) { // continua carregando pra fora da caixa
+        const extra = document.createElement('i');
+        extra.className = 'lb-block on lb-extra';
+        bar.appendChild(extra);
+        await lbWait(120);
+      }
+      await lbWait(450);
+      bar.querySelectorAll('.lb-extra').forEach((e) => e.remove());
+    } else if (kind === 'shuffle') {
+      const order = [...blocks.keys()].sort(() => Math.random() - 0.5);
+      for (const i of order) { on(i); await lbWait(jerk() * 0.8); }
+    } else if (kind === 'regret') {
+      for (let i = 0; i < 16; i++) { on(i); await lbWait(jerk() * 0.8); }
+      await lbWait(400);
+      for (let i = 15; i >= 6; i--) { off(i); await lbWait(70); } // desistiu
+      await lbWait(500);
+      for (let i = 6; i < LB_BLOCKS; i++) { on(i); await lbWait(45); }
+    } else if (kind === 'jitter') {
+      bar.classList.add('lb-shake');
+      for (let i = 0; i < LB_BLOCKS; i++) {
+        on(i);
+        if (Math.random() < 0.35 && i > 2) { off(i - 2); await lbWait(60); on(i - 2); }
+        await lbWait(jerk());
+      }
+      bar.classList.remove('lb-shake');
+    } else { // freeze
+      for (let i = 0; i < 7; i++) { on(i); await lbWait(jerk()); }
+      await lbWait(1500); // morreu?
+      blocks.forEach((_, i) => on(i)); // não, só tava pensando
+      await lbWait(150);
+    }
 
-    const showTip = () => {
-      tipEl.style.opacity = '0';
-      setTimeout(() => {
-        tipEl.textContent = tips[ti++ % tips.length];
-        tipEl.style.opacity = '1';
-      }, 180);
-    };
-    showTip();
-    ov.style.setProperty('--sl-persp', `${220 + Math.random() * 700}px`);
-
-    const iv = setInterval(() => {
-      step += 1;
-      if (step % 3 === 0) showTip();
-      // A barra às vezes volta (é de propósito)
-      pct = Math.random() < 0.2 ? Math.max(0, pct - 14) : Math.min(97, pct + 7 + Math.random() * 16);
-      fill.style.width = `${pct}%`;
-      pctEl.textContent = Math.random() < 0.22 ? pick(SL_WEIRD_PCT) : `${Math.round(pct)}%`;
-      if (Math.random() < 0.3) obj.innerHTML = slShapeHtml(pick(SL_SHAPES));
-      if (Math.random() < 0.12) ov.classList.toggle('sl-invert');
-      ov.style.setProperty('--sl-persp', `${220 + Math.random() * 700}px`);
-    }, 380);
-
-    setTimeout(() => {
-      clearInterval(iv);
-      fill.style.width = '100%';
-      pctEl.textContent = '100%';
-      setTimeout(() => {
-        if (!fadeOut) {
-          resolve();
-          return;
-        }
-        ov.classList.add('sl-out');
-        setTimeout(() => {
-          ov.remove();
-          slActive = false;
-          resolve();
-        }, 280);
-      }, 220);
-    }, total);
+    await lbWait(220);
+    if (!fadeOut) { resolve(); return; }
+    ov.remove();
+    slActive = false;
+    resolve();
   });
 }
 
@@ -4393,8 +4357,8 @@ const DEV_TREE = [
       ['reset', '🔄 Resetar tudo do zero'],
       ['add_points_big', '💎 +500.000 pts (clicker)'],
       ['spawn_event', '🪰 Evento aleatório (clicker)'],
-      ['fx_loading', '🌀 Loading Superliminal (mudo)'],
-      ['fx_loading_blue', '🌀 Loading Superliminal (mão azul)'],
+      ['fx_loading', '▭ Barra de loading (próxima variação)'],
+      ['fx_loading_blue', '▭ Barra de loading (mão azul)'],
       ['fx_wild', '🖱️ Simular cliques no vazio'],
       ['fx_tab', '🏷️ Simular troca de aba (volta)'],
     ],
@@ -4504,7 +4468,7 @@ function mountDevTestPanel() {
       }
       if (action === 'fx_loading' || action === 'fx_loading_blue') {
         const blue = action === 'fx_loading_blue';
-        showSuperliminalLoading({ blueCursor: blue, awake: blue });
+        showSuperliminalLoading({ blueCursor: blue });
         return;
       }
       if (action === 'fx_wild') {

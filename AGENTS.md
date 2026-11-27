@@ -69,7 +69,7 @@ O coração do jogo inteiro é **o cara que fala pela tag `log` (e `[log]:` no c
 4. **Cursores Personalizados (`client/public/cursors/`):**
    - **Mouse normal do sistema até o despertar.** A Mãozinha Azul do jogador (`user-blue.png`) nasce no *hover* do `Recarregar` depois que ele fala (Página 4) e fica de vez (`body.blue-hand-on` → `.awakened-cursors`). Mãos Vermelhas reativas do `log` (`op-point.png`, `op-stop.png`, `op-middle.png`, `op-thumb.png`, `op-chill.png`, `op-hd.png` via `flashCursorMood`) e cursores temáticos dedicados dos 6 Contos (`cursor_1.png` a `cursor_6.png` em 40x40px).
 5. **Motor de Jogo Vivo (`setupPsychologicalTraps`):** cliques no vazio (`isBlankClickTarget`), `Ctrl+A`, botão direito, `F12`/`Ctrl+U`, troca de aba e título da aba que "respira" com o tempo em TODOS os capítulos. Antes do despertar: só reações mudas (aba `...`, conquista besta no clicker). Depois: falas de `/api/behavior` (`BEHAVIOR_POOLS` por zona, escalando por repetição) alternando com `react_teimoso`/`react_risada`.
-6. **Loading estilo *Superliminal* (`showSuperliminalLoading` / `reloadWithSuperliminal`):** todo `Recarregar` mostra 2–4 s de formas impossíveis girando, dicas absurdas que trocam, barra que volta e percentual torto (`SL_TIPS_MUTE` / `SL_TIPS_AWAKE`).
+6. **Barra de loading ruim (`showSuperliminalLoading` / `reloadWithSuperliminal`):** todo `Recarregar` mostra só uma barra feia que sempre termina; a cada vez um defeito diferente (`LB_ORDER` em `main.js`). Nada de texto, formas ou percentual na tela.
 
 ---
 
