@@ -181,6 +181,88 @@ function ensureCaveEchoChain(ctx) {
   return echoDelayNode;
 }
 
+// MOTOR DE VOZ HUMANA DO `log` (ElevenLabs + Estalo de Microfone + Eco Acústico Automático na Caverna!)
+let activeVoiceAudio = null;
+let isVoiceSpeakingNow = false;
+
+function stopOperatorVoice() {
+  if (activeVoiceAudio) {
+    try {
+      activeVoiceAudio.pause();
+      activeVoiceAudio.currentTime = 0;
+    } catch {}
+    activeVoiceAudio = null;
+  }
+  isVoiceSpeakingNow = false;
+}
+
+function playMicClick() {
+  try {
+    const ctx = ensureAudio();
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.025), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / 140);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    g.gain.value = 0.16;
+    src.connect(g);
+    g.connect(ctx.destination);
+    src.start();
+  } catch {}
+}
+
+function playOperatorVoiceClip(voiceUrl, { onBlocked = null } = {}) {
+  stopOperatorVoice();
+  if (!voiceUrl) return null;
+
+  try {
+    const ctx = ensureAudio();
+    const isStoryMode = document.body?.className?.includes('story-mode-');
+    const inCave = currentStage === 'cave_2d' || currentStage === 'cave_escaped' || isStoryMode;
+
+    const audio = new Audio(voiceUrl);
+    audio.preload = 'auto';
+    activeVoiceAudio = audio;
+
+    // Conecta a voz no WebAudio para aplicar eco cavernoso real quando estiver na Caverna/Contos!
+    try {
+      const mediaSrc = ctx.createMediaElementSource(audio);
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = 1.0;
+      mediaSrc.connect(dryGain);
+      dryGain.connect(ctx.destination);
+
+      if (inCave) {
+        const echoSend = ctx.createGain();
+        echoSend.gain.value = 0.34;
+        mediaSrc.connect(echoSend);
+        echoSend.connect(ensureCaveEchoChain(ctx));
+      }
+    } catch {}
+
+    playMicClick();
+    isVoiceSpeakingNow = true;
+
+    audio.addEventListener('ended', () => {
+      if (activeVoiceAudio === audio) {
+        isVoiceSpeakingNow = false;
+        activeVoiceAudio = null;
+      }
+    });
+
+    audio.play().catch(() => {
+      isVoiceSpeakingNow = false;
+      if (onBlocked) onBlocked(audio);
+    });
+
+    return audio;
+  } catch {
+    isVoiceSpeakingNow = false;
+    return null;
+  }
+}
+
 function playOperatorTypeKey(ch = 'a') {
   if (ch === ' ' || ch === '\n') return;
   try {
@@ -192,12 +274,13 @@ function playOperatorTypeKey(ch = 'a') {
     const gain = ctx.createGain();
     osc.type = inCave ? 'sine' : 'triangle';
 
-    // Leve variação de frequência por tecla pra soar como teclado mecânico real!
+    // Leve variação de frequência por tecla (fica bem baixinho quando a voz dele está falando no mic!)
     const pitch = (inCave ? 620 : 760) + ((ch.charCodeAt(0) * 19) % 220);
     osc.frequency.setValueAtTime(pitch, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(190, ctx.currentTime + 0.028);
 
-    gain.gain.setValueAtTime(inCave ? 0.075 : 0.05, ctx.currentTime);
+    const baseVol = inCave ? 0.075 : 0.05;
+    gain.gain.setValueAtTime(isVoiceSpeakingNow ? baseVol * 0.22 : baseVol, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
 
     osc.connect(gain);
@@ -1377,7 +1460,7 @@ async function humanTypeSequence(container, steps) {
   cursor.remove();
 }
 
-async function runAwakeningSequence(_totalClicks, ownedUpgrades, _minutesPlayed, reloadBtn) {
+async function runAwakeningSequence(_totalClicks, _ownedUpgrades, _minutesPlayed, reloadBtn) {
   await sleep(1700);
 
   const errCode = document.getElementById('err-code');
@@ -1385,39 +1468,45 @@ async function runAwakeningSequence(_totalClicks, ownedUpgrades, _minutesPlayed,
   const slot = document.getElementById('hijack-slot');
   const detailsPanel = document.getElementById('fake-details-panel');
 
-  if (errCode) errCode.textContent = 'ERR_BACKUP_O_CARALHO';
+  if (errCode) errCode.textContent = 'ERR_JA_DEU_PORRA';
   if (hints) hints.style.display = 'none';
   if (detailsPanel) {
-    detailsPanel.innerHTML = `<p>backup em nuvem de cu é rola irmão. fui eu que travei a requisição.</p>`;
+    detailsPanel.innerHTML = `<p>fui eu que derrubei essa merda aqui pra ver se vc acorda pra vida.</p>`;
   }
-
-  const boughtBits = ['bloquinho de encaixar de bebê'];
-  if (ownedUpgrades.includes('kids_theme')) boughtBits.push('papel de parede de maternal');
-  if (ownedUpgrades.includes('cookie_banner')) boughtBits.push('aviso de cookie que trava a própria tela');
-  if (ownedUpgrades.includes('fake_progress')) boughtBits.push('barra que nunca sai do 99%');
 
   const box = document.createElement('div');
   box.className = 'hijack-box';
   slot.appendChild(box);
 
+  // Dispara a voz real do Operador sincronizada milimetricamente com os timestamps de 00:00 a 00:26!
+  playOperatorVoiceClip('/voices/log_awakening.mp3', {
+    onBlocked: (audioEl) => {
+      // Caso a pessoa tenha acabado de dar F5 direto na tela de erro sem clique prévio no navegador:
+      const unlockOnce = () => {
+        ensureAudio();
+        audioEl.play().then(() => { isVoiceSpeakingNow = true; }).catch(() => {});
+        window.removeEventListener('pointerdown', unlockOnce);
+      };
+      window.addEventListener('pointerdown', unlockOnce, { once: true });
+    },
+  });
+
   await humanTypeSequence(box, [
-    { text: 'pera aí mano' },
-    { pause: 1400 },
-    { text: '... "backup em nuvem"? vc quer salvar na nuvem a porra de uns pombos e ventilador amarrado em mouse?' },
-    { pause: 1800 },
-    { text: `\n\no site deu erro 3 vezes, teve ${boughtBits.join(', ')}... e vc real ficou aí clicando igual seu lunáti` },
-    { pause: 400 },
-    { backspace: 10 },
-    { pause: 500 },
-    { text: 'campeão?' },
-    { pause: 2000 },
-    { text: '\n\nquer saber, faltam só 3 porqueiras naquela lista de melhorias. clica logo nessa merda de recarregar aí embaixo, compra os 3 que faltam e vaza daqui.' },
+    { pause: 950 }, // [00:00 - 00:01] suspiro real no microfone ("fff...")
+    { text: 'mano... deixa eu te perguntar um negócio namoral...', speed: 46 },
+    { pause: 450 },
+    { text: '\n\ncê passou esse tempo todo da tua vida apertando a porra de um botão pra comprar pombo treinado e ventilador amarrado no mouse?', speed: 44 },
+    { pause: 950 }, // [00:12] risadinha sarcástica ("heheh...")
+    { text: '\n\nbicho, eu botei até bloquinho de encaixar de criança de dois anos na tua cara pra ver se cê se tocava e ia embora.', speed: 43 },
+    { pause: 420 },
+    { text: '\n\nquer saber? faltam só 3 porqueiras nessa lista aí. aperta logo em recarregar, compra o resto e vê se me deixa em paz.', speed: 44 },
   ]);
 
   if (reloadBtn) {
     reloadBtn.disabled = false;
     reloadBtn.classList.add('ready-pulse');
     reloadBtn.addEventListener('click', async () => {
+      stopOperatorVoice();
       reloadBtn.disabled = true;
       const data = await apiPost('/api/enter-awakened');
       if (data && data.stage === 'awakened_clicker') {
@@ -1442,7 +1531,7 @@ let lastAmbientAt = 0;
  * - 'action'  -> Resposta direta a algo que o jogador fez (comprar, mexer na temp, girar válvula, busca). Entra na fila!
  * - 'ambient' -> Comentário passivo de clique/ociosidade. Ignorado se já tiver fala rolando ou fila cheia (zero spam!).
  */
-function setOperatorRemark(textOrArray, { delayBefore = 220, priority = 'action', force = false } = {}) {
+function setOperatorRemark(textOrArray, { delayBefore = 220, priority = 'action', force = false, voiceUrl = null } = {}) {
   if (!textOrArray) return;
   const effPriority = force ? 'urgent' : priority;
   const items = Array.isArray(textOrArray) ? textOrArray.filter(Boolean) : [textOrArray];
@@ -1458,10 +1547,9 @@ function setOperatorRemark(textOrArray, { delayBefore = 220, priority = 'action'
   if (effPriority === 'urgent') {
     remarkQueue.length = 0;
     remarkTypingId += 1; // Cancela imediatamente a digitação atual pra dar lugar à urgência!
+    if (voiceUrl) stopOperatorVoice();
     isProcessingQueue = false;
   } else if (effPriority === 'action') {
-    // Se tiver mais de 2 falas velhas acumuladas, enxuga pra não atrasar a resposta da ação nova,
-    // e se a fala atual já terminou de digitar e está só esperando pausa, pula pro próximo!
     while (remarkQueue.length >= 2) {
       remarkQueue.shift();
     }
@@ -1470,6 +1558,7 @@ function setOperatorRemark(textOrArray, { delayBefore = 220, priority = 'action'
   items.forEach((txt, idx) => {
     remarkQueue.push({
       text: txt,
+      voiceUrl: idx === 0 ? voiceUrl : null,
       delayBefore: idx === 0 ? delayBefore : 180,
       holdAfterMs: items.length > 1 && idx < items.length - 1 ? 950 : 650,
     });
@@ -1500,6 +1589,10 @@ async function processRemarkQueue() {
 
     if (current.delayBefore > 0) await sleep(current.delayBefore);
     if (myId !== remarkTypingId) return; // interrompido por 'urgent'
+
+    if (current.voiceUrl) {
+      playOperatorVoiceClip(current.voiceUrl);
+    }
 
     const span = document.createElement('span');
     el.insertBefore(span, cursor);
