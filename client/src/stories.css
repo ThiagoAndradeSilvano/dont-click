@@ -1442,3 +1442,321 @@ body.story-mode-1 {
   background: #422006;
   transform: translateY(-1px);
 }
+
+/* ==========================================================================
+   CONTO 2 COMPLETO — REINO DOS BASTIDORES DE PAPELÃO (RPG POINT & CLICK!)
+   ========================================================================== */
+body.story-mode-2 {
+  background: radial-gradient(circle at 50% 20%, #4a102a 0%, #1f0612 100%);
+  color: #fce7f3;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  cursor: url('/cursors/cursor_2.png') 4 4, pointer;
+  overflow-x: hidden;
+}
+
+.s2-shell {
+  width: min(1140px, 97vw);
+  padding: 10px 14px 18px;
+  gap: 10px;
+}
+
+.s2-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.s2-map-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: center;
+}
+
+.s2-map-btn {
+  background: #2b0b1a;
+  color: #f9a8d4;
+  border: 2px solid #831843;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: monospace;
+  font-size: 11.5px;
+  font-weight: bold;
+  cursor: inherit;
+  transition: transform 0.12s, background 0.15s;
+}
+.s2-map-btn.active {
+  background: #db2777;
+  color: #fff;
+  border-color: #fde047;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+}
+.s2-map-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.s2-wallet {
+  background: #2b0b1a;
+  color: #fde047;
+  border: 2px solid #ca8a04;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: monospace;
+  font-size: 12.5px;
+  font-weight: bold;
+}
+
+.s2-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 310px;
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 920px) {
+  .s2-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.s2-stage-panel {
+  background: #2a0d1b;
+  border: 3px solid #9d174d;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+}
+
+.s2-room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #1a0610;
+  border: 1.5px solid #831843;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fbcfe8;
+}
+
+.s2-scene-canvas {
+  border: 3px solid #500724;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #14050c;
+}
+
+.s2-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 245px;
+}
+
+.s2-hotspots-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.s2-spot-btn {
+  background: #500724;
+  color: #fce7f3;
+  border: 2px solid #ec4899;
+  border-bottom-width: 4px;
+  border-radius: 9px;
+  padding: 9px 13px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: bold;
+  cursor: inherit;
+  transition: transform 0.1s, background 0.15s;
+}
+.s2-spot-btn:hover:not(:disabled) {
+  background: #831843;
+  transform: translateY(-1px);
+}
+.s2-spot-btn:disabled {
+  opacity: 0.45;
+  border-color: #6b7280;
+  cursor: not-allowed;
+}
+
+.s2-quiz-box {
+  background: #1a0610;
+  border: 2px solid #db2777;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.s2-quiz-q {
+  font-size: 13.5px;
+  font-weight: bold;
+  color: #fde68a;
+  margin-bottom: 10px;
+  line-height: 1.45;
+}
+.s2-quiz-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.s2-quiz-btn {
+  text-align: left;
+  background: #3b0d23;
+  color: #fce7f3;
+  border: 1.5px solid #be185d;
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: inherit;
+}
+.s2-quiz-btn:hover {
+  background: #701a43;
+  border-color: #f472b6;
+}
+
+.s2-doc-callout {
+  background: #fdf2f8;
+  color: #500724;
+  border: 2px dashed #db2777;
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.s2-dl-big {
+  display: inline-block;
+  margin-top: 7px;
+  background: #e11d48;
+  color: #fff;
+  border: 2px solid #fde047;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.s2-side-inv {
+  background: #220815;
+  border: 3px solid #831843;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.s2-inv-hdr {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: bold;
+  color: #fde047;
+  border-bottom: 1px solid #831843;
+  padding-bottom: 6px;
+}
+
+.s2-inv-hint {
+  font-size: 11.5px;
+  color: #f9a8d4;
+  line-height: 1.35;
+}
+
+.s2-inv-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.s2-inv-empty {
+  font-size: 12px;
+  opacity: 0.65;
+  padding: 16px 6px;
+  text-align: center;
+}
+
+.s2-inv-card {
+  background: #380e22;
+  border: 2px solid #831843;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.s2-inv-card.selected {
+  background: #701a43;
+  border-color: #fde047;
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.35);
+}
+
+.s2-inv-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.s2-inv-equip-tag {
+  font-family: monospace;
+  font-size: 10px;
+  background: #1a0610;
+  color: #fde047;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.s2-inv-card-desc {
+  font-size: 11px;
+  color: #fbcfe8;
+  opacity: 0.9;
+  line-height: 1.35;
+}
+
+.s2-dl-mini {
+  display: inline-block;
+  margin-top: 5px;
+  background: #09090b;
+  color: #fde047;
+  border: 1px solid #f43f5e;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: monospace;
+  font-size: 10.5px;
+  text-decoration: none;
+}
+
+.s2-clue-tracker {
+  background: #15040c;
+  border: 1.5px dashed #be185d;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #fbcfe8;
+}
+.s2-clue-hdr {
+  font-weight: bold;
+  color: #fde047;
+  margin-bottom: 4px;
+}

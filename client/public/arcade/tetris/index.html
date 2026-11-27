@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tetris</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="outer-board">
+    <div id="board">
+      <div id="banner">
+        <div>
+          <div id="message"></div>
+          <div id="new-game">Clique para iniciar!</div>
+        </div>
+      </div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+      <div class="empty"><div class="inner-tile"><div class="inner-inner-tile"></div></div></div>
+    </div>
+    <div id="stats">
+      <div class="labels">Pontos<div id="score" class="frame">0</div></div>
+      <button class="btn btn-rounded" id="left">◀</button>
+      <button class="btn btn-rounded" id="right">▶</button>
+      <button class="btn btn-rounded" id="rotate">↻</button>
+      <button class="btn btn-rounded" id="down">▼</button>
+    </div>
+  </div>
+  <script src="./script.js"></script>
+</body>
+</html>

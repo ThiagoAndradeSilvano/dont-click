@@ -39,11 +39,35 @@ export const BOOKS_META = {
     id: 'book_2',
     storyId: '2',
     title: 'A Princesa de Plástico',
-    subtitle: 'Livro II // Conto de Fadas',
+    subtitle: 'Livro II // Bastidores de Papelão',
     themeClass: 'book-theme-pink',
-    prologue: 'Um roteirista preguiçoso trancou uma princesa no topo de uma torre de papelão só para cumprir cota de conto de fadas. O reino inteiro está em greve esperando o próximo idiota ir resgatá-la.',
-    summary: 'Você enfrentou um cavalo sindicalizado, entrevista de RH, dragão com rinite, elevador de serviço e entregou açaí para a princesa.',
-    riddle: '"Esqueça a Disney. Na obra original francesa de 1697 achada no Ato 4 (La Belle au bois dormant), some os ANOS que a princesa dormiu com a IDADE exata do autor quando publicou o livro, e multiplique pelo número de fadas BOAS convidadas para o batizado."',
+    prologuePages: [
+      {
+        heading: 'Capítulo I — O Reino que Entrou em Greve',
+        text: 'Por gerações, os figurantes do Vale Cor-de-Rosa repetiram o mesmo teatrinho: o bardo cantava, o cavalo galopava, o dragão cuspia fogo e a princesa suspirava no alto da torre.',
+      },
+      {
+        heading: 'Capítulo II — A Farsa de Papelão',
+        text: 'Até o dia em que os bastidores ruíram. O corcel abriu dissidência sindical, um troll de RH montou pedágio corporativo na ponte levadiça, o dragão desenvolveu rinite crônica ao pó do cenário e a princesa virou influenciadora viciada em açaí.',
+      },
+      {
+        heading: 'Capítulo III — O Negativo Esquecido Atrás do Cenário',
+        text: 'Dizem que, escondido na câmara escura atrás das torres de papelão, repousa um negativo fotográfico negro que aponta para a verdadeira e sombria origem do conto — muito antes de Paris e de Hollywood.',
+      },
+    ],
+    prologue: 'Um reino cenográfico em greve geral: atravesse 7 cenários interativos, use os itens do seu alforje e não deixe de investigar a câmara escura nos bastidores.',
+    summary: 'Você superou os 7 cenários do Reino de Plástico — do sindicato equino e do RH do Troll até o dragão asmático, os disjuntores 220V e a cobertura da Princesa.',
+    recordedClues: [
+      '• Folha de 1697 (Bastidores): Sete fadas boas convidadas ao batizado.',
+      '• Placa na Coleira do Dragão: SÉRIE #0x2F.',
+      '• Evidência Fotográfica: Negativo Subexposto #02 (baixe abaixo para inspecionar fora do navegador).',
+    ],
+    evidenceDownload: {
+      url: '/story2/negativo_torre_02.png',
+      filename: 'negativo_torre_02.png',
+      label: '⬇ Baixar Evidência: negativo_torre_02.png',
+    },
+    riddle: '"Nem sempre os olhos enxergam o que dorme na escuridão de uma fotografia — e nem toda imagem guarda apenas pixels. Baixe o Negativo #02 da página ao lado: revele o que está escondido na penumbra e leia o que foi gravado nas entranhas brutas do próprio arquivo."',
   },
   book_3: {
     id: 'book_3',
@@ -107,11 +131,24 @@ export function openBookReaderModal(
   document.getElementById('book-reader-modal')?.remove();
   const isSolved = Array.isArray(caveState.booksSolved) && caveState.booksSolved.includes(bookId);
 
+  const evidenceBtnHtml = meta.evidenceDownload
+    ? `
+      <div style="margin-top:8px;">
+        <a
+          href="${meta.evidenceDownload.url}"
+          download="${meta.evidenceDownload.filename}"
+          style="display:inline-block; background:#18181b; color:#fde047; border:1.5px solid #fbbf24; border-radius:5px; padding:6px 11px; font-family:monospace; font-size:11.5px; font-weight:bold; text-decoration:none;"
+        >${meta.evidenceDownload.label}</a>
+      </div>
+    `
+    : '';
+
   const cluesHtml = Array.isArray(meta.recordedClues) && meta.recordedClues.length > 0
     ? `
       <div style="background:rgba(0,0,0,0.08); border:1.5px dashed rgba(0,0,0,0.35); border-radius:6px; padding:10px 12px; font-family:monospace; font-size:12px; line-height:1.55;">
         <div style="font-weight:bold; margin-bottom:4px; text-transform:uppercase; font-size:11px; opacity:0.85;">📌 Pistas Registradas na História:</div>
         ${meta.recordedClues.map((c) => `<div>${c}</div>`).join('')}
+        ${evidenceBtnHtml}
       </div>
     `
     : '';
