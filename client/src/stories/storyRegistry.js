@@ -276,36 +276,42 @@ export function launchStory(storyId, ctx) {
     <img class="story-portal-book" id="portal-book-img" src="/cave/book_${storyId}_closed.png" alt="" />
     <div class="story-portal-title">${meta?.title || ''}</div>
     <p class="story-portal-prologue">${meta?.prologue || ''}</p>
+    <button type="button" class="story-portal-enter-btn" id="portal-open-btn">📖 Abrir o Livro</button>
   `;
   document.body.appendChild(overlay);
 
   requestAnimationFrame(() => overlay.classList.add('active'));
 
-  // 1. Mostra o livro FECHADO + prólogo por 2.2s para o jogador ler a história de entrada!
-  setTimeout(() => {
+  let started = false;
+  const openAndEnter = () => {
+    if (started) return;
+    started = true;
+    const btn = document.getElementById('portal-open-btn');
+    if (btn) btn.style.visibility = 'hidden';
+
     const img = document.getElementById('portal-book-img');
     if (img) {
       img.src = `/cave/book_${storyId}_open.png`;
       img.classList.add('opened');
     }
     if (ctx.playBeep) ctx.playBeep();
-  }, 2200);
 
-  // 2. Depois de aberto e brilhando (1.3s), o livro suga o jogador para dentro das páginas!
-  setTimeout(() => {
-    const img = document.getElementById('portal-book-img');
-    img?.classList.add('entering');
+    // Fica aberto brilhando e suga o jogador para dentro das páginas!
+    setTimeout(() => {
+      img?.classList.add('entering');
+      runner({
+        app,
+        ...ctx,
+        finishStory: async () => {
+          const res = await ctx.apiPost('/api/cave/complete-story', { storyId: String(storyId) });
+          const updatedCave = res?.caveState || ctx.caveState;
+          ctx.returnToCave(updatedCave, { justEarnedBook: `book_${storyId}`, remark: res?.remark });
+        },
+      });
+      overlay.classList.add('suck-in');
+      setTimeout(() => overlay.remove(), 680);
+    }, 1050);
+  };
 
-    runner({
-      app,
-      ...ctx,
-      finishStory: async () => {
-        const res = await ctx.apiPost('/api/cave/complete-story', { storyId: String(storyId) });
-        const updatedCave = res?.caveState || ctx.caveState;
-        ctx.returnToCave(updatedCave, { justEarnedBook: `book_${storyId}`, remark: res?.remark });
-      },
-    });
-    overlay.classList.add('suck-in');
-    setTimeout(() => overlay.remove(), 680);
-  }, 3600);
+  document.getElementById('portal-open-btn')?.addEventListener('click', openAndEnter);
 }

@@ -360,3 +360,23 @@ body.story-mode-6 {
   text-transform: uppercase;
   letter-spacing: 2px;
 }
+
+.story-portal-enter-btn {
+  margin-top: 10px;
+  padding: 11px 22px;
+  background: #27272a;
+  color: #fde68a;
+  border: 2px solid #fbbf24;
+  border-bottom-width: 4px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.story-portal-enter-btn:hover {
+  background: #422006;
+  transform: translateY(-1px);
+}
