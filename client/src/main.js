@@ -547,7 +547,8 @@ const DUMB_MAX_ON_SCREEN = 14;
 
 function makeDumbWindow({ title, body, buttons, className = '' }) {
   const open = document.querySelectorAll('.dumb-window');
-  if (open.length >= DUMB_MAX_ON_SCREEN) open[0].remove();
+  // A mais velha some, mas nunca o erro da barra (ela fica esperando o OK dele)
+  if (open.length >= DUMB_MAX_ON_SCREEN) document.querySelector('.dumb-window:not(.dumb-sync-error)')?.remove();
   const win = document.createElement('div');
   win.className = `dumb-window ${className}`;
   win.style.left = `${6 + Math.random() * 52}vw`;
@@ -1239,7 +1240,19 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     fakeProgressTimer = setInterval(() => {
       const fill = document.getElementById('fake-progress-fill');
       const lbl = document.getElementById('fake-progress-pct');
-      if (!fill || !lbl || erroring) return;
+      if (!fill || !lbl) return;
+      if (erroring) {
+        // Se a janela de erro sumiu sem passar pelo OK, não deixa a barra presa em ERRO pra sempre
+        if (!document.querySelector('.dumb-sync-error')) {
+          erroring = false;
+          pct = 0;
+          fakeProgressPctMemo = 0;
+          stuckTicks = 0;
+          fill.classList.remove('fake-progress-error');
+        } else {
+          return;
+        }
+      }
 
       if (pct < 99) {
         // Devagar e aos trancos: às vezes nem anda
