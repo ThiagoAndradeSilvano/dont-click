@@ -156,7 +156,7 @@ export function runStory2Princesa({
       id: 'negativo_02',
       icon: '🎞️',
       name: 'Negativo Escuro #02',
-      desc: 'Chapa subexposta. Baixe o .PNG para clarear o brilho E abrir no Bloco de Notas!',
+      desc: 'Chapa subexposta, quase toda preta. Ninguém pendura no varal uma foto que não tem nada... ou tem?',
     },
   };
 
@@ -262,7 +262,7 @@ export function runStory2Princesa({
     if (!isAlive || expected !== scrollSeq || !logText) return;
     await new Promise((r) => setTimeout(r, 550));
     if (!isAlive || expected !== scrollSeq) return;
-    setOperatorRemark(logText, { priority });
+    setOperatorRemark(logText, { priority, key: true });
   }
 
   // ---- RETRATOS RECORTADOS DE PAPELÃO (Híbrido: carrega `/story2/chars/{id}_{mood}.png` se existir + SVG Rico Ilustrado!) ----
@@ -447,7 +447,7 @@ export function runStory2Princesa({
         const active = st.room === r.id;
         return `
           <button type="button" class="s2-map-btn ${active ? 'active' : ''}" data-goto="${r.id}" ${unlocked ? '' : 'disabled'}>
-            ${unlocked ? r.icon : '🔒'} ${r.short}
+            <span class="s2-map-ico">${unlocked ? r.icon : '🔒'}</span><span class="s2-map-lbl"> ${r.short}</span>
           </button>
         `;
       }).join('');
@@ -532,7 +532,7 @@ export function runStory2Princesa({
 
     if (room === 'tavern') {
       return `
-        <div class="s2-stage-room s2-bg-tavern" style="background-image:url('/story2/scenes/tavern.png');">
+        <div class="s2-stage-room s2-bg-tavern" style="--s2-scene:url('/story2/scenes/tavern.webp');">
           ${hangingClouds}
           <div class="s2-cardboard-sign">🍺 TAVERNA &amp; AÇAITERIA DO REI</div>
 
@@ -557,7 +557,7 @@ export function runStory2Princesa({
 
     if (room === 'stable') {
       return `
-        <div class="s2-stage-room s2-bg-stable" style="background-image:url('/story2/scenes/stable.png');">
+        <div class="s2-stage-room s2-bg-stable" style="--s2-scene:url('/story2/scenes/stable.webp');">
           ${hangingClouds}
           <div class="s2-cardboard-sign warn">⚠️ SINDICATO DOS CORCÉIS — GREVE POR TEMPO INDETERMINADO</div>
 
@@ -575,7 +575,7 @@ export function runStory2Princesa({
 
     if (room === 'bridge') {
       return `
-        <div class="s2-stage-room s2-bg-bridge" style="background-image:url('/story2/scenes/bridge.png');">
+        <div class="s2-stage-room s2-bg-bridge" style="--s2-scene:url('/story2/scenes/bridge.webp');">
           ${hangingClouds}
           <div class="s2-cardboard-sign">💼 POSTO DE TRIAGEM — PEOPLE &amp; CULTURA</div>
           <div class="s2-actor-hitbox" id="s2-actor-slot" data-actor="troll" data-stage-act="troll" style="left:38%; bottom:6px;" title="Troll Sênior de RH">
@@ -587,7 +587,7 @@ export function runStory2Princesa({
 
     if (room === 'backstage') {
       return `
-        <div class="s2-stage-room s2-bg-backstage" style="background-image:url('/story2/scenes/backstage.png');">
+        <div class="s2-stage-room s2-bg-backstage" style="--s2-scene:url('/story2/scenes/backstage.webp');">
           <div class="s2-red-darkroom-lamp">🔴 LUZ DE REVELAÇÃO</div>
 
           <button type="button" class="s2-stage-prop" data-stage-act="meds" style="left:14%; bottom:24px;">
@@ -610,7 +610,7 @@ export function runStory2Princesa({
 
     if (room === 'dragon') {
       return `
-        <div class="s2-stage-room s2-bg-dragon" style="background-image:url('/story2/scenes/dragon.png');">
+        <div class="s2-stage-room s2-bg-dragon" style="--s2-scene:url('/story2/scenes/dragon.webp');">
           <button type="button" class="s2-stage-prop" data-stage-act="curtain" style="left:10%; top:38px;" ${st.curtainOpened ? 'disabled' : ''}>
             <span class="s2-prop-emoji">${st.curtainOpened ? '🪟' : ' drapes' ? '🧱' : '🪟'}</span>
             <span class="s2-prop-tag">${st.curtainOpened ? 'Janela Aberta ✓' : 'Cortina Empoada'}</span>
@@ -632,7 +632,7 @@ export function runStory2Princesa({
       const volts = [110, 45, 75, 35];
       const curSum = st.breakers.reduce((acc, on, idx) => acc + (on ? volts[idx] : 0), 0);
       return `
-        <div class="s2-stage-room s2-bg-elevator" style="background-image:url('/story2/scenes/elevator.png');">
+        <div class="s2-stage-room s2-bg-elevator" style="--s2-scene:url('/story2/scenes/elevator.webp');">
           <div class="s2-cardboard-sign">${curSum === 220 ? '⚡ 220V ESTABILIZADO!' : `⚡ PAINEL AUXILIAR: ${curSum}V (META: 220V)`}</div>
 
           <div class="s2-breakers-box">
@@ -658,7 +658,7 @@ export function runStory2Princesa({
 
     // penthouse
     return `
-      <div class="s2-stage-room s2-bg-penthouse" style="background-image:url('/story2/scenes/penthouse.png');">
+      <div class="s2-stage-room s2-bg-penthouse" style="--s2-scene:url('/story2/scenes/penthouse.webp');">
         <div class="s2-cardboard-sign">👑 COBERTURA REAL // GRAVANDO STORIES AO VIVO</div>
 
         <div class="s2-ringlight-prop" style="left:16%; bottom:18px;">💡</div>
@@ -692,7 +692,7 @@ export function runStory2Princesa({
         showStageBubble('Bardo', 'Ei! Essa gorjeta de 25 moedas era minha... ah, tanto faz, nem recebo comissão.', 'angry');
         narratorThenLog(
           'Debaixo do caneco virado havia +25 moedas esquecidas pelo último figurante!',
-          'saqueando gorjeta de figurante mal pago na cara dura kkkkk agora dá pra comprar a cenoura e o açaí.',
+          null,
           'action'
         );
         renderRoom(false);
@@ -707,7 +707,7 @@ export function runStory2Princesa({
       showStageBubble('Bardo', 'O Corcel ali fora exige acordo assinado + cenoura. E a Princesa só abre a porta se levar Açaí!', 'normal');
       narratorThenLog(
         'O Bardo afina o alaúde colado com fita crepe e aponta para a saída do Estábulo.',
-        'até num teatro vagabundo de papelão o cavalo tem sindicato e eu trancado aqui trabalhando de graça.',
+        null,
         'action'
       );
       return;
@@ -741,7 +741,7 @@ export function runStory2Princesa({
       showStageBubble('Bardo', 'Caprichei no Leite Ninho! Não deixa entornar na escada.', 'happy');
       narratorThenLog(
         'Você guardou o Açaí 500ml no Alforje.',
-        'quarenta e cinco moedas num copo de isopor roxo. inflação medieval tá voando hein.',
+        null,
         'action'
       );
       renderRoom(false);
@@ -757,7 +757,7 @@ export function runStory2Princesa({
       showStageBubble('Bardo', 'Cuidado pra não quebrar a ponta do 30cm, herói!', 'happy');
       narratorThenLog(
         'Você comprou a Espada Faber 30cm pintada de prata.',
-        'gastou 15 moedas numa régua escolar mano. parabéns pelo investimento bélico.',
+        null,
         'action'
       );
       renderRoom(false);
@@ -775,7 +775,7 @@ export function runStory2Princesa({
         showStageBubble('Corcel', 'Achou a minuta do Acordo aí? Equipa ela na mão e traz aqui pra eu carimbar o casco!', 'normal');
         narratorThenLog(
           'No alforje da cerca havia um Acordo de Hora-Galope e +15 moedas!',
-          'boa, pegou o contrato do sindicato e mais uns trocados. clica no contrato ali na direita pra equipar na mão e clica no cavalo!',
+          null,
           'action'
         );
         renderRoom(false);
@@ -810,7 +810,6 @@ export function runStory2Princesa({
       if (st.selectedItem === 'regua') {
         playToyFanfare(false);
         showStageBubble('Corcel', 'Tá me ameaçando com material escolar, patrão?! Vou chamar o ministério!', 'angry');
-        setOperatorRemark('tentou intimidar o cavalo sindicalizado com uma régua acrílica kkkkk', { priority: 'action' });
         return;
       }
       if (st.horseSigned && st.horseFed) {
@@ -819,7 +818,7 @@ export function runStory2Princesa({
         playToyFanfare(true);
         narratorThenLog(
           'POCOTÓ! O Corcel te leva em trote sindicalizado até a Ponte Levadiça de RH!',
-          'passamos pelo piquete equino... e demos de cara com um recrutador do linkedin na ponte.',
+          null,
           'urgent'
         );
         renderRoom(true);
@@ -852,7 +851,7 @@ export function runStory2Princesa({
         playToyFanfare(true);
         narratorThenLog(
           'Você pegou Lenços Anti-Pó e o Descongestionante Dracônico na maleta médica!',
-          'kit rinite garantido. não sai dessa sala sem olhar a folha de 1697 e o negativo pendurado no varal vermelho!',
+          null,
           'action'
         );
         renderRoom(false);
@@ -879,7 +878,7 @@ export function runStory2Princesa({
       }
       narratorThenLog(
         'Você guardou a página francesa de 1697 no Alforje (repare no rabisco "/1697" na margem!).',
-        'sete fadas boas em 1697... e alguém rabiscou um caminho de url ali no canto da folha. guarda isso!',
+        null,
         'action'
       );
       return;
@@ -908,7 +907,7 @@ export function runStory2Princesa({
       }
       narratorThenLog(
         'Você recolheu a chapa escura negativo_torre_02.png do varal de revelação!',
-        'mano... baixa esse arquivo .png pro teu pc. joga o brilho lá no talo no paint e depois abre ele como texto no bloco de notas!',
+        'pera... isso aí não é cenário de papelão não. é um arquivo de verdade. quem pendura um .png num varal dentro de um livro??',
         'urgent'
       );
       return;
@@ -922,7 +921,7 @@ export function runStory2Princesa({
       showStageBubble('Dragão', '*SNIF*... ufa, entrou um ventinho fresco na masmorra!', 'normal');
       narratorThenLog(
         'Você abriu a cortina mofada! Metade da nuvem de poeira saiu pela janela.',
-        'boa! agora equipa o lenço na mochila e clica no dragão pra zerar o resto da poeira antes do remédio!',
+        null,
         'action'
       );
       renderRoom(false);
@@ -950,7 +949,6 @@ export function runStory2Princesa({
         if (st.dustLevel > 0) {
           playSneezeBurst();
           showStageBubble('Dragão', 'ATCHIMMM!! Com essa poeira toda no ar eu espirro o remédio longe!!', 'angry');
-          setOperatorRemark('zera a poeira primeiro (cortina + lenço), senão ele espirra tudo na tua cara!', { priority: 'action' });
           return;
         }
         st.dragonAllergy = 0;
@@ -961,7 +959,7 @@ export function runStory2Princesa({
         showStageBubble('Dragão', 'SNIFFFF... ahhh, respirando em HD! Vou tirar um cochilo... Zzz...', 'happy');
         narratorThenLog(
           'O Dragão apagou num sono sereno, liberando a passagem para a Casa de Máquinas!',
-          'nocaute nasal perfeito kkkkk confere a coleira de latão no pescoço dele antes de avançar!',
+          null,
           'urgent'
         );
         renderRoom(false);
@@ -999,7 +997,7 @@ export function runStory2Princesa({
       }
       narratorThenLog(
         'Na coleira de latão está gravado em hexadecimal: LOTE #0x2F e Tensão 220V.',
-        'código hexadecimal 0x2F gravado na coleira... guarda esse número pra conta final do livro!',
+        null,
         'action'
       );
       return;
@@ -1039,7 +1037,7 @@ export function runStory2Princesa({
       playToyFanfare(true);
       narratorThenLog(
         'DING! Portas do elevador destravadas para a Cobertura Real!',
-        'subindo pro último andar dessa arapuca cor-de-rosa!',
+        null,
         'action'
       );
       renderRoom(false);
@@ -1067,7 +1065,7 @@ export function runStory2Princesa({
       showStageBubble('Princesa', 'Até que enfim! Não vou casar com entregador PJ, mas pode levar aquele Livro II brega ali do pufe!', 'happy');
       narratorThenLog(
         'A Princesa pega o Açaí, volta pros stories e libera o Livro II sobre o pufe!',
-        'mano kkkkkkk essa jornada épica inteira foi literalmente um frete do ifood sem gorjeta!! clica no Livro II ali no palco e vamo cair fora!',
+        'mano kkkkkkk a jornada épica inteira era um frete de açaí sem gorjeta. pega esse livro e vamo vazar.',
         'urgent'
       );
       renderRoom(false);
@@ -1173,7 +1171,7 @@ export function runStory2Princesa({
                 showStageBubble('Troll de RH', 'UAU, arrepiei! Match cultural de 100%! Toma teu Crachá PJ!', 'happy');
                 narratorThenLog(
                   'Aprovado! Você recebeu o Crachá "Herói PJ" e liberou os Bastidores e o Covil do Dragão!',
-                  'vendeu a alma pro corporativo direitinho hein kkkkk passa nos Bastidores primeiro pra pegar as paradas!',
+                  null,
                   'urgent'
                 );
               } else {
@@ -1275,15 +1273,29 @@ export function runStory2Princesa({
   fetch('/voices/story2_entrada.mp3', { method: 'HEAD' })
     .then((r) => r.ok && (r.headers.get('content-type') || '').includes('audio'))
     .catch(() => false)
-    .then((hasVoice) => {
+    .then(async (hasVoice) => {
       if (!isAlive) return;
-      sayNarrator('As cortinas se abrem no Reino de Compensado! Clique diretamente nos personagens e objetos no palco (ou use o Alforje à direita).');
-      setTimeout(() => {
+      // Regra: o narrador do conto termina primeiro, ~650ms de respiro, e só então o `log` mete o bedelho
+      await sayNarrator('As cortinas se abrem no Reino de Compensado! Clique diretamente nos personagens e objetos no palco (ou use o Alforje à direita).');
+      await new Promise((r) => setTimeout(r, 650));
+      {
         if (!isAlive) return;
         if (hasVoice) {
+          // Cravado no envelope real do story2_entrada.mp3 (7.16s): 0.06 "puta merda" → 0.80 "agora é" → 1.46 "teatrinho..." → 4.68 "vê se..."
           setOperatorRemark('puta merda, agora é teatrinho de papelão colado com fita crepe?! vê se não demora nessa bosta rosa, mano.', {
             priority: 'urgent',
+            delayBefore: 120,
             voiceUrl: '/voices/story2_entrada.mp3',
+            steps: [
+              { pause: 60 },
+              { text: 'puta merda, ', durationMs: 580 },
+              { pause: 160 },
+              { text: 'agora é ', durationMs: 420 },
+              { pause: 240 },
+              { text: 'teatrinho de papelão colado com fita crepe?! ', durationMs: 2740 },
+              { pause: 480 },
+              { text: 'vê se não demora nessa bosta rosa, mano.', durationMs: 2020 },
+            ],
           });
         } else {
           setOperatorRemark(
@@ -1291,6 +1303,6 @@ export function runStory2Princesa({
             { priority: 'urgent' }
           );
         }
-      }, 600);
+      }
     });
 }

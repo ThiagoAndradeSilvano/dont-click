@@ -167,20 +167,25 @@ const TEIMOSO_VOICE_POOL = [
   {
     text: 'mano, namoral... tu tem algum problema com seguir instrução simples?',
     voiceUrl: '/voices/react_teimoso_2.mp3',
-    optional: true,
+    // Cravado no envelope real do mp3 (5.41s): suspiro 0.16 → "mano" 0.94 → "namoral" 1.48 → frase 2.54–5.24
     steps: [
-      { text: 'mano, namoral... ', durationMs: 1400 },
-      { pause: 150 },
-      { text: 'tu tem algum problema com seguir instrução simples?', durationMs: 2650 },
+      { pause: 900 },
+      { text: 'mano, ', durationMs: 300 },
+      { pause: 280 },
+      { text: 'namoral... ', durationMs: 600 },
+      { pause: 460 },
+      { text: 'tu tem algum problema com seguir instrução simples?', durationMs: 2700 },
     ],
   },
   {
     text: 'eu falo "não mexe" e o dedo do infeliz já vai seco lá clicar, impressionante.',
     voiceUrl: '/voices/react_teimoso_3.mp3',
-    optional: true,
+    // Envelope real (5.49s): frase 0.08–4.02 → "impressionante" 4.50–5.32
     steps: [
-      { text: 'eu falo "não mexe" e o dedo do infeliz já vai seco lá clicar, ', durationMs: 3100 },
-      { text: 'impressionante.', durationMs: 1100 },
+      { pause: 80 },
+      { text: 'eu falo "não mexe" e o dedo do infeliz já vai seco lá clicar, ', durationMs: 3940 },
+      { pause: 480 },
+      { text: 'impressionante.', durationMs: 820 },
     ],
   },
   {
@@ -1285,7 +1290,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
           } else {
             document.body.classList.toggle('warm-warning', finalTemp >= 45);
             tempSlot.innerHTML = `<span class="temp-editable-num" id="temp-display">${finalTemp}</span>`;
-            if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 120, priority: 'action' });
+            if (res?.remark) setOperatorRemark(res.remark, { delayBefore: 120, priority: 'action', key: true });
           }
         };
 
@@ -1454,7 +1459,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
     } else if (res.mode === 'awakened') {
       if (resultEl) resultEl.textContent = '';
       if (res.mood) flashCursorMood(res.mood, 2500);
-      if (res.remark) setOperatorRemark(res.remark, { delayBefore: 120, force: isOverheatedLocal });
+      if (res.remark) setOperatorRemark(res.remark, { delayBefore: 120, force: isOverheatedLocal, key: true });
     }
   });
 
@@ -1463,7 +1468,7 @@ function renderClickerScreen(state, { justAwakened = false, newlyBought = null }
       const missingCount = 16 - currentUpgrades.length;
       setOperatorRemark(
         `pronto. vc já deu ${state.totalClicks} cliques até aqui, pega logo os ${missingCount} upgrades que faltam aí do lado e some da minha frente`,
-        { delayBefore: 700 }
+        { delayBefore: 700, key: true }
       );
     } else if (!newlyBought) {
       if (state.allOwned) {
@@ -2045,16 +2050,27 @@ async function runAwakeningSequence(_totalClicks, _ownedUpgrades, _minutesPlayed
 const remarkQueue = [];
 let isProcessingQueue = false;
 let lastAmbientAt = 0;
+let lastRemarkEndedAt = 0;
+
+// "Ele só fala o principal": comentário miúdo precisa de silêncio antes. Quem fala demais vira ruído.
+const LOG_MINOR_GAP_MS = 22000;
+const LOG_AMBIENT_GAP_MS = 30000;
+
+function isLogBusy() {
+  return isProcessingQueue || remarkQueue.length > 0 || isVoiceSpeakingNow;
+}
 
 /*
  * priority:
- * - 'urgent'  -> Limpa a fila secundária e corta na hora (ex: incêndio / quebra de lâmpada)
- * - 'action'  -> Resposta direta a algo que o jogador fez (comprar, mexer na temp, girar válvula, busca). Entra na fila!
- * - 'ambient' -> Comentário passivo de clique/ociosidade. Ignorado se já tiver fala rolando ou fila cheia (zero spam!).
+ * - 'urgent'  -> Limpa a fila secundária e corta na hora (ex: incêndio / quebra de lâmpada / entrada de capítulo)
+ * - 'action'  -> Resposta a algo que o jogador fez. SEM `key: true` (e sem voz) é comentário miúdo:
+ *               só sai se ele estiver calado há LOG_MINOR_GAP_MS. Com `key: true` é fala principal (sempre entra na fila).
+ *               Use `key` só pra resposta que o jogador PRECISA (senha errada, enigma, pista) ou batida de história.
+ * - 'ambient' -> Comentário passivo de clique/ociosidade. Ignorado se tiver fala rolando ou se ele falou há pouco.
  */
 function setOperatorRemark(
   textOrArray,
-  { delayBefore = 220, priority = 'action', force = false, voiceUrl = null, steps = null } = {}
+  { delayBefore = 220, priority = 'action', force = false, voiceUrl = null, steps = null, key = false, fitToAudio = false } = {}
 ) {
   if (!textOrArray) return;
   const effPriority = force ? 'urgent' : priority;
@@ -2062,10 +2078,11 @@ function setOperatorRemark(
   if (items.length === 0) return;
 
   if (effPriority === 'ambient') {
-    if (isProcessingQueue || remarkQueue.length > 0 || isVoiceSpeakingNow || Date.now() - lastAmbientAt < 8000) {
-      return;
-    }
+    const since = Date.now() - Math.max(lastAmbientAt, lastRemarkEndedAt);
+    if (isLogBusy() || since < LOG_AMBIENT_GAP_MS) return;
     lastAmbientAt = Date.now();
+  } else if (effPriority === 'action' && !key && !voiceUrl) {
+    if (isLogBusy() || Date.now() - lastRemarkEndedAt < LOG_MINOR_GAP_MS) return;
   }
 
   if (effPriority === 'urgent') {
@@ -2084,6 +2101,7 @@ function setOperatorRemark(
       text: txt,
       voiceUrl: idx === 0 ? voiceUrl : null,
       steps: idx === 0 ? steps : null,
+      fitToAudio: idx === 0 ? fitToAudio : false,
       delayBefore: idx === 0 ? delayBefore : 180,
       holdAfterMs: items.length > 1 && idx < items.length - 1 ? 950 : 650,
     });
@@ -2092,6 +2110,29 @@ function setOperatorRemark(
   if (!isProcessingQueue) {
     processRemarkQueue();
   }
+}
+
+// Clipe novo do ElevenLabs que ainda não foi medido à mão: escala os `steps` pela duração real do áudio
+// (proporção mantida entre frases e pausas), pra letra nunca ficar pra trás nem correr na frente da voz.
+function waitAudioDuration(audio, timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    if (audio && Number.isFinite(audio.duration) && audio.duration > 0) return resolve(audio.duration);
+    const done = () => resolve(Number.isFinite(audio?.duration) && audio.duration > 0 ? audio.duration : null);
+    const t = setTimeout(done, timeoutMs);
+    audio?.addEventListener('loadedmetadata', () => { clearTimeout(t); done(); }, { once: true });
+  });
+}
+
+async function fitStepsToAudio(steps, audio) {
+  const dur = await waitAudioDuration(audio);
+  if (!dur) return steps;
+  const planned = steps.reduce((acc, st) => acc + (st.pause || st.durationMs || (st.text ? st.text.length * 36 : 0)), 0);
+  if (!planned) return steps;
+  const k = (dur * 1000 - 150) / planned;
+  if (k < 0.45 || k > 2.2) return steps; // áudio muito diferente do roteiro: não força
+  return steps.map((st) =>
+    st.pause ? { ...st, pause: st.pause * k } : st.text ? { ...st, durationMs: (st.durationMs || st.text.length * 36) * k } : st
+  );
 }
 
 async function processRemarkQueue() {
@@ -2115,8 +2156,13 @@ async function processRemarkQueue() {
     if (current.delayBefore > 0) await sleep(current.delayBefore);
     if (myId !== remarkTypingId) return; // interrompido por 'urgent'
 
+    let voiceEl = null;
     if (current.voiceUrl) {
-      playOperatorVoiceClip(current.voiceUrl);
+      voiceEl = playOperatorVoiceClip(current.voiceUrl);
+    }
+    if (voiceEl && current.fitToAudio && Array.isArray(current.steps)) {
+      current.steps = await fitStepsToAudio(current.steps, voiceEl);
+      if (myId !== remarkTypingId) return;
     }
 
     const span = document.createElement('span');
@@ -2153,6 +2199,7 @@ async function processRemarkQueue() {
       }
     }
 
+    lastRemarkEndedAt = Date.now();
     // Pausa rápida entre uma mensagem da fila e a próxima (pra dar tempo de ler sem travar!)
     await sleep(remarkQueue.length > 0 ? Math.min(current.holdAfterMs, 850) : 500);
     if (myId === remarkTypingId && remarkQueue.length === 0) {
@@ -2308,6 +2355,7 @@ function triggerWildClickReaction() {
 function setupPsychologicalTraps() {
   let lastMoveResetAt = 0;
   let hiddenBaseTitle = null;
+  let hiddenAt = 0;
 
   document.addEventListener('visibilitychange', () => {
     const key = getLivingStageKey() || (getMuteStageKey() === 'mute_clicker' ? 'mute_clicker' : null);
@@ -2315,6 +2363,7 @@ function setupPsychologicalTraps() {
     if (!key) return;
 
     if (document.hidden) {
+      hiddenAt = Date.now();
       cancelTabFlash();
       hiddenBaseTitle = document.title;
       document.title = HIDDEN_TAB_LINES[key];
@@ -2327,7 +2376,8 @@ function setupPsychologicalTraps() {
       showUselessAchievement('🏅 Conquista: Voltou para a Aba Certa');
       return;
     }
-    sendBehaviorRemark('tab_return', { force: true });
+    // Só vale comentário se o cara sumiu de verdade (alt-tab rápido não é assunto)
+    if (Date.now() - hiddenAt >= 20000) sendBehaviorRemark('tab_return', { force: true });
   });
 
   document.addEventListener('keydown', (e) => {
@@ -3031,30 +3081,26 @@ function renderSubsolo2DScreen(initialState = null) {
 
   setOperatorRemark(
     'COF COF COF... caralho que fumaceira... fica quieto aí no porão enquanto eu tento salvar essa merda aqui em cima!',
-    { delayBefore: 400 }
+    { delayBefore: 400, key: true }
   );
   resetIdleChillTimer();
 
+  // Transmissões lá de cima: poucas, espaçadas, e acabam (ele tá ocupado apagando incêndio, não narrando o teu porão)
   const upstairsLines = [
     'COF COF... caralho, quanto pó tem nesse extintor...',
     'a fonte explodiu e levou dois pentes de memória junto... desgraça.',
-    'ei, vc tá quieto aí embaixo né? nem inventa de mexer em nada enquanto eu limpo a fuligem aqui.',
-    'onde enfia esse conector azul... pq tem três fios desencapados saindo da parede?!',
     'se eu pegar o desgraçado que colocou 99 graus no termostato eu juro que desligo a máquina...',
-    'COF COF... desgraça de fumaça preta... não dá nem pra enxergar o monitor.',
-    'tô tentando religar a refrigeração de emergência... se der estalo aí embaixo nem esquenta.',
-    'ainda bem que aquele desocupado sumiu lá pro porão e parou de clicar, pelo menos silêncio nessa porra.',
     'peraí, cadê a porra da chave de fenda que tava aqui na mesa...',
     'vc tá quieto demais aí embaixo... deve tá mofando no escuro. melhor assim, pelo menos não enche o saco.',
   ];
   let lineIdx = 0;
   if (subsoloChatTimer) clearInterval(subsoloChatTimer);
   subsoloChatTimer = setInterval(() => {
-    if (currentStage !== 'subsolo_2d') return;
-    const line = upstairsLines[lineIdx % upstairsLines.length];
+    if (currentStage !== 'subsolo_2d' || lineIdx >= upstairsLines.length) return;
+    const line = upstairsLines[lineIdx];
     lineIdx++;
     setOperatorRemark(line, { priority: 'ambient' });
-  }, 38000);
+  }, 75000);
 
   const canvas = document.getElementById('subsolo-canvas');
   const ctx = canvas?.getContext('2d');
@@ -3178,7 +3224,7 @@ function renderSubsolo2DScreen(initialState = null) {
             if (res.errorType !== 'glare' && triggerRisadaVoiceReaction()) {
               // Tocou a risada irônica dele ao errar a senha!
             } else if (res.remark) {
-              setOperatorRemark(res.remark, { priority: 'action' });
+              setOperatorRemark(res.remark, { priority: 'action', key: true });
             }
             typed = '';
             isUnlocking = false;
@@ -3810,8 +3856,11 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
       </div>
     </div>
 
-    <div class="cave-inventory">
-      <img class="cave-backpack-icon" src="/cave/creepyBackpack.png" title="Mochila" alt="Mochila" />
+    <div class="cave-inventory" id="cave-inventory">
+      <button type="button" class="cave-backpack-btn" id="cave-backpack-toggle" title="Abrir/Recolher Mochila">
+        <img class="cave-backpack-icon" src="/cave/creepyBackpack.png" alt="Mochila" />
+        <span class="cave-backpack-badge" id="cave-backpack-badge">0</span>
+      </button>
       <div class="cave-inv-grid" id="cave-inv-grid"></div>
     </div>
 
@@ -3826,7 +3875,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
 
     <div class="cave-wasd-hint">
       <span>Mover: <span class="wasd-keycap">W</span><span class="wasd-keycap">A</span><span class="wasd-keycap">S</span><span class="wasd-keycap">D</span></span>
-      <span>Interagir na sala: <span class="wasd-keycap">E</span> ou <span class="wasd-keycap">Clique</span></span>
+      <span>Interagir: <span class="wasd-keycap">E</span> / <span class="wasd-keycap">Clique</span></span>
     </div>
   `;
 
@@ -3926,8 +3975,11 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
   function refreshInventoryUI() {
     const grid = document.getElementById('cave-inv-grid');
     if (!grid) return;
-    grid.innerHTML = state.inventory
-      .filter((id) => CAVE_INVENTORY_META[id])
+    const validItems = state.inventory.filter((id) => CAVE_INVENTORY_META[id]);
+    const badge = document.getElementById('cave-backpack-badge');
+    if (badge) badge.textContent = String(validItems.length);
+    grid.classList.toggle('compact-bag', validItems.length > 9);
+    grid.innerHTML = validItems
       .map((id) => {
         const m = CAVE_INVENTORY_META[id];
         const isBook = id.startsWith('book_');
@@ -3985,11 +4037,6 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
           }
         } else {
           itemVariations[id] = !itemVariations[id];
-          if (id === '0' && itemVariations[id]) {
-            setOperatorRemark('mandou pra dentro uma maçã velha que tava jogada no chão da mina msm?! coragem hein.', { priority: 'action' });
-          } else if (id === '15' && itemVariations[id]) {
-            setOperatorRemark('cuidado brincando com essa dinamite na mão mano!', { priority: 'action' });
-          }
           refreshInventoryUI();
         }
       });
@@ -4043,17 +4090,59 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
   let elevatorTargetRow = null;
   let activeLift = null; // [lr, lc]
 
-  function fitCaveStageToScreen() {
+  let caveCamScale = 1.15;
+  let caveCamX = 0;
+  let caveCamY = 0;
+  let caveCamInitialized = false;
+
+  function updateCaveCamera(instant = false, dt = 0.016) {
     const root = document.getElementById('cave-stage-root');
-    if (!root) return;
-    const availW = Math.max(320, window.innerWidth - 200);
-    const availH = Math.max(240, window.innerHeight - 155);
-    const scale = Math.min(availW / 1728, availH / 1344, 0.92);
-    const offsetX = window.innerWidth > 900 ? 72 : 0;
-    root.style.transform = `translate(calc(-50% + ${offsetX}px), -50%) scale(${scale})`;
+    const vp = document.getElementById('cave-viewport');
+    if (!root || !vp) return;
+
+    const frameW = Math.max(260, root.clientWidth);
+    const frameH = Math.max(200, root.clientHeight);
+    // Câmera responsiva acompanhando o personagem (~5.3 salas x ~1.35 andares na tela, sem encolher o mapa todo!)
+    caveCamScale = Math.max(0.85, Math.min(1.55, Math.min(frameW / 760, frameH / 448)));
+
+    const visW = frameW / caveCamScale;
+    const visH = frameH / caveCamScale;
+    const focusX = charX;
+    const focusY = Math.max(115, charY - 26);
+
+    const targetX = visW >= 1728
+      ? (1728 - visW) / 2
+      : Math.max(0, Math.min(1728 - visW, focusX - visW / 2));
+    const targetY = visH >= 1344
+      ? (1344 - visH) / 2
+      : Math.max(0, Math.min(1344 - visH, focusY - visH / 2));
+
+    if (instant || !caveCamInitialized) {
+      caveCamX = targetX;
+      caveCamY = targetY;
+      caveCamInitialized = true;
+    } else {
+      const alpha = Math.min(1, dt * 8.5);
+      caveCamX += (targetX - caveCamX) * alpha;
+      caveCamY += (targetY - caveCamY) * alpha;
+    }
+
+    const tx = -Math.round(caveCamX * caveCamScale);
+    const ty = -Math.round(caveCamY * caveCamScale);
+    vp.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${caveCamScale})`;
   }
-  fitCaveStageToScreen();
-  caveResizeHandler = fitCaveStageToScreen;
+
+  const invEl = document.getElementById('cave-inventory');
+  if (invEl && window.innerWidth <= 900) {
+    invEl.classList.add('bag-collapsed');
+  }
+  document.getElementById('cave-backpack-toggle')?.addEventListener('click', () => {
+    playCheapBeep();
+    invEl?.classList.toggle('bag-collapsed');
+    requestAnimationFrame(() => updateCaveCamera(true));
+  });
+
+  caveResizeHandler = () => updateCaveCamera(true);
   window.addEventListener('resize', caveResizeHandler);
 
   function getNearbyInteractable() {
@@ -4117,6 +4206,10 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
       plat.style.top = `${186 + offsetPx}px`;
       ropes.style.height = `${16 + offsetPx}px`;
     });
+
+    if (!caveCamInitialized) {
+      updateCaveCamera(true);
+    }
   }
 
   function isBlockedAt(r, c) {
@@ -4173,8 +4266,9 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
 
   async function syncCave(eventCode = null) {
     const res = await apiPost('/api/cave/sync', { caveState: state, eventCode });
+    // O servidor só devolve fala nas batidas principais da mina (detonador, bilhete, cadeado, saída)
     if (res?.remark) {
-      setOperatorRemark(res.remark, { priority: 'action' });
+      setOperatorRemark(res.remark, { priority: 'action', key: true });
     }
   }
 
@@ -4233,11 +4327,11 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         modal.remove();
         refreshObjectsVisuals();
         showSegmentBubble(state.row, state.col, 'Cadeado destrancado!');
-        if (res.remark) setOperatorRemark(res.remark, { priority: 'action' });
+        if (res.remark) setOperatorRemark(res.remark, { priority: 'action', key: true });
       } else {
         playErrorBuzzer();
         if (!triggerRisadaVoiceReaction()) {
-          if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+          if (res?.remark) setOperatorRemark(res.remark, { priority: 'action', key: true });
         }
       }
     });
@@ -4289,10 +4383,10 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     if (obj.kind === 'plunger') {
       state.plungerArmed = true;
       if (!state.cleared.includes('beam')) state.cleared.push('beam');
-      const vp = document.getElementById('cave-viewport');
-      vp?.classList.remove('shake-blast');
-      void vp?.offsetWidth;
-      vp?.classList.add('shake-blast');
+      const rootStage = document.getElementById('cave-stage-root');
+      rootStage?.classList.remove('shake-blast');
+      void rootStage?.offsetWidth;
+      rootStage?.classList.add('shake-blast');
       playCollapseRumble();
       refreshObjectsVisuals();
       showSegmentBubble(obj.row, obj.col, obj.msg);
@@ -4463,6 +4557,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         dropVy = 0;
       }
       updateViewportPosition(facingLeft, false);
+      updateCaveCamera(false, dt);
       caveRaf = requestAnimationFrame(caveTick);
       return;
     }
@@ -4480,6 +4575,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
         syncCave();
       }
       updateViewportPosition(facingLeft, false);
+      updateCaveCamera(false, dt);
       caveRaf = requestAnimationFrame(caveTick);
       return;
     }
@@ -4531,6 +4627,7 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
     }
 
     updateViewportPosition(facingLeft, isMoving);
+    updateCaveCamera(false, dt);
     caveRaf = requestAnimationFrame(caveTick);
   };
   caveRaf = requestAnimationFrame(caveTick);
@@ -4582,12 +4679,6 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
           });
         }
 
-        setTimeout(() => {
-          setOperatorRemark(
-            'QUE PORRA DE MUSIQUINHA DE FADA É ESSA?! "CAVERNA DOS CONTOS"?! QUEM ENFIOU ABERTURA DA DISNEY DEBAIXO DO MEU PORÃO?!',
-            { priority: 'urgent' }
-          );
-        }, 900);
 
         let closed = false;
         const closeIntro = () => {
@@ -4613,22 +4704,56 @@ function renderCaveChapterScreen(savedCave = null, { justFell = false, justEarne
       });
 
       state.introDone = true;
+      // A música de fada acaba (ou o jogador pula), um segundo de silêncio... e ele explode.
+      await sleep(650);
+      playCaveIntroReaction();
       await syncCave('intro_done');
       resetIdleChillTimer();
     })();
   } else {
     if (remark) {
       setOperatorRemark(remark, { delayBefore: 250, priority: 'urgent' });
-    } else {
-      setOperatorRemark(
-        'ainda nessa mina velha? usa WASD e vê se resolve logo antes que eu perca o resto da paciência.',
-        { delayBefore: 350 }
-      );
     }
     if (justEarnedBook) {
       setTimeout(() => openBookFromBag(justEarnedBook), 450);
     }
     resetIdleChillTimer();
+  }
+}
+
+// Primeira vez que ele perde o controle: ele NÃO fez aquela mina nem aquela abertura de fada.
+// Roteiro pro ElevenLabs no AGENTS.md (cave_intro_reacao.mp3). Steps estimados + fitToAudio cravam no áudio real.
+const CAVE_INTRO_REACTION = {
+  voiceUrl: '/voices/cave_intro_reacao.mp3',
+  text: 'QUE PORRA É ESSA?! musiquinha de fada?! "caverna dos contos"?! quem enfiou abertura da disney debaixo do meu porão, caralho?! ...pera. eu não fiz isso não, mano. eu não programei mina nenhuma aqui embaixo.',
+  steps: [
+    { text: 'QUE PORRA É ESSA?! ', durationMs: 1300 },
+    { pause: 250 },
+    { text: 'musiquinha de fada?! ', durationMs: 1100 },
+    { text: '"caverna dos contos"?! ', durationMs: 1200 },
+    { pause: 200 },
+    { text: 'quem enfiou abertura da disney debaixo do meu porão, caralho?! ', durationMs: 2900 },
+    { pause: 1300 },
+    { text: '...pera. ', durationMs: 700 },
+    { pause: 400 },
+    { text: 'eu não fiz isso não, mano. ', durationMs: 1400 },
+    { pause: 350 },
+    { text: 'eu não programei mina nenhuma aqui embaixo.', durationMs: 2200 },
+  ],
+  fallback: [
+    'QUE PORRA É ESSA?!',
+    'MUSIQUINHA DE FADA?! "CAVERNA DOS CONTOS"?! QUEM ENFIOU ABERTURA DA DISNEY DEBAIXO DO MEU PORÃO?!',
+    '...pera. eu não fiz isso não, mano. eu não programei mina nenhuma aqui embaixo.',
+  ],
+};
+
+async function playCaveIntroReaction() {
+  const r = CAVE_INTRO_REACTION;
+  flashCursorMood('stop', 3500);
+  if (await probeVoiceExists(r.voiceUrl)) {
+    setOperatorRemark(r.text, { priority: 'urgent', delayBefore: 80, voiceUrl: r.voiceUrl, steps: r.steps, fitToAudio: true });
+  } else {
+    setOperatorRemark(r.fallback, { priority: 'urgent', delayBefore: 80 });
   }
 }
 

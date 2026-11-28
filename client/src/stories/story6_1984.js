@@ -66,7 +66,7 @@ export function runStory61984({ app, setOperatorRemark, playBeep, finishStory, r
           setOperatorRemark('firewall derrubado. pega o sexto e último livro.', { priority: 'urgent' });
           await finishStory();
         } else {
-          setOperatorRemark('sintaxe errada, hacker de cinema. junta os três códigos com espaço.', { priority: 'action' });
+          setOperatorRemark('sintaxe errada, hacker de cinema. junta os três códigos com espaço.', { priority: 'action', key: true });
         }
       });
       return;
@@ -95,11 +95,11 @@ export function runStory61984({ app, setOperatorRemark, playBeep, finishStory, r
         const word = span.getAttribute('data-w');
         if (word === b.forbidden) {
           capturedCodes.push(b.hex);
-          setOperatorRemark(`censurado. código extraído: ${b.hex}`, { priority: 'action' });
+          setOperatorRemark(`censurado. código extraído: ${b.hex}`, { priority: 'action', key: true });
           idx += 1;
           renderBulletin();
         } else {
-          setOperatorRemark('isso é uma palavra comum, idiota. censura o termo subversivo.', { priority: 'action' });
+          setOperatorRemark('isso é uma palavra comum, idiota. censura o termo subversivo.', { priority: 'action', key: true });
         }
       });
     });

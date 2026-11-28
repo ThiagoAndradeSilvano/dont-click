@@ -19,5 +19,11 @@ Sempre que escrever qualquer diálogo, reação, erro ou chat do personagem **`l
    - Use sempre `setOperatorRemark` respeitando as prioridades `'urgent'`, `'action'` e `'ambient'` (nunca espame mensagens cortadas no clique rápido!).
    - Combine as falas dele com `flashCursorMood('middle' | 'stop' | 'thumb' | 'point' | 'chill')` usando as mãos vermelhas dele (`client/public/cursors/op-*.png`), e garanta sempre reações caso o jogador fique parado/inativo!
 
-4. **Sincronização Git entre Máquinas:**
+4. **Ele Só Fala o Principal (feedback direto do Thiago: "o log ta falando muito"):**
+   - Uma fala por batida de verdade (entrada de capítulo, descoberta grande, erro que importa, final). Nada de comentar item pego, compra, porta aberta, clique em objeto.
+   - Fala principal = `priority: 'urgent'` ou `'action'` com `key: true` (ou com voz). Comentário sem `key` passa pela trava de 22s de silêncio e geralmente some — é de propósito.
+   - Dentro dos Contos o narrador/NPC conta o rotineiro; o `log` só aparece quando algo tira ele do sério.
+   - **Nunca** ensinar a resolver enigma pela boca dele (nada de "abre no bloco de notas", "guarda esse número pra conta").
+
+5. **Sincronização Git entre Máquinas:**
    - Leia sempre o `AGENTS.md` completo na raiz antes de mexer no projeto, atualize o `AGENTS.md` ao criar páginas/mecânicas novas e SEMPRE faça `git push origin main` após commitar.

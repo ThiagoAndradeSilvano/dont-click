@@ -633,11 +633,8 @@ app.post('/api/claim-event', (req, res) => {
   player.points = Math.round((player.points + bonus) * 10) / 10;
   saveDb(db);
 
-  let remark = null;
-  if (player.stage === 'awakened_clicker') {
-    if (eventType === 'fly') remark = 'matou uma mosca de pixel na tela por pontinho virtual, que orgulho hein';
-    if (eventType === 'mystery_box') remark = 'kkkkkk ganhou +1 ponto na caixa brilhante, cai em qualquer isca msm';
-  }
+  // Ele não comenta mosca nem caixinha: evento besta do clicker não é assunto dele (só fala o principal)
+  const remark = null;
 
   res.json({
     ok: true,
@@ -970,22 +967,16 @@ app.post('/api/cave/sync', (req, res) => {
     player.stage = 'cave_escaped';
   }
 
-  // Falas do Operador (`log`) — dev brasileiro real, sarcástico, boca-suja e cabreiro com o que tem enterrado debaixo do servidor!
+  // Falas do Operador (`log`) na mina: SÓ as batidas principais. Pegar lanterna, picareta, tábua, manivela etc.
+  // é com o jogador — ele não narra inventário (feedback do Thiago: "deve ser somente as principais").
+  // A reação à intro "Caverna dos Contos" agora é voz no cliente (cave_intro_reacao.mp3), por isso não tem intro_done aqui.
+  const firstNote = eventCode === 'got_note' && !player.flags.includes('cave_first_note');
+  if (firstNote) player.flags.push('cave_first_note');
   const caveRemarks = {
-    intro_done: 'mano... que porra foi essa de musiquinha de fada brilhando na minha cara?! eu NÃO programei mina nenhuma aqui embaixo, acha logo uma saída desse buraco.',
-    got_lantern: 'boa, achou uma lanterna. pelo menos agora dá pra enxergar dois palmos sem dar com a cara na pedra.',
-    got_pickaxe: 'uma picareta enferrujada... namoral, quem enterrou asset de joguinho de mineiro debaixo do meu servidor??',
-    broke_boulder: 'arrebentou a pedra no braço msm kkkkk bora ver onde esse corredor vai dar.',
     armed_plunger: 'CARALHO TREMEU TUDO!! vc apertou um detonador sem nem saber onde tava a dinamite seu maluco?!',
-    got_plank: 'uma tábua velha cheia de cupim... guarda aí, vai que tem buraco lá na frente.',
-    placed_plank: 'ponte improvisada na gambiarra pura. se essa madeira quebrar no meio eu vou rir muito.',
-    got_note: 'tem bilhete rabiscado à mão aqui dentro?? lê isso aí na mochila, essa letra não é minha nem fodendo.',
-    padlock_wrong: 'nem mexeu o cadeado. olha direito aqueles 3 papéis na mochila antes de sair chutando número.',
-    padlock_open: 'destravou!! esses traços e bolinhas nas notas eram números antigos... mano, quem caralhos trancou isso aqui embaixo?',
-    got_handle: 'uma manivela de ferro. deve encaixar em algum registro velho mais pro fundo.',
-    stopped_water: 'fechou a cachoeira! bora ver o que esconderam atrás dessa água.',
-    got_dynamite: 'bananas de dinamite dando sopa... só falta achar estopim pra explodir uma passagem.',
-    got_fuses: 'pegou os estopins! junta com a dinamite lá naquela parede bloqueada pra gente meter o pé daqui.',
+    got_note: firstNote ? 'bilhete escrito à mão?? essa letra não é minha nem fodendo.' : null,
+    padlock_wrong: 'chutando número no cadeado? os papéis tão na tua mochila, gênio.',
+    padlock_open: 'destravou... aqueles risquinhos e bolinhas eram número. mano, quem caralhos trancou isso aqui embaixo?',
     cave_win: 'EXPLODIU!! caralho finalmente... pera, onde é que esse buraco vai sair agora?!',
   };
 

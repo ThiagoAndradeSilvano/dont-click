@@ -78,7 +78,7 @@ export function runStory4Titanic({ app, setOperatorRemark, playBeep, finishStory
     if (!companionOnDoor) {
       companionOnDoor = true;
       tilt += 14;
-      setOperatorRemark('viu só? coube perfeitamente. cinema mentiroso do caralho.', { priority: 'action' });
+      setOperatorRemark('viu só? coube perfeitamente. cinema mentiroso do caralho.', { priority: 'action', key: true });
     }
     updateUI();
   });

@@ -215,13 +215,13 @@ export function openBookReaderModal(
     submitBtn.disabled = false;
 
     if (res?.ok) {
-      if (res.remark) setOperatorRemark(res.remark, { priority: 'action' });
+      if (res.remark) setOperatorRemark(res.remark, { priority: 'action', key: true });
       modal.remove();
       if (onSolved) onSolved(res.caveState);
     } else {
       if (feedbackEl) feedbackEl.textContent = 'Resposta incorreta.';
       if (!(triggerRisadaVoiceReaction && triggerRisadaVoiceReaction())) {
-        if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+        if (res?.remark) setOperatorRemark(res.remark, { priority: 'action', key: true });
       }
     }
   };
@@ -331,7 +331,7 @@ export function openFinalShelfModal(caveState, { apiPost, setOperatorRemark, onE
       } else {
         const fb = modal.querySelector('#shelf-feedback');
         if (fb) fb.textContent = 'Ordem incorreta. A estante não se moveu.';
-        if (res?.remark) setOperatorRemark(res.remark, { priority: 'action' });
+        if (res?.remark) setOperatorRemark(res.remark, { priority: 'action', key: true });
       }
     });
   };

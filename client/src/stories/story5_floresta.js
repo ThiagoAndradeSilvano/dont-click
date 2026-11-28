@@ -120,7 +120,7 @@ export function runStory5Floresta({ app, setOperatorRemark, playBeep, finishStor
       playBeep();
       const id = btn.getAttribute('data-acc');
       if (inspectedClues.size < 3 || interrogated.size < 3) {
-        setOperatorRemark('vc nem olhou todas as pistas e depoimentos ainda, detetive de araque. investiga tudo primeiro.', { priority: 'action' });
+        setOperatorRemark('vc nem olhou todas as pistas e depoimentos ainda, detetive de araque. investiga tudo primeiro.', { priority: 'action', key: true });
         return;
       }
 

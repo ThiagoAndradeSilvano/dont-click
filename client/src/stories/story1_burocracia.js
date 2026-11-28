@@ -1631,11 +1631,17 @@ export function runStory1Burocracia({
     updateHudAndQueue();
   });
 
-  // ---- ESPALHA OS PAPÉIS DO VIAJANTE PELA MESA ----
+  // ---- ESPALHA OS PAPÉIS DO VIAJANTE PELA MESA (100% responsivo à altura/largura real da mesa!) ----
   function spawnDocumentsOnDesk(person) {
     const layer = document.getElementById('pp-docs-layer');
+    const desk = document.getElementById('pp-desk');
     if (!layer) return;
     layer.innerHTML = '';
+
+    const deskW = Math.max(320, desk?.clientWidth || 640);
+    const deskH = Math.max(280, desk?.clientHeight || 480);
+    const fitX = (pref, docW) => Math.max(12, Math.min(pref, deskW - docW - 14));
+    const fitY = (pref, docH) => Math.max(52, Math.min(pref, deskH - docH - 12));
 
     const kInfo = KINGDOMS[person.kingdom] || KINGDOMS['República de Vostok'];
     const passPhotoChar = person.photoCharId || person.charId;
@@ -1645,8 +1651,8 @@ export function runStory1Burocracia({
     const passEl = document.createElement('div');
     passEl.className = 'pp-doc-item pp-passport-doc';
     passEl.id = 'pp-doc-passport';
-    passEl.style.left = '34px';
-    passEl.style.top = '74px';
+    passEl.style.left = `${fitX(28, 268)}px`;
+    passEl.style.top = `${fitY(62, 205)}px`;
     passEl.style.zIndex = String(++topZ);
     passEl.innerHTML = `
       <div class="pp-pass-header ${kInfo.cls}">
@@ -1680,8 +1686,8 @@ export function runStory1Burocracia({
     if (person.entryTicket) {
       const tk = document.createElement('div');
       tk.className = 'pp-doc-item pp-permit-doc';
-      tk.style.left = '322px';
-      tk.style.top = '78px';
+      tk.style.left = `${fitX(Math.round(deskW * 0.46), 224)}px`;
+      tk.style.top = `${fitY(66, 128)}px`;
       tk.style.zIndex = String(++topZ);
       tk.innerHTML = `
         <div class="pp-permit-header">TICKET DE ENTRADA // ${person.entryTicket.code}</div>
@@ -1699,8 +1705,8 @@ export function runStory1Burocracia({
       wp.className = 'pp-doc-item pp-permit-doc';
       wp.style.background = '#efe8f6';
       wp.style.borderColor = '#4c1d95';
-      wp.style.left = '318px';
-      wp.style.top = '235px';
+      wp.style.left = `${fitX(Math.round(deskW * 0.44), 224)}px`;
+      wp.style.top = `${fitY(Math.round(deskH * 0.42), 126)}px`;
       wp.style.zIndex = String(++topZ);
       wp.innerHTML = `
         <div class="pp-permit-header" style="border-color:#4c1d95;">PERMISSÃO DE TRABALHO</div>
@@ -1716,8 +1722,8 @@ export function runStory1Burocracia({
     if (person.vaccineCert) {
       const vc = document.createElement('div');
       vc.className = 'pp-doc-item pp-vaccine-doc';
-      vc.style.left = '66px';
-      vc.style.top = '325px';
+      vc.style.left = `${fitX(54, 196)}px`;
+      vc.style.top = `${fitY(Math.round(deskH * 0.62), 118)}px`;
       vc.style.zIndex = String(++topZ);
       vc.innerHTML = `
         <div style="font-weight:bold; border-bottom:1px solid #854d0e; margin-bottom:4px;">💉 PROFILAXIA SANITÁRIA</div>
@@ -1733,8 +1739,8 @@ export function runStory1Burocracia({
     if (person.bribe) {
       const br = document.createElement('div');
       br.className = 'pp-doc-item pp-bribe-note';
-      br.style.left = '345px';
-      br.style.top = '385px';
+      br.style.left = `${fitX(Math.round(deskW * 0.52), 168)}px`;
+      br.style.top = `${fitY(Math.round(deskH * 0.68), 108)}px`;
       br.style.zIndex = String(++topZ);
       br.innerHTML = `
         <div style="font-weight:bold;">💵 +${person.bribe} CRÉDITOS VIVOS</div>

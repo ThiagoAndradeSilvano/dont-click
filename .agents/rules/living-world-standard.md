@@ -31,14 +31,20 @@ Sempre que criar ou editar **QUALQUER** tela, capítulo, livro ou minigame, cump
 ## 5. Separação Rigorosa Mundo do Jogo vs. `log` + Áudio & Eco
 - Contos, livros e minigames pós-caverna têm **universo e regras próprias** (não quebram a quarta parede por conta própria falando "sou um código corrompido"). Quem quebra a banca de fora é o `log` na barra superior!
 - Sempre espere o narrador/interfone local terminar (~`550–700ms`) antes do `log` reagir, respeite prioridades (`urgent`, `action`, `ambient`), e mantenha o eco acústico (`ensureCaveEchoChain`) onde couber.
+- **Mundo vivo ≠ `log` tagarela:** a tela reage a tudo (aba, cursor, som, NPC), mas o `log` só fala o principal (`key: true`). Reação a ação rotineira vai pro mundo (narrador, balão do NPC, título da aba), não pra boca dele.
 
 ## 6. Padrão de Enigmas *Don't Believe His Lies* (Anti-Chute & Anti-Print)
 - **Zero senha no front-end:** Toda resposta de enigma é validada exclusivamente no `server/src/index.js`.
 - Enigmas principais devem exigir **pensamento lateral real e múltiplas camadas** (arquivos baixáveis com esteganografia de brilho/contraste + bytes no Bloco de Notas, áudio invertido/espectrograma, física em tempo real, Morse/cifras cruzadas com pesquisa histórica real onde um simples print no GPT não entrega pronto).
 - Chutes errados repetidos devem ter respostas progressivas do `log` (do deboche leve até irritação ou dica ácida indireta, sem nunca dar a resposta de bandeja).
 
-## 7. Zero Rolagem Indesejada & Zero Dependência Externa Suja
-- Telas de jogo devem caber limpas na viewport (`100dvh` / escala responsiva) sem barra de rolagem acidental em notebooks/telas menores.
+## 7. Responsividade Total (`100dvh`) & Zero Rolagem de Página (LEI OBRIGATÓRIA EM TODAS AS TELAS!)
+- **TODA tela do jogo** (Botão, Erros, Forminhas, Clicker, Loading, Subsolo, Caverna, todos os 6 Contos, Livros, Estante e Modais) **DEVE ser 100% responsiva e caber inteira em `100dvh` sem barra de rolagem na página**, tanto em notebooks com DPI 125% (`1280×640`, `1366×768`, `1536×864`) quanto em monitores `1080p+` e telas estreitas/mobile (`360×640`).
+- **Regras técnicas obrigatórias ao criar/editar qualquer tela:**
+  1. Trave o `body` do modo em `height: 100dvh; max-height: 100dvh; overflow: hidden;` e o container raiz (ex: `.story-shell`, `.clicker-layout`) em `height: 100dvh; min-height: 0; display: flex; flex-direction: column;`.
+  2. **PROIBIDO usar `min-height` fixo grande** (ex: `min-height: 590px`) em grids/painéis principais: use `flex: 1 1 0; min-height: 0;` + `clamp()` para alturas, fontes e espaçamentos, deixando rolagem (`overflow-y: auto`) **apenas dentro** de sub-listas específicas (manual, loja, inventário).
+  3. **Mapas 2D grandes (como a Caverna):** NUNCA encolha o mapa inteiro pra caber na tela deixando o personagem minúsculo — use **janela de câmera responsiva (`follow-camera`)** que preenche a viewport e acompanha o jogador com zoom legível (`updateCaveCamera`).
+  4. **Elementos posicionados em `px` (ex: documentos na mesa):** calcule o spawn relativo a `clientWidth`/`clientHeight` reais do container para nunca nascerem cortados em telas baixas.
 - **PROIBIDO** embutir CDNs externos frágeis, `<base href>` de terceiros, analytics ou binários WASM opacos. Tudo roda 100% local e auditado no repositório.
 
 ## 8. Cursor Conta a História (Mouse Normal Até o Jogo "Começar")

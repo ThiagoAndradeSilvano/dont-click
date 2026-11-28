@@ -14,7 +14,7 @@
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   display: flex;
   justify-content: center;
@@ -54,8 +54,10 @@ body {
 
 /* ===== FALSO ERRO NATIVO CHROMIUM ===== */
 body.native-error-mode {
-  display: block;
-  min-height: 100vh;
+  display: flow-root; /* impede a margem do wrapper de vazar pro body e criar 30px fantasmas de rolagem */
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   margin: 0;
   background-color: #ffffff;
   color: #5f6368;
@@ -95,32 +97,40 @@ body.native-error-mode {
 
 .neterror-wrapper {
   max-width: 600px;
-  margin: 13vh auto 0;
-  padding: 0 24px 60px;
+  margin: clamp(10px, 8dvh, 14dvh) auto 0;
+  padding: 0 24px clamp(10px, 2dvh, 32px);
+}
+
+/* Quando o `log` sequestra a página de erro, a caixa alarga pra caber o monólogo inteiro sem rolar */
+.neterror-wrapper:has(.hijack-box) {
+  max-width: min(740px, 100%);
+  margin-top: clamp(8px, 5dvh, 10dvh);
 }
 
 .neterror-icon {
-  margin-bottom: 28px;
+  margin-bottom: clamp(6px, 2.4dvh, 26px);
+  height: clamp(40px, 10dvh, 72px);
+  width: auto;
 }
 
 .neterror-title {
   color: #202124;
-  font-size: 24px;
+  font-size: clamp(19px, 3.6dvh, 24px);
   font-weight: 500;
   line-height: 1.25;
-  margin: 0 0 16px 0;
+  margin: 0 0 clamp(6px, 2dvh, 16px) 0;
 }
 
 .neterror-desc {
-  font-size: 15px;
+  font-size: clamp(13px, 2.3dvh, 15px);
   line-height: 1.55;
-  margin: 0 0 12px 0;
+  margin: 0 0 clamp(4px, 1.6dvh, 12px) 0;
 }
 
 .neterror-list {
-  font-size: 15px;
+  font-size: clamp(13px, 2.3dvh, 15px);
   line-height: 1.6;
-  margin: 0 0 18px 0;
+  margin: 0 0 clamp(6px, 2.2dvh, 18px) 0;
   padding-left: 24px;
 }
 
@@ -128,21 +138,32 @@ body.native-error-mode {
   font-size: 12px;
   letter-spacing: 0.02em;
   color: #5f6368;
-  margin: 16px 0 32px 0;
+  margin: clamp(6px, 2dvh, 16px) 0 clamp(10px, 4dvh, 32px) 0;
   text-transform: uppercase;
   font-family: monospace;
 }
 
 .hijack-box {
-  margin: 20px 0 28px;
-  padding: 14px 16px;
+  margin: clamp(8px, 2.4dvh, 20px) 0 clamp(8px, 2.8dvh, 28px);
+  padding: clamp(8px, 1.8dvh, 14px) 16px;
   background-color: #f8f9fa;
   border-left: 3px solid #d93025;
   font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 13.5px;
-  line-height: 1.65;
+  font-size: clamp(12px, 2.1dvh, 13.5px);
+  line-height: 1.55;
   color: #202124;
   white-space: pre-wrap;
+}
+
+/* Telas estreitas/baixas: o ícone sai de cena quando ele tá falando (o texto dele é o que importa) */
+@media (max-width: 560px), (max-height: 560px) {
+  .neterror-wrapper:has(.hijack-box) .neterror-icon {
+    display: none;
+  }
+  .neterror-wrapper {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 .typing-cursor {
@@ -163,7 +184,7 @@ body.native-error-mode {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 32px;
+  margin-top: clamp(10px, 4dvh, 32px);
 }
 
 .neterror-btn-reload {
@@ -214,7 +235,7 @@ body.blue-hand-on * {
 
 .neterror-details-panel {
   display: none;
-  margin-top: 28px;
+  margin-top: clamp(10px, 3dvh, 28px);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -227,7 +248,10 @@ body.firefox-error-mode {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 13vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding-top: clamp(16px, 7dvh, 12dvh);
   background-color: #ffffff;
   color: #15141a;
   font-family: system-ui, -apple-system, sans-serif;
@@ -344,6 +368,7 @@ body.awakened-cursors.cursor-mood-point * {
 .clicker-layout {
   max-width: 860px;
   width: 100%;
+  height: 100%;
   max-height: 100%;
   min-height: 0;
   margin: auto;
@@ -456,7 +481,8 @@ body.awakened-cursors.cursor-mood-point * {
 }
 
 .clicker-main {
-  flex: 0 1 auto;
+  /* Ocupa só o que sobra embaixo dos widgets (log, busca, clima, barra) — nunca empurra a página */
+  flex: 1 1 0;
   min-height: 0;
   display: grid;
   /* Janela do botão compacta no centro + loja enxuta ao lado (sem esticar 900px na tela!) */
@@ -500,16 +526,26 @@ body.awakened-cursors.cursor-mood-point * {
   border: 1px solid #bbb;
   padding: 10px 12px;
   min-height: 0;
-  height: min(430px, calc(100dvh - 190px));
-  max-height: calc(100dvh - 180px);
+  height: min(560px, 100%);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 @media (max-width: 760px) {
+  /* Celular: a coluna inteira ocupa exatamente a tela e a loja estica só no que sobrar (rola por dentro) */
+  .clicker-layout {
+    height: 100%;
+  }
   .clicker-main {
+    flex: 1 1 0;
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .clicker-shop {
+    height: auto;
+    max-height: none;
   }
   .clicker-arena {
     align-self: stretch;
@@ -888,16 +924,18 @@ body.shapes-mode {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   background: #ffffff;
   cursor: default;
-  padding: 20px;
+  padding: clamp(12px, 2.5dvh, 20px);
 }
 
 .shapes-card {
   background: #ffffff;
   border: 2px solid #000000;
-  padding: 28px 34px;
+  padding: clamp(16px, 3dvh, 28px) clamp(16px, 3vw, 34px);
   max-width: 440px;
   width: 100%;
 }
@@ -1099,12 +1137,14 @@ body.shitty-loading-mode {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   background-color: #c0c0c0;
   font-family: 'Tahoma', 'MS Sans Serif', monospace;
   color: #000;
   cursor: wait;
-  padding: 16px;
+  padding: clamp(8px, 2dvh, 16px);
 }
 
 .win98-loading-window {
@@ -1115,6 +1155,8 @@ body.shitty-loading-mode {
   border-bottom: 3px solid #404040;
   width: 100%;
   max-width: 580px;
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
   padding: 4px;
   box-shadow: 6px 6px 0 rgba(0,0,0,0.35);
 }
@@ -1251,19 +1293,17 @@ body.subsolo-mode #app {
 
 .subsolo-shell {
   width: 100%;
-  /* Cabe na altura da tela sem rolagem: 32 de padding + 76 do log + 12 de gap + 6 de borda */
-  max-width: min(846px, calc((100dvh - 126px) * 840 / 460));
+  max-width: min(846px, 96vw, calc((100dvh - 108px) * 840 / 460));
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: clamp(8px, 1.4dvh, 12px);
 }
 
 .subsolo-shell .operator-feed {
   width: 100%;
-  height: 76px;
-  min-height: 76px;
-  max-height: 76px;
+  min-height: clamp(50px, 8dvh, 72px);
+  max-height: 82px;
   overflow: hidden;
 }
 
@@ -1447,7 +1487,8 @@ body.cave-mode {
   font-family: 'CavePixles', monospace;
   font-size: 15px;
   user-select: none;
-  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   margin: 0;
   display: block;
   cursor: var(--cur-user-blue);
@@ -1455,10 +1496,10 @@ body.cave-mode {
 
 .cave-top-hud {
   position: fixed;
-  top: 12px;
+  top: clamp(6px, 1.2dvh, 12px);
   left: 50%;
   transform: translateX(-50%);
-  width: min(860px, calc(100vw - 140px));
+  width: min(860px, calc(100vw - 120px));
   z-index: 9600;
 }
 
@@ -1466,25 +1507,28 @@ body.cave-mode {
   background: rgba(12, 12, 14, 0.92);
   border-color: #3f3f46;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.8);
+  padding: clamp(5px, 0.9dvh, 8px) 12px;
+  min-height: clamp(36px, 5.4dvh, 44px);
 }
 
 .cave-wasd-hint {
   position: fixed;
-  bottom: 16px;
+  bottom: clamp(6px, 1.2dvh, 12px);
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(20, 20, 22, 0.9);
+  background: rgba(20, 20, 22, 0.92);
   border: 2px solid #3f3f46;
   color: #e4e4e7;
-  padding: 8px 16px;
+  padding: clamp(4px, 0.8dvh, 7px) clamp(10px, 1.6vw, 16px);
   border-radius: 6px;
   font-family: 'CavePixles', monospace;
-  font-size: 13px;
+  font-size: clamp(11px, 1.6dvh, 13px);
   letter-spacing: 0.5px;
   z-index: 45;
   display: flex;
-  gap: 16px;
+  gap: clamp(8px, 1.6vw, 16px);
   align-items: center;
+  white-space: nowrap;
 }
 
 .wasd-keycap {
@@ -1498,16 +1542,27 @@ body.cave-mode {
   margin: 0 2px;
 }
 
+/* Janela de câmera responsiva que preenche a tela acompanhando o personagem! */
 .cave-stage-root {
   position: fixed;
-  left: 50%;
-  top: 50%;
-  width: 1728px; /* 12 cols * 144px */
-  height: 1344px; /* 4 rows * 336px */
-  transform-origin: center center;
+  left: clamp(232px, 19vw, 268px);
+  right: 16px;
+  top: clamp(54px, 8.8dvh, 68px);
+  bottom: clamp(44px, 7.2dvh, 54px);
   background: #000000;
-  box-shadow: inset 0 0 0 8px #000000, 0 0 0 8px #000000;
+  border: 2px solid #18181b;
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9);
   overflow: hidden;
+  transition: left 0.22s ease;
+}
+
+body.cave-mode:has(.cave-inventory.bag-collapsed) .cave-stage-root {
+  left: 78px;
+}
+
+.cave-stage-root.shake-blast {
+  animation: caveShake 0.8s ease;
 }
 
 /* Bonequinho principal (coordenadas livres dentro do mapa fixo!) */
@@ -1537,11 +1592,13 @@ body.cave-mode {
   to { background-position: -288px 0; }
 }
 
-/* Mapa 100% estacionário — a luz e o personagem é que se movem! */
+/* Mundo pixel-art 1728x1344 movido suavemente pela câmera responsiva! */
 .cave-viewport {
   position: relative;
   width: 1728px;
   height: 1344px; /* 4 rows * 336px */
+  transform-origin: 0 0;
+  will-change: transform;
   z-index: 5;
 }
 
@@ -1550,10 +1607,6 @@ body.cave-mode {
   inset: -8px;
   z-index: 25;
   pointer-events: none;
-}
-
-.cave-viewport.shake-blast {
-  animation: caveShake 0.8s ease;
 }
 
 @keyframes caveShake {
@@ -1768,46 +1821,88 @@ body.cave-mode {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mochila lateral de Inventário da Caverna (canto esquerdo, 3 colunas, SEM barra de rolagem!) */
+/* Mochila lateral responsiva de Inventário da Caverna */
 .cave-inventory {
   position: fixed;
   z-index: 48;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 248px;
+  left: 14px;
+  top: clamp(56px, 9dvh, 72px);
+  bottom: clamp(46px, 7.5dvh, 58px);
+  width: clamp(208px, 17.5vw, 244px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   color: #fff;
-  font-size: 10.5px;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.cave-backpack-btn {
+  position: relative;
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s ease;
+}
+.cave-backpack-btn:hover {
+  transform: scale(1.06);
 }
 
 .cave-backpack-icon {
-  width: 44px;
+  width: clamp(36px, 5.5dvh, 44px);
   image-rendering: pixelated;
-  cursor: pointer;
+  display: block;
+}
+
+.cave-backpack-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  background: #fbbf24;
+  color: #18181b;
+  border: 2px solid #09090b;
+  border-radius: 99px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1.3;
+}
+
+.cave-inventory.bag-collapsed .cave-inv-grid {
+  display: none;
 }
 
 .cave-inv-grid {
-  margin-top: 8px;
+  margin-top: 6px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 94px;
+  grid-auto-rows: clamp(60px, 10.2dvh, 88px);
   align-items: stretch;
-  gap: 6px;
+  gap: clamp(4px, 0.7dvh, 6px);
   background: rgba(12, 12, 16, 0.94);
   border: 2px solid #3f3f46;
   border-radius: 8px;
-  padding: 8px;
+  padding: clamp(5px, 0.9dvh, 8px);
   overflow: visible;
+  pointer-events: auto;
+}
+
+.cave-inv-grid.compact-bag {
+  grid-auto-rows: clamp(48px, 7.8dvh, 72px);
 }
 
 .cave-inv-item {
   position: relative;
   width: 100%;
-  height: 94px;
+  height: 100%;
+  min-height: 0;
   background: rgba(24, 24, 29, 0.92);
   border: 1px solid #3f3f46;
   border-radius: 5px;
-  padding: 6px 4px;
+  padding: clamp(3px, 0.6dvh, 6px) 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1817,11 +1912,30 @@ body.cave-mode {
 }
 
 .cave-inv-item img {
-  width: 36px;
-  height: 36px;
+  width: clamp(22px, 3.8dvh, 34px);
+  height: clamp(22px, 3.8dvh, 34px);
   flex-shrink: 0;
   object-fit: contain;
   image-rendering: pixelated;
+}
+
+@media (max-width: 900px) {
+  .cave-stage-root,
+  body.cave-mode:has(.cave-inventory.bag-collapsed) .cave-stage-root {
+    left: 10px;
+    right: 10px;
+  }
+  .cave-inventory {
+    top: 58px;
+    bottom: auto;
+    justify-content: flex-start;
+    width: min(244px, calc(100vw - 28px));
+  }
+  .cave-top-hud {
+    width: calc(100vw - 92px);
+    left: 10px;
+    transform: none;
+  }
 }
 
 .cave-inv-item > div:not(.inv-tooltip) {
