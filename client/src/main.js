@@ -189,13 +189,21 @@ const TEIMOSO_VOICE_POOL = [
     ],
   },
   {
-    text: 'continua cutucando tudo aí vai, depois quando der merda não chora.',
+    text: 'para de cutucar seu porra! quer que eu fique cutucando sua casa inteira também? ...não fode.',
     voiceUrl: '/voices/react_teimoso_4.mp3',
-    optional: true,
+    // Envelope real (14.84s): "para de cutucar" 0.44–1.40 → "seu porra" 2.00–3.18 → "quer que eu fique" 3.56–4.92
+    // → "cutucando sua casa inteira também" 5.30–8.24 → silêncio + bufada → "não fode" 10.82–11.68
     steps: [
-      { text: 'continua cutucando tudo aí vai, ', durationMs: 1850 },
-      { pause: 150 },
-      { text: 'depois quando der merda não chora.', durationMs: 2100 },
+      { pause: 440 },
+      { text: 'para de cutucar ', durationMs: 960 },
+      { pause: 600 },
+      { text: 'seu porra! ', durationMs: 1180 },
+      { pause: 380 },
+      { text: 'quer que eu fique ', durationMs: 1360 },
+      { pause: 380 },
+      { text: 'cutucando sua casa inteira também? ', durationMs: 2940 },
+      { pause: 2580 },
+      { text: '...não fode.', durationMs: 860 },
     ],
   },
 ];
